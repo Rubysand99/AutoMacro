@@ -16,6 +16,7 @@ import android.widget.TextView
 import com.starclan.starhub.data.HubFormat
 import com.starclan.starhub.engine.FarmController
 import com.starclan.starhub.engine.FarmState
+import com.starclan.starhub.engine.TagCollector
 import com.starclan.starhub.service.AutoAccessibilityService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -87,6 +88,7 @@ object FarmOverlay {
     private var btnMute: TextView? = null
     private var btnMode: TextView? = null
     private var btnEvent: TextView? = null
+    private var btnTags: TextView? = null
 
     private val groups = mutableMapOf<String, Group>()
     private val collapsed = mutableSetOf<String>()   // nho trang thai thu gon trong luc app chay
@@ -352,6 +354,8 @@ object FarmOverlay {
         btnMute = muteBtn
         btnMode = modeBtn
         btnEvent = eventBtn
+        val tagBtn = pill(service, "📚 Học lời khuyên vũ khí", C_BTN, 12f)
+        btnTags = tagBtn
 
         val rowMute = LinearLayout(service)
         rowMute.orientation = LinearLayout.HORIZONTAL
@@ -365,6 +369,9 @@ object FarmOverlay {
         row2.addView(modeBtn, lparams(0, LinearLayout.LayoutParams.WRAP_CONTENT, weight = 3f, margin = dp(2)))
         row2.addView(hideBtn, lparams(0, LinearLayout.LayoutParams.WRAP_CONTENT, weight = 0.8f, margin = dp(2)))
         row2.addView(closeBtn, lparams(0, LinearLayout.LayoutParams.WRAP_CONTENT, weight = 0.8f, margin = dp(2)))
+        val row3 = LinearLayout(service)
+        row3.orientation = LinearLayout.HORIZONTAL
+        row3.addView(tagBtn, lparams(0, LinearLayout.LayoutParams.WRAP_CONTENT, weight = 1f, margin = dp(2)))
 
         // -- Cac nhom (cuon duoc) --
         val content = LinearLayout(service)
@@ -396,7 +403,8 @@ object FarmOverlay {
         panelBox.addView(alert, LinearLayout.LayoutParams(panelWidth, wrap).also { it.setMargins(0, 0, 0, dp(6)) })
         panelBox.addView(rowMute, LinearLayout.LayoutParams(panelWidth, wrap))
         panelBox.addView(row1, LinearLayout.LayoutParams(panelWidth, wrap))
-        panelBox.addView(row2, LinearLayout.LayoutParams(panelWidth, wrap).also { it.setMargins(0, 0, 0, dp(8)) })
+        panelBox.addView(row2, LinearLayout.LayoutParams(panelWidth, wrap))
+        panelBox.addView(row3, LinearLayout.LayoutParams(panelWidth, wrap).also { it.setMargins(0, 0, 0, dp(8)) })
         panelBox.addView(scroll, LinearLayout.LayoutParams(panelWidth, wrap))
         container.addView(panelBox, LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT))
@@ -411,6 +419,10 @@ object FarmOverlay {
             }
         }
         muteBtn.setOnClickListener { FarmController.stopAlarm() }
+        // Tu hoc loi khuyen vu khi trong server OwO (go ?tag <vu khi>, doc chu, gui len bot; bot gui file cho Ruby)
+        tagBtn.setOnClickListener {
+            if (TagCollector.isRunning()) TagCollector.stop() else TagCollector.start(service, service.applicationContext)
+        }
         // Che do Event: BAT = dang co su kien, duoc dung slot thu 4 (gem Special). Bot luu lai trang thai.
         eventBtn.setOnClickListener {
             val nowOn = FarmController.state.value.hub?.eventMode == true
@@ -478,6 +490,18 @@ object FarmOverlay {
         scope = s
         s.launch {
             FarmController.state.collect { st -> render(st) }
+        }
+        s.launch {
+            TagCollector.progress.collect { p ->
+                val label = when {
+                    p.running -> "📚 Đang học ${p.done}/${p.total} · bấm để dừng"
+                    p.message.isNotEmpty() -> "📚 ${p.message}"
+                    else -> "📚 Học lời khuyên vũ khí"
+                }
+                btnTags?.text = label
+                setPillColor(btnTags, if (p.running) "#6A4FB3" else C_BTN)
+                render(FarmController.state.value)
+            }
         }
         refreshJob = s.launch {
             while (true) {
@@ -600,6 +624,11 @@ object FarmOverlay {
         }
         farmRows.add(Row("Hunt mode", "${st.huntMode} · $modeLong"))
         if (!st.huntPaused.isNullOrBlank()) farmRows.add(Row("Hunt", "Tạm dừng: ${st.huntPaused}", Tone.WARN))
+        val tagP = TagCollector.progress.value
+        if (tagP.running || tagP.message.isNotEmpty()) {
+            val tagText = if (tagP.running) "${tagP.done}/${tagP.total} · ${tagP.message}" else tagP.message
+            farmRows.add(Row("Học tag", tagText, if (tagText.startsWith("✅")) Tone.GOOD else if (tagText.startsWith("⚠️")) Tone.WARN else Tone.NORMAL))
+        }
         setGroup("farm", if (b == null) "" else "🔥 $streakNow", farmRows)
 
         // ===== Gem =====

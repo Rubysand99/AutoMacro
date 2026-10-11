@@ -188,6 +188,27 @@ object OwoTrackerApi {
             }
         }
 
+    /** Gui chu loi khuyen vu khi (`?tag <vu khi>`) len bot; bot tach passive va gui file cho Ruby. true = bot da nhan. */
+    suspend fun uploadWeaponAdvice(apiUrl: String, token: String, tags: Map<String, String>): Boolean =
+        withContext(Dispatchers.IO) {
+            try {
+                val url = URL(joinUrl(apiUrl, "/weapon-advice"))
+                val conn = url.openConnection() as HttpURLConnection
+                conn.requestMethod = "POST"
+                conn.setRequestProperty("Authorization", "Bearer $token")
+                conn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+                conn.doOutput = true
+                conn.connectTimeout = 10_000
+                conn.readTimeout = 20_000
+                val payload = gson.toJson(mapOf("tags" to tags))
+                conn.outputStream.use { it.write(payload.toByteArray(Charsets.UTF_8)) }
+                conn.responseCode == 200
+            } catch (e: Exception) {
+                Log.w(TAG, "uploadWeaponAdvice loi: ${e.message}")
+                false
+            }
+        }
+
     /** Bao owo-tracker biet 1 lenh da xu ly xong (hoac that bai), de no khong gui lai lenh do nua. */
     suspend fun ack(apiUrl: String, token: String, commandId: Int, status: String) = withContext(Dispatchers.IO) {
         try {
