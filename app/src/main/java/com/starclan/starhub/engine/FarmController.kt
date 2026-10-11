@@ -74,6 +74,8 @@ object FarmController {
     // 1 vong (hunt + battle). OwO bat cooldown 15 giay moi lenh, nen vong ngan nhat 16.5 giay la sat nhat co the.
     private const val CYCLE_MIN_MS = 16_500L
     private const val CYCLE_MAX_MS = 21_000L
+    private const val TEAM_REFRESH_GAP_MS = 30 * 60_000L          // owo team: cap nhat doi hinh cho ,teamcheck cua bot
+    private const val WEAPON_DETAIL_GAP_MS = 6 * 60 * 60_000L     // owo weapon <ID> cua pet trong doi: it thay doi
     private const val CHORE_REQUEUE_MS = 2 * 60_000L     // lenh vua go thanh cong -> cho 2 phut moi quay lai danh sach random
     private const val FILLER_MIN_REMAINING_MS = 5_500L   // con it nhat chung nay trong vong thi moi chen them 1 lenh kiem tra
 
@@ -583,20 +585,38 @@ object FarmController {
         }
 
         // owo hb: xem / nhan thanh qua; neu huntbot vua xong thi nhac Ruby tu chay lai (can mat khau xac minh)
+        val hbChore = Chore("hb") {
+            val finished = hb?.secondsLeft?.let { it <= 0L } == true && choreDue("huntbot", HUNTBOT_GAP_MS)
+            val r = runChoreCommands(sender, settings, "hb", listOf(HUNTBOT_COLLECT_COMMAND))
+            if (r == SendResult.OK && finished) {
+                choreAt["huntbot"] = System.currentTimeMillis()
+                choreAt["huntbot_idle"] = System.currentTimeMillis()
+                notifyOwner(
+                    "🤖 Huntbot đã chạy xong và app đã nhận thành quả (owo hb). Chạy lại cần mật khẩu xác nhận: " +
+                        "bot sẽ nhờ app gõ lệnh và gửi ảnh mật khẩu sang acc phụ, bạn chỉ cần đọc rồi nhắn lại đúng mã.",
+                    toAlt = true
+                )
+            }
+            r
+        }
         if (ready("hb")) {
-            pool += Chore("hb") {
-                val finished = hb?.secondsLeft?.let { it <= 0L } == true && choreDue("huntbot", HUNTBOT_GAP_MS)
-                val r = runChoreCommands(sender, settings, "hb", listOf(HUNTBOT_COLLECT_COMMAND))
-                if (r == SendResult.OK && finished) {
-                    choreAt["huntbot"] = System.currentTimeMillis()
-                    choreAt["huntbot_idle"] = System.currentTimeMillis()
-                    notifyOwner(
-                        "🤖 Huntbot đã chạy xong và app đã nhận thành quả (owo hb). " +
-                            "Bạn tự gõ `owo hb 24h` + mã xác nhận để chạy lại nhé — app không điền được mã này.",
-                        toAlt = true
-                    )
-                }
-                r
+            // Huntbot da toi gio xong -> nhan thanh qua NGAY, khong cho boc ngau nhien
+            if (hb?.hunting == true && (hb.secondsLeft ?: 1L) <= 0L) {
+                val r = hbChore.run()
+                if (r == SendResult.OK) choreAt["wait_hb"] = System.currentTimeMillis()
+                return r
+            }
+            pool += hbChore
+        }
+
+        // Doi hinh + chi tiet vu khi cua pet trong doi (de ,teamcheck cua bot cham diem duoc). Thua hon cac viec khac.
+        if (choreDue("team_refresh", TEAM_REFRESH_GAP_MS)) {
+            pool += Chore("team") { runChoreCommands(sender, settings, "team_refresh", listOf("owo team")) }
+        }
+        for (m in hub?.team?.members.orEmpty()) {
+            val wid = m.weaponId ?: continue
+            if (choreDue("weapon_$wid", WEAPON_DETAIL_GAP_MS)) {
+                pool += Chore("wpn_$wid") { runChoreCommands(sender, settings, "weapon_$wid", listOf("owo weapon $wid")) }
             }
         }
 
