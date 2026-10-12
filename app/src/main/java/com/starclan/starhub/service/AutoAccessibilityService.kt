@@ -27,7 +27,9 @@ import com.starclan.starhub.data.ScriptJson
 import com.starclan.starhub.data.ScriptStep
 import com.starclan.starhub.data.StepType
 import com.starclan.starhub.data.summarizeStep
+import com.starclan.starhub.engine.ButtonClicker
 import com.starclan.starhub.engine.DiscordSender
+import com.starclan.starhub.engine.FarmController
 import com.starclan.starhub.engine.ScriptEngine
 import com.starclan.starhub.engine.SendResult
 import kotlinx.coroutines.CoroutineScope
@@ -221,13 +223,35 @@ class AutoAccessibilityService : AccessibilityService() {
                 continue
             }
 
-            val result = try {
+            // Lenh co "click_label" (vd quet danh sach vu khi nhieu trang): sau khi go lenh se BAM nut do nhieu lan.
+            // Khong lam khi dang farm vi cac tin moi se day danh sach ra khoi man hinh.
+            val clickLabel = cmd.params["click_label"]
+            if (!clickLabel.isNullOrBlank() && FarmController.isRunning()) {
+                Log.w(TAG, "Lenh '${cmd.action}' can man hinh yen tinh nhung dang farm - bo qua")
+                OwoTrackerApi.ack(apiUrl, token, cmd.id, "failed")
+                continue
+            }
+
+            var result = try {
                 sender.send(commandText, settings, reopenChannel = first)
             } catch (e: Exception) {
                 Log.e(TAG, "Loi khi chay lenh '${cmd.action}': ${e.message}")
                 SendResult.SEND_FAILED
             }
             first = false
+            if (result == SendResult.OK && !clickLabel.isNullOrBlank()) {
+                val times = cmd.params["click_times"]?.toIntOrNull() ?: 50
+                val minMs = cmd.params["click_min_ms"]?.toLongOrNull() ?: 1_800L
+                val maxMs = cmd.params["click_max_ms"]?.toLongOrNull() ?: 2_800L
+                val n = try {
+                    ButtonClicker.clickRepeatedly(this, clickLabel, times, minMs, maxMs)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Loi khi bam nut '$clickLabel': ${e.message}")
+                    -1
+                }
+                Log.d(TAG, "Lenh '${cmd.action}': da bam '$clickLabel' $n lan")
+                if (n < 0) result = SendResult.SEND_FAILED
+            }
             Log.d(TAG, "Lenh '${cmd.action}' (${cmd.id}) -> $result")
 
             OwoTrackerApi.ack(apiUrl, token, cmd.id, if (result == SendResult.OK) "done" else "failed")
