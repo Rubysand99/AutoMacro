@@ -6,6 +6,7 @@ import android.view.accessibility.AccessibilityNodeInfo
 import com.starclan.starhub.data.OwoTrackerApi
 import com.starclan.starhub.data.OwoTrackerPrefs
 import com.starclan.starhub.service.AutoAccessibilityService
+import com.starclan.starhub.view.FarmOverlay
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -59,6 +60,10 @@ object TagCollector {
 
     fun start(service: AutoAccessibilityService, context: Context) {
         if (isRunning()) return
+        if (!FarmOverlay.isShown()) {
+            _progress.value = Progress(false, results.size, TAGS.size, "Hãy bật Hub nổi trước")
+            return
+        }
         if (FarmController.isRunning()) {
             _progress.value = Progress(false, results.size, TAGS.size, "Hãy dừng farm trước rồi bấm lại")
             return
@@ -81,6 +86,7 @@ object TagCollector {
         val todo = TAGS.filter { it.lowercase() !in results.keys }
         var first = true
         for (tag in todo) {
+            if (!FarmOverlay.isShown()) return   // Hub noi bi tat -> dung ngay
             _progress.value = Progress(true, results.size, TAGS.size, "Đang hỏi ?tag $tag")
             var sent = false
             for (attempt in 1..3) {

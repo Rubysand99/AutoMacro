@@ -22,6 +22,7 @@ import kotlinx.coroutines.sync.withLock
 import java.time.Instant
 import java.util.Calendar
 import kotlin.random.Random
+import com.starclan.starhub.view.FarmOverlay
 
 /** Trang thai farm de Hub noi hien thi */
 data class FarmState(
@@ -247,6 +248,10 @@ object FarmController {
 
     fun start(service: AutoAccessibilityService) {
         if (isRunning()) return
+        if (!FarmOverlay.isShown()) {
+            update { it.copy(alert = "Bật Hub nổi trước rồi mới bắt đầu farm được") }
+            return
+        }
         appCtx = service.applicationContext
         loadHuntMode(service.applicationContext)
         stopAlarm()

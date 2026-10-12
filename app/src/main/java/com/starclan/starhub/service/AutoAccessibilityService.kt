@@ -32,6 +32,7 @@ import com.starclan.starhub.engine.DiscordSender
 import com.starclan.starhub.engine.FarmController
 import com.starclan.starhub.engine.ScriptEngine
 import com.starclan.starhub.engine.SendResult
+import com.starclan.starhub.view.FarmOverlay
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -201,6 +202,9 @@ class AutoAccessibilityService : AccessibilityService() {
     }
 
     private suspend fun pollOwoTrackerOnce(apiUrl: String, token: String) {
+        // App chi tu hanh dong khi Hub noi dang BAT. Hub tat -> khong dong vao lenh nao (lenh cua bot cu nam cho,
+        // het han sau 10 phut)
+        if (!FarmOverlay.isShown()) return
         // Dang tam dung vi captcha -> khong dong vao lenh nao, de chung nam cho
         if (System.currentTimeMillis() < captchaPauseUntilMs) return
 
@@ -223,6 +227,11 @@ class AutoAccessibilityService : AccessibilityService() {
                 continue
             }
 
+            // Hub noi bi tat giua chung -> dung ngay, cac lenh con lai de nguyen (chua ack)
+            if (!FarmOverlay.isShown()) {
+                Log.i(TAG, "Hub noi da tat - dung xu ly lenh cua bot")
+                break
+            }
             // Lenh co "click_label" (vd quet danh sach vu khi nhieu trang): sau khi go lenh se BAM nut do nhieu lan.
             // Khong lam khi dang farm vi cac tin moi se day danh sach ra khoi man hinh.
             val clickLabel = cmd.params["click_label"]

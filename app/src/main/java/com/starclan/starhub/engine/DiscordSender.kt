@@ -9,6 +9,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlin.random.Random
+import com.starclan.starhub.view.FarmOverlay
 
 /** Ket qua 1 lan gui lenh vao Discord */
 enum class SendResult {
@@ -131,6 +132,8 @@ class DiscordSender(private val service: AutoAccessibilityService) {
 
     /** Giong send() nhung KHONG tu lay khoa: chi goi khi da giu DiscordSender.sendMutex (vd go lenh roi bam nut lien tiep) */
     suspend fun sendWithoutLock(text: String, settings: OwoTrackerPrefs.Settings, reopenChannel: Boolean): SendResult {
+        // App chi duoc tu hanh dong khi Hub noi dang BAT; tat Hub la dung ngay
+        if (!FarmOverlay.isShown()) return SendResult.SEND_FAILED
         if (reopenChannel || foregroundPackage() != DISCORD_PACKAGE) {
             if (!openDiscord(settings.discordLink)) return SendResult.DISCORD_NOT_OPEN
         }

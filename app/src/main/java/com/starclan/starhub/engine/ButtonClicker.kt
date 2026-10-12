@@ -4,6 +4,7 @@ import android.graphics.Rect
 import android.util.Log
 import android.view.accessibility.AccessibilityNodeInfo
 import com.starclan.starhub.service.AutoAccessibilityService
+import com.starclan.starhub.view.FarmOverlay
 import kotlinx.coroutines.delay
 import kotlin.random.Random
 
@@ -65,6 +66,10 @@ object ButtonClicker {
         var clicked = 0
         delay(3_000L) // doi OwO ve danh sach trang 1
         for (i in 1..times) {
+            if (!FarmOverlay.isShown()) {
+                Log.i(TAG, "Hub noi da tat - dung bam sau $clicked lan")
+                break
+            }
             val node = findBottomMost(service, target)
             if (node == null) {
                 Log.i(TAG, "Khong thay nut '$target' - dung sau $clicked lan")

@@ -102,11 +102,17 @@ object FarmOverlay {
     private fun dp(v: Int): Int = (v * density).toInt()
 
     fun hide() {
+        // Tat Hub noi = DUNG MOI HOAT DONG TU DONG cua app NGAY LAP TUC (farm, tu hoc tag, lenh tu bot).
+        // Cac vong lap khac cung tu dung vi kiem tra isShown() truoc moi viec.
+        val removedRoot = root
+        root = null   // tu day isShown() = false -> moi noi khac dung lai
+        FarmController.stop()
+        if (TagCollector.isRunning()) TagCollector.stop()
         refreshJob?.cancel()
         refreshJob = null
         scope?.cancel()
         scope = null
-        val r = root
+        val r = removedRoot
         val wm = windowManager
         if (r != null && wm != null) {
             try {
@@ -115,7 +121,6 @@ object FarmOverlay {
                 // da bi go roi
             }
         }
-        root = null
         params = null
         panel = null
         windowManager = null
