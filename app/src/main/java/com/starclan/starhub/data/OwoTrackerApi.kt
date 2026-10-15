@@ -27,13 +27,14 @@ private data class ActivityInfo(
     @SerializedName("last_reply_age_seconds") val lastReplyAgeSeconds: Long? = null,
     @SerializedName("last_command_age_seconds") val lastCommandAgeSeconds: Long? = null
 )
-private data class AlertsResponse(val captcha: CaptchaInfo? = null, val activity: ActivityInfo? = null)
+private data class AlertsResponse(val captcha: CaptchaInfo? = null, val activity: ActivityInfo? = null, val off: Boolean? = null)
 
 /** Ket qua hoi bot: OwO co dang doi captcha khong, va OwO tra loi lenh gan nhat cach day bao lau */
 data class AlertInfo(
     val captchaActive: Boolean,
     val lastReplyAgeSeconds: Long?,
-    val lastCommandAgeSeconds: Long?
+    val lastCommandAgeSeconds: Long?,
+    val off: Boolean = false
 )
 
 /** Ket qua goi GET /hub — tach ro thanh cong / that bai de man hinh Hub bao loi cho de hieu. */
@@ -135,7 +136,8 @@ object OwoTrackerApi {
             AlertInfo(
                 captchaActive = parsed.captcha?.active == true,
                 lastReplyAgeSeconds = parsed.activity?.lastReplyAgeSeconds,
-                lastCommandAgeSeconds = parsed.activity?.lastCommandAgeSeconds
+                lastCommandAgeSeconds = parsed.activity?.lastCommandAgeSeconds,
+                off = parsed.off == true
             )
         } catch (e: Exception) {
             Log.w(TAG, "fetchAlerts loi: ${e.message}")
@@ -146,6 +148,10 @@ object OwoTrackerApi {
     /** Chi hoi captcha: true/false, null = khong hoi duoc */
     suspend fun fetchCaptchaActive(apiUrl: String, token: String): Boolean? =
         fetchAlerts(apiUrl, token, null)?.captchaActive
+
+    /** Bot dang TAT app (lenh ,off): true/false, null = khong hoi duoc */
+    suspend fun fetchAppOff(apiUrl: String, token: String): Boolean? =
+        fetchAlerts(apiUrl, token, null)?.off
 
     /** Nho bot nhan tin tag Ruby tren Discord (de dien thoai/may khac cung bao) */
     suspend fun notify(apiUrl: String, token: String, text: String, toAlt: Boolean = false) = withContext(Dispatchers.IO) {

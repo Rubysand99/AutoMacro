@@ -684,6 +684,13 @@ object FarmController {
             }
             unreachableSinceMs = 0L
 
+            if (info.off) {
+                val j = job
+                plannedStop("🔴 Đã tắt từ xa bằng lệnh ,off — app đã dừng farm. Gõ ,off on trong kênh Discord rồi bấm Bắt đầu lại")
+                j?.cancel()
+                return
+            }
+
             if (info.captchaActive) {
                 handleCaptcha(ctx)
                 job?.cancel()
@@ -742,6 +749,12 @@ object FarmController {
                 running = true, resting = false, status = "Đang chuẩn bị…", hunts = 0, battles = 0,
                 sessionStartIso = startIso, sessionNewPets = emptyList(), alert = null
             )
+        }
+
+        // Bot dang TAT app (lenh ,off) -> khong bat dau farm
+        if (OwoTrackerApi.fetchAppOff(settings.apiUrl, settings.token) == true) {
+            plannedStop("🔴 Bot đang TẮT app (lệnh ,off). Gõ ,off on trong kênh Discord rồi bấm Bắt đầu lại")
+            return
         }
 
         // Dang co canh bao captcha chua giai -> khong go them lenh nao
