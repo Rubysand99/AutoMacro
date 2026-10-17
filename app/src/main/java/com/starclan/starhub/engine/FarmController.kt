@@ -70,6 +70,8 @@ object FarmController {
     private const val QUEST_COMMAND = "owo quest"
 
     // Nhip go lenh
+    private const val BURST_MAX = 3                   // toi da 3 lenh trong BURST_WINDOW_MS (OwO bao "Slow down" khi go qua day)
+    private const val BURST_WINDOW_MS = 12_000L
     private const val GAP_MIN_MS = 1_200L         // nghi giua cac lenh lien tiep
     private const val GAP_MAX_MS = 2_800L
     // 1 vong (hunt + battle). OwO bat cooldown 15 giay moi lenh, nen vong ngan nhat 16.5 giay la sat nhat co the.
@@ -78,7 +80,7 @@ object FarmController {
     private const val TEAM_REFRESH_GAP_MS = 30 * 60_000L          // owo team: cap nhat doi hinh cho ,teamcheck cua bot
     private const val WEAPON_DETAIL_GAP_MS = 6 * 60 * 60_000L     // owo weapon <ID> cua pet trong doi: it thay doi
     private const val CHORE_REQUEUE_MS = 2 * 60_000L     // lenh vua go thanh cong -> cho 2 phut moi quay lai danh sach random
-    private const val FILLER_MIN_REMAINING_MS = 5_500L   // con it nhat chung nay trong vong thi moi chen them 1 lenh kiem tra
+    private const val FILLER_MIN_REMAINING_MS = 8_000L   // con it nhat chung nay trong vong thi moi chen them 1 lenh kiem tra
 
     // Nghi giai lao ngan: sau 45-80 vong nghi 1.5 - 4 phut
     private const val REST_EVERY_MIN = 45
@@ -355,11 +357,27 @@ object FarmController {
         SendResult.CAPTCHA -> "OwO đang đòi captcha"
     }
 
+    private val recentSends = ArrayDeque<Long>()
+
+    /** Cho den khi gui them 1 lenh khong vuot qua BURST_MAX lenh / BURST_WINDOW_MS, roi ghi nhan lan gui nay */
+    private suspend fun awaitBurstSlot() {
+        while (true) {
+            val now = System.currentTimeMillis()
+            while (recentSends.isNotEmpty() && now - recentSends.first() > BURST_WINDOW_MS) recentSends.removeFirst()
+            if (recentSends.size < BURST_MAX) break
+            val wait = BURST_WINDOW_MS - (now - recentSends.first()) + Random.nextLong(200L, 900L)
+            update { it.copy(status = "Giãn nhịp gõ lệnh (tránh OwO báo Slow down)…") }
+            delay(wait.coerceAtLeast(300L))
+        }
+        recentSends.addLast(System.currentTimeMillis())
+    }
+
     private suspend fun sendCommand(
         sender: DiscordSender,
         settings: OwoTrackerPrefs.Settings,
         text: String
     ): SendResult {
+        awaitBurstSlot()
         update { it.copy(lastCommand = text) }
         sendCounter++
         val result = try {
@@ -525,6 +543,7 @@ object FarmController {
         settings: OwoTrackerPrefs.Settings
     ): SendResult {
         choreAt["quest"] = System.currentTimeMillis()
+        awaitBurstSlot()
         sendCounter++
         update { it.copy(status = "Kiểm tra nhiệm vụ…", lastCommand = QUEST_COMMAND) }
         return DiscordSender.sendMutex.withLock {

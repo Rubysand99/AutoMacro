@@ -556,7 +556,8 @@ object FarmOverlay {
         val detail = StringBuilder(st.status)
         if (st.running && st.lastCommand.isNotEmpty()) detail.append("\nLệnh gần nhất: ").append(st.lastCommand)
         if (!st.huntPaused.isNullOrBlank()) detail.append("\n⏳ Hunt tạm dừng: ").append(st.huntPaused)
-        tvStatusDetail?.text = detail.toString()
+        // tieu de da ghi "Đã dừng" thi khong lap lai y het o dong chi tiet
+        tvStatusDetail?.text = if (detail.toString().trim() == title) "" else detail.toString()
 
         val modeShort = when (st.huntMode) {
             1 -> "đủ lootbox"
@@ -629,6 +630,9 @@ object FarmOverlay {
         }
         farmRows.add(Row("Hunt mode", "${st.huntMode} · $modeLong"))
         if (!st.huntPaused.isNullOrBlank()) farmRows.add(Row("Hunt", "Tạm dừng: ${st.huntPaused}", Tone.WARN))
+        hub.slowdown?.takeIf { (it.count30m ?: 0) > 0 }?.let { sd ->
+            farmRows.add(Row("OwO báo chậm", "${sd.count30m} lần/30 phút${ageText(sd.ageSeconds)} — app đang tự giãn nhịp gõ", Tone.WARN))
+        }
         val tagP = TagCollector.progress.value
         if (tagP.running || tagP.message.isNotEmpty()) {
             val tagText = if (tagP.running) "${tagP.done}/${tagP.total} · ${tagP.message}" else tagP.message

@@ -16,6 +16,7 @@ data class HubResponse(
     @SerializedName("weapon_shards") val weaponShards: HubWeaponShards? = null,
     val event: HubEvent? = null,
     @SerializedName("event_mode") val eventMode: Boolean? = null,
+    val slowdown: HubSlowdown? = null,
     val gems: HubGems? = null,
     val huntbot: HubHuntbot? = null,
     val quest: HubQuest? = null,
@@ -141,6 +142,12 @@ data class HubWeaponShards(
     @SerializedName("emoji_id") val emojiId: String? = null,
     @SerializedName("emoji_animated") val emojiAnimated: Boolean? = null,
     val emoji: String? = null,
+    @SerializedName("age_seconds") val ageSeconds: Long? = null
+)
+
+/** So lan OwO bao "Slow down" (gui lenh qua day) trong 30 phut gan nhat */
+data class HubSlowdown(
+    @SerializedName("count_30m") val count30m: Int? = null,
     @SerializedName("age_seconds") val ageSeconds: Long? = null
 )
 
