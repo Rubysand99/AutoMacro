@@ -1,12 +1,24 @@
-# AutoMacro
+# Star Hub (AutoMacro)
 
-App Android tu dong hoa thao tac tren may (bam, vuot, mo app) - kieu Tasker/MacroDroid.
-Xem chi tiet trang thai va ke hoach trong `AI_CONTEXT.md`.
+App Android tự động hóa thao tác trên máy (bấm, vuốt, gõ chữ, mở app) kiểu Tasker/MacroDroid, ghép với
+bot [owo-tracker](https://github.com/Rubysand99/owo-tracker): owo-tracker là "bộ não" (biết lúc nào cần làm gì),
+Star Hub là "tay chân" (thực thi trên điện thoại) và có màn hình **Hub** hiển thị dữ liệu bot đọc được.
+
+> Tên app: **Star Hub** — tên gói `com.starclan.starhub` (trước đây là `com.tuytam.automacro`).
+> Chi tiết trạng thái, thiết kế và lịch sử thay đổi nằm trong `AI_CONTEXT.md`.
 
 ## Build APK
-Push len nhanh `main` tren GitHub, tab **Actions** se tu build va cho tai APK debug
-o phan **Artifacts** cua workflow `Build APK`. Khong can gradlew, khong can PC.
+Push lên nhánh `main` trên GitHub, tab **Actions** tự build và cho tải APK debug ở phần **Artifacts** của workflow
+`Build APK` (artifact `starhub-debug-apk`). Không cần gradlew, không cần PC.
+Sau bước build, workflow chạy thêm unit test JVM (`gradle testDebugUnitTest`); bước này chưa chặn build.
 
-## Cai APK va bat quyen
-1. Cai file APK tai tu Artifacts
-2. Mo app -> bam "Bat quyen Accessibility" -> tim "TuyTam AutoMacro" trong danh sach -> bat
+## Cài APK và bật quyền
+1. Cài file APK tải từ Artifacts. Vì đổi tên gói nên đây là app **mới**: gỡ bản cũ bằng tay, nhập lại địa chỉ API/token.
+2. Mở app → tab **Cài đặt** → "Bật quyền Accessibility" → tìm **Star Hub** trong danh sách → bật.
+3. Nhập **Địa chỉ API** (phải là `https://...`, Android chặn `http://`) và **token** giống `AUTOMACRO_API_TOKEN` của bot, rồi bấm Lưu.
+
+## Lưu ý
+- APK được ký bằng `keystore/debug.keystore` nằm trong repo (mật khẩu mặc định `android`) để các bản build cài đè lên nhau
+  được. Phù hợp dùng cá nhân; **đừng phát hành công khai** theo cách này.
+- Service Accessibility chỉ đăng ký 2 loại sự kiện (đổi cửa sổ, bấm) dùng cho chế độ ghi kịch bản; việc đọc màn hình khi chạy
+  đều đọc chủ động qua `rootInActiveWindow`.

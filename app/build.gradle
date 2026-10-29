@@ -65,4 +65,7 @@ dependencies {
 
     // Gson - chuyen doi kich ban (List<ScriptStep>) sang JSON de luu vao Room
     implementation "com.google.code.gson:gson:2.11.0"
+
+    // Test chay tren JVM (khong can may that): gradle testDebugUnitTest
+    testImplementation "junit:junit:4.13.2"
 }

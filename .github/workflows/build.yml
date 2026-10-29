@@ -32,3 +32,9 @@ jobs:
         with:
           name: starhub-debug-apk
           path: app/build/outputs/apk/debug/*.apk
+
+      # Chay SAU khi da upload APK va chua chan build: test nay moi viet, chua tung chay tren may that.
+      # Khi thay xanh on dinh thi xoa dong continue-on-error de test hong se chan build.
+      - name: Unit test (JVM)
+        continue-on-error: true
+        run: gradle testDebugUnitTest --no-daemon

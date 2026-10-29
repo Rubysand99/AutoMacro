@@ -4,7 +4,7 @@
 App Android tu dong hoa thao tac tren may (bam, vuot, go chu, mo app) - kieu
 Tasker/MacroDroid. Muc dich chinh: ho tro choi OwO Bot tren Discord.
 Nguoi dung chi quan sat, app tu thuc hien cac buoc theo "kich ban" da tao.
-Repo GitHub: accphu24/automatic.
+Repo GitHub: Rubysand99/AutoMacro (https://github.com/Rubysand99/AutoMacro).
 
 Dang ket hop voi du an rieng "owo-tracker" (bot Discord theo doi choi OwO,
 repo Python/discord.py rieng) de tao 1 he thong tap trung: owo-tracker la

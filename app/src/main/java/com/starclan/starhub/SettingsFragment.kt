@@ -14,6 +14,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import com.starclan.starhub.data.ApiUrlCheck
 import com.starclan.starhub.data.OwoTrackerPrefs
 import com.starclan.starhub.databinding.FragmentSettingsBinding
 import com.starclan.starhub.engine.DiscordSender
@@ -138,6 +139,20 @@ class SettingsFragment : Fragment() {
             val url = binding.etOwoApiUrl.text.toString().trim()
             val token = binding.etOwoApiToken.text.toString().trim()
             val enabled = binding.cbOwoSyncEnabled.isChecked
+
+            // Chi kiem tra khi dang bat dong bo hoac da go URL (de van luu duoc rieng link Discord)
+            if (enabled || url.isNotEmpty()) {
+                val problem: Int? = when (ApiUrlCheck.check(url)) {
+                    ApiUrlCheck.Result.OK -> null
+                    ApiUrlCheck.Result.EMPTY -> R.string.toast_api_url_empty
+                    ApiUrlCheck.Result.MISSING_SCHEME -> R.string.toast_api_url_missing_scheme
+                    ApiUrlCheck.Result.CLEARTEXT_BLOCKED -> R.string.toast_api_url_cleartext
+                }
+                if (problem != null) {
+                    Toast.makeText(requireContext(), getString(problem), Toast.LENGTH_LONG).show()
+                    return@setOnClickListener
+                }
+            }
 
             OwoTrackerPrefs.saveConnection(requireContext(), enabled, url, token)
             OwoTrackerPrefs.saveDiscordLink(requireContext(), binding.etDiscordLink.text.toString())
