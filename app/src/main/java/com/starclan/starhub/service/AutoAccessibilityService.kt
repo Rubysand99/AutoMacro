@@ -30,6 +30,7 @@ import com.starclan.starhub.data.summarizeStep
 import com.starclan.starhub.engine.ButtonClicker
 import com.starclan.starhub.engine.DiscordSender
 import com.starclan.starhub.engine.FarmController
+import com.starclan.starhub.engine.HuntbotNotifier
 import com.starclan.starhub.engine.ScriptEngine
 import com.starclan.starhub.engine.SendResult
 import com.starclan.starhub.view.FarmOverlay
@@ -190,15 +191,35 @@ class AutoAccessibilityService : AccessibilityService() {
         }
         Log.d(TAG, "Dong bo owo-tracker: BAT, cu 15 giay kiem tra 1 lan")
         syncJob = serviceScope.launch {
+            var lastHuntbotCheckMs = 0L
             while (isActive) {
                 try {
                     pollOwoTrackerOnce(apiUrl, token)
                 } catch (e: Exception) {
                     Log.e(TAG, "Loi khi dong bo owo-tracker: ${e.message}")
                 }
+                // Nhac huntbot con ~10 phut: hoi bot moi phut, KE CA luc Hub noi dang tat / app khong farm
+                val nowMs = System.currentTimeMillis()
+                if (nowMs - lastHuntbotCheckMs >= 60_000L) {
+                    lastHuntbotCheckMs = nowMs
+                    try {
+                        checkHuntbotAlert(apiUrl, token)
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Loi khi kiem tra gio huntbot: ${e.message}")
+                    }
+                }
                 delay(15_000)
             }
         }
+    }
+
+    /** Hoi bot gio huntbot ve; con <= 10 phut thi hien thong bao tren dien thoai (moi chuyen 1 lan). */
+    private suspend fun checkHuntbotAlert(apiUrl: String, token: String) {
+        val info = OwoTrackerApi.fetchAlerts(apiUrl, token, null) ?: return
+        val sent = HuntbotNotifier.maybeNotify(
+            this, info.huntbotHunting, info.huntbotSecondsLeft, info.huntbotReadyEpoch
+        )
+        if (sent) Log.i(TAG, "Da thong bao huntbot sap ve (con ${info.huntbotSecondsLeft}s)")
     }
 
     private suspend fun pollOwoTrackerOnce(apiUrl: String, token: String) {

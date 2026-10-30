@@ -123,6 +123,10 @@
     <string name="hub_section_weapons">🗡️ Vũ khí</string>
     <string name="hub_section_inventory">🎒 Kho đồ</string>
     <string name="hub_section_pet_dex">📖 Pet Dex</string>
+    <!-- Thong bao huntbot sap ve -->
+    <string name="huntbot_alert_channel">Huntbot sắp về</string>
+    <string name="huntbot_alert_title">⏰ Huntbot sắp về</string>
+    <string name="huntbot_alert_text">Còn khoảng %1$d phút nữa là huntbot về</string>
     <!-- Kiem tra dia chi API luc bam Luu -->
     <string name="toast_api_url_empty">Chưa nhập địa chỉ API</string>
     <string name="toast_api_url_missing_scheme">Địa chỉ API phải bắt đầu bằng https://</string>

@@ -207,3 +207,13 @@ app/src/main/java/com/starclan/starhub/
 - RUI RO CAN NHO: OwO Bot co he thong chong macro (bat sus/captcha), tu dong choi ho
   co the vi pham dieu khoan Discord - can than khi mo rong sang hunt/battle tu dong,
   nen them do tre ngau nhien (jitter) thay vi canh dung giay khi lam phan do.
+
+## Nhắc huntbot + tự cập nhật khi đang farm (mới)
+- Bot (owo-tracker `auto_refresh.py` + vòng nền `auto_refresh_loop`): khi app ĐANG FARM (`/alerts?farm=1`), bot xếp lệnh
+  `auto_check` (params: `command_text`, `kind`) cho mục dữ liệu đã cũ — app chạy nó như mọi lệnh có `command_text` (chen giữa
+  lúc farm, giống đổi gem). Không farm / `,off` / captcha / Slow down gần đây / còn lệnh chờ -> không xếp. `,autocheck on|off`.
+- `/alerts` trả thêm `huntbot: {hunting, seconds_left, ready_epoch}` (bot tính, app không so đồng hồ máy).
+  `AutoAccessibilityService` hỏi mỗi 60 giây (kể cả Hub nổi tắt) -> `HuntbotNotifier` bắn thông báo khi còn 60..600 giây,
+  mỗi chuyến 1 lần (nhớ `ready_epoch` đã báo trong SharedPreferences, lệch < 30 phút = cùng chuyến).
+- Logic quyết định nằm ở `HuntbotAlertLogic.kt` (thuần, có test) và khớp `huntbot_alert_due()` bên bot.
+

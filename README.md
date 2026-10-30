@@ -17,6 +17,11 @@ Sau bước build, workflow chạy thêm unit test JVM (`gradle testDebugUnitTes
 2. Mở app → tab **Cài đặt** → "Bật quyền Accessibility" → tìm **Star Hub** trong danh sách → bật.
 3. Nhập **Địa chỉ API** (phải là `https://...`, Android chặn `http://`) và **token** giống `AUTOMACRO_API_TOKEN` của bot, rồi bấm Lưu.
 
+## Thông báo huntbot
+Khi huntbot còn khoảng 10 phút nữa là về, app hiện thông báo trên điện thoại (mỗi chuyến 1 lần). Service Accessibility hỏi bot
+mỗi phút nên **không cần mở app hay bật Hub nổi**, chỉ cần đã bật "đồng bộ owo-tracker" trong Cài đặt. Lần đầu mở app trên
+Android 13+ sẽ hỏi quyền thông báo — hãy bấm Cho phép. Giờ huntbot do bot tính nên không phụ thuộc đồng hồ điện thoại.
+
 ## Lưu ý
 - APK được ký bằng `keystore/debug.keystore` nằm trong repo (mật khẩu mặc định `android`) để các bản build cài đè lên nhau
   được. Phù hợp dùng cá nhân; **đừng phát hành công khai** theo cách này.

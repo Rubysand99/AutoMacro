@@ -1,5 +1,8 @@
 package com.starclan.starhub
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import com.starclan.starhub.databinding.ActivityMainBinding
@@ -36,6 +39,20 @@ class MainActivity : AppCompatActivity() {
 
         if (savedInstanceState == null) {
             binding.bottomNav.selectedItemId = R.id.navHub
+            requestNotificationPermissionIfNeeded()
         }
+    }
+
+    /** Android 13+ phai xin quyen moi hien duoc thong bao "huntbot con 10 phut nua ve". */
+    private fun requestNotificationPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), REQUEST_NOTIFICATIONS)
+        }
+    }
+
+    private companion object {
+        const val REQUEST_NOTIFICATIONS = 1001
     }
 }

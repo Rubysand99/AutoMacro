@@ -27,14 +27,28 @@ private data class ActivityInfo(
     @SerializedName("last_reply_age_seconds") val lastReplyAgeSeconds: Long? = null,
     @SerializedName("last_command_age_seconds") val lastCommandAgeSeconds: Long? = null
 )
-private data class AlertsResponse(val captcha: CaptchaInfo? = null, val activity: ActivityInfo? = null, val off: Boolean? = null)
+private data class HuntbotAlertInfo(
+    val hunting: Boolean? = null,
+    @SerializedName("seconds_left") val secondsLeft: Long? = null,
+    @SerializedName("ready_epoch") val readyEpoch: Long? = null
+)
+private data class AlertsResponse(
+    val captcha: CaptchaInfo? = null,
+    val activity: ActivityInfo? = null,
+    val off: Boolean? = null,
+    val huntbot: HuntbotAlertInfo? = null
+)
 
 /** Ket qua hoi bot: OwO co dang doi captcha khong, va OwO tra loi lenh gan nhat cach day bao lau */
 data class AlertInfo(
     val captchaActive: Boolean,
     val lastReplyAgeSeconds: Long?,
     val lastCommandAgeSeconds: Long?,
-    val off: Boolean = false
+    val off: Boolean = false,
+    /** Huntbot dang san? con bao nhieu giay (BOT tinh)? gio ve (giay tu 1970) de nhan dien chuyen san */
+    val huntbotHunting: Boolean = false,
+    val huntbotSecondsLeft: Long? = null,
+    val huntbotReadyEpoch: Long? = null
 )
 
 /** Ket qua goi GET /hub — tach ro thanh cong / that bai de man hinh Hub bao loi cho de hieu. */
@@ -137,7 +151,10 @@ object OwoTrackerApi {
                 captchaActive = parsed.captcha?.active == true,
                 lastReplyAgeSeconds = parsed.activity?.lastReplyAgeSeconds,
                 lastCommandAgeSeconds = parsed.activity?.lastCommandAgeSeconds,
-                off = parsed.off == true
+                off = parsed.off == true,
+                huntbotHunting = parsed.huntbot?.hunting == true,
+                huntbotSecondsLeft = parsed.huntbot?.secondsLeft,
+                huntbotReadyEpoch = parsed.huntbot?.readyEpoch
             )
         } catch (e: Exception) {
             Log.w(TAG, "fetchAlerts loi: ${e.message}")
