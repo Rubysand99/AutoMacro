@@ -22,7 +22,11 @@ data class PendingCommand(
 private data class PendingCommandsResponse(val commands: List<PendingCommand> = emptyList())
 
 /** GET /alerts — canh bao nhe, goi thuong xuyen luc dang farm */
-private data class CaptchaInfo(val active: Boolean? = null)
+private data class CaptchaInfo(
+    val active: Boolean? = null,
+    /** So giay ke tu luc OwO bao captcha (bot tinh) - de dem nguoc 10 phut "thoi gian vang" */
+    @SerializedName("age_seconds") val ageSeconds: Long? = null
+)
 private data class ActivityInfo(
     @SerializedName("last_reply_age_seconds") val lastReplyAgeSeconds: Long? = null,
     @SerializedName("last_command_age_seconds") val lastCommandAgeSeconds: Long? = null
@@ -48,7 +52,9 @@ data class AlertInfo(
     /** Huntbot dang san? con bao nhieu giay (BOT tinh)? gio ve (giay tu 1970) de nhan dien chuyen san */
     val huntbotHunting: Boolean = false,
     val huntbotSecondsLeft: Long? = null,
-    val huntbotReadyEpoch: Long? = null
+    val huntbotReadyEpoch: Long? = null,
+    /** Captcha da bao cach day bao nhieu giay (null = khong biet / khong co) */
+    val captchaAgeSeconds: Long? = null
 )
 
 /** Ket qua goi GET /hub — tach ro thanh cong / that bai de man hinh Hub bao loi cho de hieu. */
@@ -154,7 +160,8 @@ object OwoTrackerApi {
                 off = parsed.off == true,
                 huntbotHunting = parsed.huntbot?.hunting == true,
                 huntbotSecondsLeft = parsed.huntbot?.secondsLeft,
-                huntbotReadyEpoch = parsed.huntbot?.readyEpoch
+                huntbotReadyEpoch = parsed.huntbot?.readyEpoch,
+                captchaAgeSeconds = parsed.captcha?.ageSeconds
             )
         } catch (e: Exception) {
             Log.w(TAG, "fetchAlerts loi: ${e.message}")
@@ -208,6 +215,26 @@ object OwoTrackerApi {
             } catch (e: Exception) {
                 Log.w(TAG, "setEventMode loi: ${e.message}")
                 null
+            }
+        }
+
+    /** Bao bot Hub noi BAT (on=true) / TAT (on=false): Hub tat = bot khong giao viec cho app (nhu `,off`). true = bot da nhan. */
+    suspend fun setPower(apiUrl: String, token: String, on: Boolean): Boolean =
+        withContext(Dispatchers.IO) {
+            try {
+                val url = URL(joinUrl(apiUrl, "/power"))
+                val conn = url.openConnection() as HttpURLConnection
+                conn.requestMethod = "POST"
+                conn.setRequestProperty("Authorization", "Bearer $token")
+                conn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+                conn.doOutput = true
+                conn.connectTimeout = 8_000
+                conn.readTimeout = 8_000
+                conn.outputStream.use { it.write("""{"on":$on}""".toByteArray(Charsets.UTF_8)) }
+                conn.responseCode == 200
+            } catch (e: Exception) {
+                Log.w(TAG, "setPower loi: ${e.message}")
+                false
             }
         }
 

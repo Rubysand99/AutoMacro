@@ -45,7 +45,14 @@ data class FarmState(
     /** Che do hunt: 1 = dung khi du lootbox hang ngay, 2 = dung khi thieu gem, 3 = khong dung */
     val huntMode: Int = 3,
     /** Ly do hunt dang tam dung (null = dang hunt binh thuong) */
-    val huntPaused: String? = null
+    val huntPaused: String? = null,
+    /** Dang CHO (nghi, gian nhip, doi cooldown...): gio het cho (epoch ms, 0 = khong cho), tong thoi gian cho, ly do.
+     *  Hub noi dem nguoc de Ruby biet app dang cho chu khong phai dung. */
+    val waitEndMs: Long = 0L,
+    val waitTotalMs: Long = 0L,
+    val waitLabel: String = "",
+    /** Gio het "thoi gian vang" giai captcha (10 phut ke tu luc OwO bao), epoch ms; 0 = khong co captcha */
+    val captchaEndMs: Long = 0L
 )
 
 /**
@@ -138,6 +145,8 @@ object FarmController {
     private const val BOT_UNREACHABLE_STOP_MS = 120_000L  // mat ket noi bot > 2 phut -> dung (khong con ai canh captcha)
     private const val SILENT_RECOVER_SEC = 150L   // OwO khong tra loi 2.5 phut -> mo lai kenh
     private const val SILENT_STOP_SEC = 360L      // 6 phut -> dung han
+    private const val CAPTCHA_GOLDEN_MS = 10 * 60_000L   // OwO cho giai captcha 10 phut ke tu luc bao
+    private const val MIN_COUNTDOWN_MS = 2_000L          // cho ngan hon thi khong can hien dem nguoc
     private const val CAPTCHA_MESSAGE =
         "🚨 OwO đòi captcha — đã dừng farm! Giải xong gõ ,captcha clear rồi bấm Bắt đầu lại"
 
@@ -185,6 +194,39 @@ object FarmController {
         update { it.copy(alert = null) }
     }
 
+    /** Cho `ms` va hien dem nguoc tren Hub noi (cho ngan thi cho thang, khong hien). */
+    private suspend fun waitWithCountdown(ms: Long, label: String) {
+        if (ms < MIN_COUNTDOWN_MS) {
+            if (ms > 0L) delay(ms)
+            return
+        }
+        update { it.copy(waitEndMs = System.currentTimeMillis() + ms, waitTotalMs = ms, waitLabel = label) }
+        try {
+            delay(ms)
+        } finally {
+            update { it.copy(waitEndMs = 0L, waitTotalMs = 0L, waitLabel = "") }
+        }
+    }
+
+    /** Hub noi BAT = bot ON, Hub noi TAT = bot OFF (bot khong giao viec cho app). Goi tu FarmOverlay.show/hide. */
+    fun reportHubPower(context: Context, on: Boolean) {
+        val app = context.applicationContext
+        scope.launch {
+            val s = OwoTrackerPrefs.load(app)
+            if (s.apiUrl.isNotBlank() && s.token.isNotBlank()) {
+                OwoTrackerApi.setPower(s.apiUrl, s.token, on)
+            }
+        }
+    }
+
+    /** Ruby da giai captcha va go ,captcha clear -> bo dong ho "thoi gian vang" tren Hub noi */
+    private suspend fun clearCaptchaIfSolved(s: OwoTrackerPrefs.Settings) {
+        val info = OwoTrackerApi.fetchAlerts(s.apiUrl, s.token, null) ?: return
+        if (!info.captchaActive) {
+            update { it.copy(captchaEndMs = 0L, alert = if (it.alert == CAPTCHA_MESSAGE) null else it.alert) }
+        }
+    }
+
     /** Bat Hub noi / bat farm moi: xoa danh sach "pet moi" cua phien truoc, tinh lai tu bay gio */
     fun resetSession() {
         update { it.copy(sessionStartIso = Instant.now().toString(), sessionNewPets = emptyList()) }
@@ -224,9 +266,16 @@ object FarmController {
     }
 
     /** OwO doi captcha: reo chuong + rung, dung farm. (Bot tu nhan tin tag Ruby, app khong can nhan them) */
-    private fun handleCaptcha(ctx: Context) {
+    private fun handleCaptcha(ctx: Context, ageSeconds: Long = 0L) {
         startAlarm(ctx)
-        update { it.copy(running = false, resting = false, status = CAPTCHA_MESSAGE, alert = CAPTCHA_MESSAGE, ringing = true) }
+        // Dem nguoc 10 phut "thoi gian vang" ke tu luc OwO bao (bot cho biet da bao cach day bao lau)
+        val endMs = System.currentTimeMillis() + maxOf(0L, CAPTCHA_GOLDEN_MS - ageSeconds * 1000L)
+        update {
+            it.copy(
+                running = false, resting = false, status = CAPTCHA_MESSAGE, alert = CAPTCHA_MESSAGE, ringing = true,
+                captchaEndMs = endMs, waitEndMs = 0L, waitTotalMs = 0L, waitLabel = ""
+            )
+        }
         signalFarmEnded()
     }
 
@@ -257,6 +306,7 @@ object FarmController {
         appCtx = service.applicationContext
         loadHuntMode(service.applicationContext)
         stopAlarm()
+        update { it.copy(captchaEndMs = 0L) }
         job = scope.launch {
             try {
                 runFarm(service)
@@ -274,7 +324,7 @@ object FarmController {
         job = null
         stopAlarm()
         restingNow = false
-        update { it.copy(running = false, resting = false, status = "Đã dừng", alert = null) }
+        update { it.copy(running = false, resting = false, status = "Đã dừng", alert = null, captchaEndMs = 0L) }
         signalFarmEnded()
     }
 
@@ -309,6 +359,7 @@ object FarmController {
             update { it.copy(hubError = "Chưa nhập địa chỉ API / token ở Cài đặt") }
             return
         }
+        if (_state.value.captchaEndMs > 0L && !isRunning()) clearCaptchaIfSolved(s)
         when (val r = OwoTrackerApi.fetchHub(s.apiUrl, s.token)) {
             is HubResult.Success -> {
                 val hub = r.hub
@@ -367,7 +418,7 @@ object FarmController {
             if (recentSends.size < BURST_MAX) break
             val wait = BURST_WINDOW_MS - (now - recentSends.first()) + Random.nextLong(200L, 900L)
             update { it.copy(status = "Giãn nhịp gõ lệnh (tránh OwO báo Slow down)…") }
-            delay(wait.coerceAtLeast(300L))
+            waitWithCountdown(wait.coerceAtLeast(300L), "Giãn nhịp gõ lệnh")
         }
         recentSends.addLast(System.currentTimeMillis())
     }
@@ -412,8 +463,8 @@ object FarmController {
     /** Nghi `ms` mili giay (khong go lenh). Bao bot "dang nghi" de bot khong tuong OwO im lang. */
     private suspend fun CoroutineScope.restFor(ms: Long, label: String) {
         restingNow = true
-        update { it.copy(resting = true) }
         val end = System.currentTimeMillis() + ms
+        update { it.copy(resting = true, waitEndMs = end, waitTotalMs = ms, waitLabel = label) }
         try {
             while (isActive && System.currentTimeMillis() < end) {
                 val left = (end - System.currentTimeMillis()) / 1000
@@ -424,7 +475,7 @@ object FarmController {
         } finally {
             restingNow = false
             silenceBaselineMs = System.currentTimeMillis()
-            update { it.copy(resting = false) }
+            update { it.copy(resting = false, waitEndMs = 0L, waitTotalMs = 0L, waitLabel = "") }
         }
     }
 
@@ -711,7 +762,7 @@ object FarmController {
             }
 
             if (info.captchaActive) {
-                handleCaptcha(ctx)
+                handleCaptcha(ctx, info.captchaAgeSeconds ?: 0L)
                 job?.cancel()
                 job = null
                 return
@@ -794,7 +845,7 @@ object FarmController {
             }
         }
         if (link.isBlank()) {
-            plannedStop("Chưa biết kênh nào để farm. Gõ ,setchannel trong kênh Discord (cho bot), hoặc dán link kênh ở Cài đặt")
+            plannedStop("Chưa biết kênh nào để farm. Gõ ,setserver here (theo dõi cả server) hoặc ,setchannel trong Discord (cho bot), hoặc dán link kênh ở Cài đặt")
             return
         }
 
@@ -906,7 +957,7 @@ object FarmController {
                     }
                     update { it.copy(status = "Lỗi gõ lệnh (${describeSend(huntResult)}), lần $failsInRow — đang khắc phục…") }
                     if (failsInRow >= 2) reopenChannel(sender, link)
-                    delay(minOf(4_000L * failsInRow, 30_000L))
+                    waitWithCountdown(minOf(4_000L * failsInRow, 30_000L), "Thử lại sau lỗi gõ lệnh")
                     continue
                 }
                 delay(Random.nextLong(GAP_MIN_MS, GAP_MAX_MS))
@@ -959,7 +1010,7 @@ object FarmController {
                 delay(Random.nextLong(GAP_MIN_MS, GAP_MAX_MS))
             }
             val left = target - (System.currentTimeMillis() - cycleStart)
-            if (left > 0) delay(left) else delay(800)
+            if (left > 0) waitWithCountdown(left, "Chờ cooldown hunt/battle") else delay(800)
         }
     }
 }

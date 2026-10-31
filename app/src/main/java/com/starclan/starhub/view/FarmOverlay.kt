@@ -84,6 +84,7 @@ object FarmOverlay {
     private var tvStatusCounts: TextView? = null
     private var tvStatusDetail: TextView? = null
     private var tvAlert: TextView? = null
+    private var waitView: WaitCountdownView? = null
     private var btnToggle: TextView? = null
     private var btnMute: TextView? = null
     private var btnMode: TextView? = null
@@ -93,7 +94,6 @@ object FarmOverlay {
     private val groups = mutableMapOf<String, Group>()
     private val collapsed = mutableSetOf<String>()   // nho trang thai thu gon trong luc app chay
 
-    private var keepingScreenOn = false
     private var scope: CoroutineScope? = null
     private var refreshJob: Job? = null
 
@@ -105,7 +105,10 @@ object FarmOverlay {
         // Tat Hub noi = DUNG MOI HOAT DONG TU DONG cua app NGAY LAP TUC (farm, tu hoc tag, lenh tu bot).
         // Cac vong lap khac cung tu dung vi kiem tra isShown() truoc moi viec.
         val removedRoot = root
+        val ctxForPower = viewCtx
         root = null   // tu day isShown() = false -> moi noi khac dung lai
+        waitView?.let { it.onTick = null; it.clear() }
+        waitView = null
         FarmController.stop()
         if (TagCollector.isRunning()) TagCollector.stop()
         refreshJob?.cancel()
@@ -126,7 +129,8 @@ object FarmOverlay {
         windowManager = null
         viewCtx = null
         groups.clear()
-        keepingScreenOn = false
+        // Hub TAT = bot OFF (khong giao viec cho app nua)
+        if (ctxForPower != null) FarmController.reportHubPower(ctxForPower, false)
     }
 
     // ------------------------------------------------------------------ dung giao dien
@@ -269,7 +273,9 @@ object FarmOverlay {
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
+            // KEEP_SCREEN_ON: Hub noi dang bat thi man hinh KHONG BAO GIO tat (tat man hinh la app khong go duoc)
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
+                WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
             PixelFormat.TRANSLUCENT
         )
         lp.gravity = Gravity.TOP or Gravity.START
@@ -347,6 +353,20 @@ object FarmOverlay {
         tvStatusDetail = statusDetail
         tvAlert = alert
 
+        // Dong ho dem nguoc: app dang CHO (nghi / gian nhip / cooldown) hoac thoi gian vang giai captcha.
+        // Bong bong cung hien dong ho nen thay duoc ngay ca khi menu dang thu gon.
+        val countdown = WaitCountdownView(service)
+        countdown.onTick = { t ->
+            if (t == null) {
+                bubble.text = "⭐"
+                bubble.textSize = 20f
+            } else {
+                bubble.text = t
+                bubble.textSize = 11f
+            }
+        }
+        waitView = countdown
+
         // -- Nut: hang 1 (bat dau/dung + tat chuong), hang 2 (hunt mode, thu gon, tat hub) --
         val toggle = pill(service, "► Bắt đầu", C_START, 14f)
         val muteBtn = pill(service, "🔕 Tắt chuông", C_BTN)
@@ -405,6 +425,7 @@ object FarmOverlay {
         val wrap = LinearLayout.LayoutParams.WRAP_CONTENT
         panelBox.addView(statusRow, LinearLayout.LayoutParams(panelWidth, wrap))
         panelBox.addView(statusDetail, LinearLayout.LayoutParams(panelWidth, wrap))
+        panelBox.addView(countdown, LinearLayout.LayoutParams(panelWidth, wrap).also { it.setMargins(0, 0, 0, dp(6)) })
         panelBox.addView(alert, LinearLayout.LayoutParams(panelWidth, wrap).also { it.setMargins(0, 0, 0, dp(6)) })
         panelBox.addView(rowMute, LinearLayout.LayoutParams(panelWidth, wrap))
         panelBox.addView(row1, LinearLayout.LayoutParams(panelWidth, wrap))
@@ -447,6 +468,8 @@ object FarmOverlay {
         }
         // Bat hub lai = bat dau phien moi: danh sach "pet moi" duoc xoa trang
         FarmController.resetSession()
+        // Hub BAT = bot ON
+        FarmController.reportHubPower(service.applicationContext, true)
 
         bubble.setOnTouchListener(object : View.OnTouchListener {
             private var startX = 0
@@ -572,17 +595,16 @@ object FarmOverlay {
         btnEvent?.text = if (eventOn) "🎉 Event: BẬT" else "🎉 Event: Tắt"
         setPillColor(btnEvent, if (eventOn) "#6A4FB3" else C_BTN)
 
-        // Dang farm thi giu man hinh luon sang (tat man hinh la app khong go duoc nua)
-        if (st.running != keepingScreenOn) {
-            keepingScreenOn = st.running
-            val lp = params
-            if (lp != null) {
-                lp.flags = if (keepingScreenOn) {
-                    lp.flags or WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
-                } else {
-                    lp.flags and WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON.inv()
-                }
-                relayout()
+        // Dem nguoc: thoi gian vang captcha (uu tien, mau do) > app dang cho (nghi / gian nhip / cooldown)
+        val nowMs = System.currentTimeMillis()
+        val cd = waitView
+        if (cd != null) {
+            when {
+                st.captchaEndMs > 0L ->
+                    cd.start(st.captchaEndMs, 10 * 60_000L, "🚨 Thời gian vàng giải captcha", true)
+                st.waitEndMs > nowMs ->
+                    cd.start(st.waitEndMs, st.waitTotalMs, st.waitLabel.ifBlank { "Đang chờ" }, false)
+                else -> cd.clear()
             }
         }
 

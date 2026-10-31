@@ -22,6 +22,14 @@ Khi huntbot còn khoảng 10 phút nữa là về, app hiện thông báo trên 
 mỗi phút nên **không cần mở app hay bật Hub nổi**, chỉ cần đã bật "đồng bộ owo-tracker" trong Cài đặt. Lần đầu mở app trên
 Android 13+ sẽ hỏi quyền thông báo — hãy bấm Cho phép. Giờ huntbot do bot tính nên không phụ thuộc đồng hồ điện thoại.
 
+## Hub nổi
+- **Luôn sáng màn hình:** Hub nổi đang bật thì màn hình không bao giờ tự tắt.
+- **Đếm ngược khi chờ:** khi app nghỉ / giãn nhịp / chờ cooldown, panel hiện "lý do · m:ss" kèm thanh chạy về 0, và bong bóng
+  ⭐ đổi thành đồng hồ (thấy được cả khi menu đang thu gọn) để biết app không bị đứng.
+- **Captcha:** hiện đồng hồ đỏ 10 phút "thời gian vàng" tính từ lúc OwO báo; chuông **reo mãi cho đến khi bấm "Tắt chuông"**
+  trên Hub. Giải xong gõ `,captcha clear` thì đồng hồ tự biến mất.
+- **Bật Hub = bot ON, tắt Hub = bot OFF** (app tự báo cho bot; bot ngừng giao việc khi Hub tắt).
+
 ## Lưu ý
 - APK được ký bằng `keystore/debug.keystore` nằm trong repo (mật khẩu mặc định `android`) để các bản build cài đè lên nhau
   được. Phù hợp dùng cá nhân; **đừng phát hành công khai** theo cách này.

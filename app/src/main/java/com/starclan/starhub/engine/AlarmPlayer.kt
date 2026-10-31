@@ -18,11 +18,11 @@ import kotlinx.coroutines.launch
 
 /**
  * Reo chuong bao dong + rung khi OwO doi captcha. Dung kenh am thanh BAO THUC
- * (van keu khi dien thoai dang im lang). Tu tat sau 2 phut neu Ruby khong tat.
+ * (van keu khi dien thoai dang im lang). Reo MAI cho den khi Ruby bam "Tat chuong" tren Hub noi
+ * (khong con tu tat): thoi gian vang giai captcha chi co 10 phut.
  */
 object AlarmPlayer {
     private const val TAG = "AlarmPlayer"
-    private const val MAX_RING_MS = 120_000L
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var job: Job? = null
@@ -65,8 +65,7 @@ object AlarmPlayer {
                     v.vibrate(VibrationEffect.createWaveform(longArrayOf(0, 700, 400), 0))
                 }
 
-                val endAt = System.currentTimeMillis() + MAX_RING_MS
-                while (isActive && System.currentTimeMillis() < endAt) {
+                while (isActive) {
                     if (r != null && !r.isPlaying) r.play()
                     delay(1_500)
                 }

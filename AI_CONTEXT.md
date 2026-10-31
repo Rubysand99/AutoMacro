@@ -217,3 +217,13 @@ app/src/main/java/com/starclan/starhub/
   mỗi chuyến 1 lần (nhớ `ready_epoch` đã báo trong SharedPreferences, lệch < 30 phút = cùng chuyến).
 - Logic quyết định nằm ở `HuntbotAlertLogic.kt` (thuần, có test) và khớp `huntbot_alert_due()` bên bot.
 
+## Hub nổi: đếm ngược, chuông captcha, bật/tắt = ON/OFF (mới)
+- `FarmState.waitEndMs/waitTotalMs/waitLabel`: đặt trong `restFor`, `awaitBurstSlot`, backoff lỗi và chờ cooldown cuối vòng
+  (`waitWithCountdown`). `FarmState.captchaEndMs` = hạn 10 phút giải captcha (bot trả `captcha.age_seconds` trong /alerts).
+  `WaitCountdownView` (view/) vẽ chữ + thanh tiến độ, cập nhật mỗi 0,1 giây; `FarmOverlay.render` chọn captcha > chờ;
+  bong bóng hiện đồng hồ qua `onTick`. Định dạng ở `CountdownFormat` (thuần, có test).
+- `AlarmPlayer` reo cho đến khi `stopAlarm()` (không còn tự tắt sau 2 phút).
+- `FLAG_KEEP_SCREEN_ON` đặt ngay khi tạo cửa sổ Hub nổi (không còn phụ thuộc đang farm).
+- `FarmOverlay.show()/hide()` gọi `FarmController.reportHubPower(on)` -> `POST /power {"on": bool}` -> bot `set_app_off(!on)`.
+- Bot: `tracked_guild_id` (`,setserver`) thay `tracked_channel_id` (`,setchannel`); gem `[0/xx]` đặt lệnh đổi gem ngay.
+
