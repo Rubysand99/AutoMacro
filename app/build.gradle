@@ -57,6 +57,9 @@ dependencies {
     implementation "androidx.room:room-ktx:2.6.1"
     kapt "androidx.room:room-compiler:2.6.1"
 
+    // Ma hoa token API (EncryptedSharedPreferences, khoa trong Android Keystore)
+    implementation "androidx.security:security-crypto:1.1.0-alpha06"
+
     // Lifecycle
     implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.8.4"
 

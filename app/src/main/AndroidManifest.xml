@@ -7,7 +7,8 @@
     <!-- Android 13+: de hien thong bao "huntbot con 10 phut nua ve" -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- Can de mo app khac theo package name (kich ban tu chon app muc tieu).
-         Neu sau nay dua len Google Play se can khai bao ly do rieng cho quyen nay. -->
+         Neu sau nay dua len Google Play se can khai bao ly do rieng cho quyen nay.
+         Co the bo neu chi mo Discord (khi do khai bao <queries> cho com.discord). -->
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
 
     <application
