@@ -224,6 +224,6 @@ app/src/main/java/com/starclan/starhub/
   bong bóng hiện đồng hồ qua `onTick`. Định dạng ở `CountdownFormat` (thuần, có test).
 - `AlarmPlayer` reo cho đến khi `stopAlarm()` (không còn tự tắt sau 2 phút).
 - `FLAG_KEEP_SCREEN_ON` đặt ngay khi tạo cửa sổ Hub nổi (không còn phụ thuộc đang farm).
-- `FarmOverlay.show()/hide()` gọi `FarmController.reportHubPower(on)` -> `POST /power {"on": bool}` -> bot `set_app_off(!on)`.
+- (OFF = chỉ ngừng giao việc cho app, bot vẫn theo dõi bình thường) `FarmOverlay.show()/hide()` gọi `FarmController.reportHubPower(on)` -> `POST /power {"on": bool}` -> bot `set_app_off(!on)`.
 - Bot: `tracked_guild_id` (`,setserver`) thay `tracked_channel_id` (`,setchannel`); gem `[0/xx]` đặt lệnh đổi gem ngay.
 
