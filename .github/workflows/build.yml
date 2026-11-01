@@ -5,6 +5,13 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
+concurrency:
+  group: build-main
+  cancel-in-progress: false
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -12,6 +19,22 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Tang so phien ban TRUOC khi build de APK mang dung so moi (1.4 -> 1.5). Chi khi push len main,
+      # va bo qua chinh commit tang version. Chay tay (workflow_dispatch) thi giu nguyen so.
+      - name: Tang so phien ban
+        id: bump
+        if: github.event_name == 'push' && !startsWith(github.event.head_commit.message, 'chore(version)')
+        run: |
+          set -euo pipefail
+          cur=$(tr -d '[:space:]' < VERSION 2>/dev/null || true)
+          if ! echo "$cur" | grep -Eq '^[0-9]+\.[0-9]+$'; then cur="1.0"; fi
+          new="${cur%%.*}.$(( ${cur##*.} + 1 ))"
+          echo "$new" > VERSION
+          echo "version=$new" >> "$GITHUB_OUTPUT"
+          echo "Phien ban moi: $new"
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -36,3 +59,16 @@ jobs:
       # Chay SAU khi da upload APK de luon lay duoc APK; test hong thi workflow van bao do.
       - name: Unit test (JVM)
         run: gradle testDebugUnitTest --no-daemon
+
+      # Chi commit lai VERSION khi build + test deu xanh. Commit do GITHUB_TOKEN tao ra khong kich hoat lai workflow.
+      - name: Luu so phien ban moi len main
+        if: success() && steps.bump.outputs.version != ''
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add VERSION
+          git commit -m "chore(version): v${{ steps.bump.outputs.version }}"
+          git fetch origin main
+          git rebase origin/main || { echo "main co commit moi lam xung dot VERSION - bo qua lan nay"; git rebase --abort; exit 0; }
+          git push origin HEAD:main

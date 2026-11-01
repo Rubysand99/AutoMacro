@@ -38,7 +38,15 @@ object HubParser {
             null
         }
 
+        // Phien ban bot (vd "v1.12"): chuoi don, doc rieng de bot cu chua gui truong nay van chay
+        val botVersion: String? = try {
+            obj.get("bot_version")?.takeIf { it.isJsonPrimitive }?.asString?.trim()?.takeIf { it.isNotEmpty() }
+        } catch (e: Exception) {
+            null
+        }
+
         return HubResponse(
+            botVersion = botVersion,
             daily = section("daily", HubDaily::class.java),
             cowoncy = section("cowoncy", HubCowoncy::class.java),
             weaponShards = section("weapon_shards", HubWeaponShards::class.java),

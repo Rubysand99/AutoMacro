@@ -205,7 +205,8 @@ class HubFragment : Fragment() {
                 fetchedAtMs = SystemClock.elapsedRealtime()
                 tileGeneration++
                 val clock = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
-                binding.tvHubStatus.text = getString(R.string.hub_updated_at, clock)
+                val botNote = result.hub.botVersion?.let { " · " + getString(R.string.hub_bot_version, it) } ?: ""
+                binding.tvHubStatus.text = getString(R.string.hub_updated_at, clock) + botNote
                 renderBodies()
                 renderTimed()
             }

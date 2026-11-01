@@ -229,5 +229,15 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
+        <TextView
+            android:id="@+id/tvAppVersion"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:alpha="0.6"
+            android:gravity="center"
+            android:textSize="12sp"
+            tools:text="Star Hub 1.12" />
+
     </LinearLayout>
 </ScrollView>

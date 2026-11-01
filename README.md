@@ -12,6 +12,11 @@ Push lên nhánh `main` trên GitHub, tab **Actions** tự build và cho tải A
 `Build APK` (artifact `starhub-debug-apk`). Không cần gradlew, không cần PC.
 Sau bước build, workflow chạy thêm unit test JVM (`gradle testDebugUnitTest`); bước này chưa chặn build.
 
+## Số phiên bản (tự tăng)
+File `VERSION` (vd `1.12`) tự tăng 1 sau mỗi lần cập nhật lên `main` (build + test xanh), APK mang đúng số mới. Xem ở tab **Cài đặt**
+(cuối trang: "Star Hub v1.12"); tab **Hub** hiện thêm số phiên bản của bot (vd "bot v1.5"). Muốn lên số lớn: sửa `VERSION` thành `2.0`
+rồi push. Push tay thì nhớ `git pull` trước vì workflow vừa thêm 1 commit.
+
 ## Cài APK và bật quyền
 1. Cài file APK tải từ Artifacts. Vì đổi tên gói nên đây là app **mới**: gỡ bản cũ bằng tay, nhập lại địa chỉ API/token.
 2. Mở app → tab **Cài đặt** → "Bật quyền Accessibility" → tìm **Star Hub** trong danh sách → bật.

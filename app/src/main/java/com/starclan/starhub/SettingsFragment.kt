@@ -52,6 +52,7 @@ class SettingsFragment : Fragment() {
         binding.cbOwoSyncEnabled.isChecked = current.enabled
         binding.etDiscordLink.setText(current.discordLink)
         updateTargetsStatusText(current.hasDiscordTargets)
+        binding.tvAppVersion.text = getString(R.string.app_version_label, appVersionName())
 
         binding.btnOpenAccessibilitySettings.setOnClickListener {
             startActivity(android.content.Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
@@ -175,6 +176,14 @@ class SettingsFragment : Fragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
+    }
+
+    /** Ten phien ban cua APK dang chay (lay tu file VERSION luc build). */
+    private fun appVersionName(): String = try {
+        val ctx = requireContext()
+        "v" + (ctx.packageManager.getPackageInfo(ctx.packageName, 0).versionName ?: "?")
+    } catch (e: Exception) {
+        "?"
     }
 
     private fun updateTargetsStatusText(hasTargets: Boolean) {

@@ -11,6 +11,15 @@ repo Python/discord.py rieng) de tao 1 he thong tap trung: owo-tracker la
 "bo nao" (biet luc nao can lam gi), AutoMacro la "tay chan" (thuc thi tren
 dien thoai). Xem muc "Ket noi voi owo-tracker" ben duoi.
 
+## v17 — So phien ban tu tang (2/11/2026)
+- File `VERSION` o goc repo (dang `1.12`). Workflow `Build APK` TU TANG so cuoi TRUOC khi build (push len main, bo qua commit
+  `chore(version)`), build + test xanh moi commit lai `chore(version): v1.13` len main. APK mang dung so moi. Chay tay (workflow_dispatch)
+  thi giu nguyen so. Muon len so lon: sua tay VERSION thanh `2.0` roi push.
+- `app/build.gradle` doc VERSION: `versionName` = so do, `versionCode` = major*10000 + minor (hong/thieu file -> 1.0).
+- Hien thi: tab Cai dat co dong "Star Hub v1.x" o cuoi; tab Hub hien them "bot v1.x" canh dong "Cap nhat luc" (bot gui `bot_version`
+  trong /hub; `HubParser` doc rieng, bot cu khong gui thi bo qua). Test: `HubParserBotVersionTest`.
+- Khi push tay nho `git pull` truoc vi workflow vua them 1 commit.
+
 ## v16 — Go tab "Tu dong", thong bao huntbot co dong ho dem nguoc (1/11/2026)
 - **Da go tab "Tu dong"** (navAutomatic): xoa AutomaticFragment, ScriptListAdapter, fragment_automatic.xml, item_script.xml,
   ic_tab_automatic.xml, bg_icon_button_tonal.xml + 6 chuoi chi dung cho tab do. App con **2 tab**: Hub, Cai dat. Muc "3 TAB" ben

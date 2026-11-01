@@ -2,6 +2,14 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-kapt'
 
+// Phien ban lay tu file VERSION o goc repo (workflow Build APK tu tang sau moi lan cap nhat). Hong/thieu file -> 1.0.
+def starVersion = "1.0"
+try {
+    def vf = file("../VERSION")
+    if (vf.exists() && vf.text.trim() ==~ /\d+\.\d+/) starVersion = vf.text.trim()
+} catch (Exception ignored) { }
+def starParts = starVersion.tokenize(".")
+
 android {
     namespace 'com.starclan.starhub'
     compileSdk 34
@@ -10,8 +18,8 @@ android {
         applicationId "com.starclan.starhub"
         minSdk 26
         targetSdk 34
-        versionCode 2
-        versionName "0.2.0"
+        versionCode starParts[0].toInteger() * 10000 + starParts[1].toInteger()
+        versionName starVersion
     }
 
     signingConfigs {

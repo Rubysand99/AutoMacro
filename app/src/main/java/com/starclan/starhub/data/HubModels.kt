@@ -11,6 +11,7 @@ import com.google.gson.annotations.SerializedName
 data class HubResponse(
     @SerializedName("hub_version") val hubVersion: Int? = null,
     @SerializedName("server_time") val serverTime: String? = null,
+    @SerializedName("bot_version") val botVersion: String? = null,
     val daily: HubDaily? = null,
     val cowoncy: HubCowoncy? = null,
     @SerializedName("weapon_shards") val weaponShards: HubWeaponShards? = null,
