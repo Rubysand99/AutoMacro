@@ -11,6 +11,22 @@ repo Python/discord.py rieng) de tao 1 he thong tap trung: owo-tracker la
 "bo nao" (biet luc nao can lam gi), AutoMacro la "tay chan" (thuc thi tren
 dien thoai). Xem muc "Ket noi voi owo-tracker" ben duoi.
 
+## v16 — Go tab "Tu dong", thong bao huntbot co dong ho dem nguoc (1/11/2026)
+- **Da go tab "Tu dong"** (navAutomatic): xoa AutomaticFragment, ScriptListAdapter, fragment_automatic.xml, item_script.xml,
+  ic_tab_automatic.xml, bg_icon_button_tonal.xml + 6 chuoi chi dung cho tab do. App con **2 tab**: Hub, Cai dat. Muc "3 TAB" ben
+  duoi la lich su (tab thu 3 khong con).
+- **Con lai (chua xoa):** ScriptEditorActivity, Room (ScriptEntity/Dao/Database/Repository), che do ghi (record) + `runScript` trong
+  AutoAccessibilityService, SampleScripts. Cac man hinh/che do nay KHONG con loi vao tu giao dien (truoc day chi bam tu tab "Tu dong")
+  -> co the don tiep neu Ruby chac chan khong dung kich ban nua. KHONG xoa AutoAccessibilityService, DiscordSender, FarmController,
+  NodeTools, ScriptEngine: Hub noi + farm + gui lenh Discord van dung chung.
+- **Thong bao huntbot chinh xac hon:** `HuntbotNotifier` them `setWhen(gio ve)` + dong ho dem nguoc he thong
+  (`setUsesChronometer` + `setChronometerCountDown`) + chu "Huntbot ve luc HH:mm, con khoang N phut" (gio ve = gio may + `seconds_left`
+  do BOT bao, khong so dong ho bot voi may) + `setTimeoutAfter` (tu go sau khi ve 2 phut). Logic thuan o `HuntbotAlertLogic.readyAtMillis`
+  / `timeoutAfterMillis` (co test). Chuoi `huntbot_alert_text` doi thanh 2 tham so: `%1$d` phut, `%2$s` gio.
+- Phia bot (owo-tracker): tin BAT DAU chuyen moi ("I WILL BE BACK IN 24H ...", khong co chu STILL HUNTING) gio duoc tinh la dang san
+  (`parse_huntbot_status`), nen /alerts va /hub co gio ve ngay, khong phai cho Ruby go `owo hb`.
+- CHUA BIEN DICH tren may: Kotlin chi duoc kiem tra qua GitHub Actions. Neu Actions bao loi o HuntbotNotifier/MainActivity thi gui log de sua.
+
 ## v15 — Doi ten thanh STAR HUB (Ruby chon, 4/10/2026)
 - Ten app: **Star Hub**. Ten goi: `com.starclan.starhub` (truoc: `com.tuytam.automacro`). Day la app MOI
   tren Android -> phai nhap lai dia chi API/token, cap lai quyen Accessibility; go ban cu bang tay.
@@ -80,7 +96,7 @@ dien thoai). Xem muc "Ket noi voi owo-tracker" ben duoi.
   hang), KE CA loai chua co - chi can Ruby tung go `owo dex <ten>`/`odex <ten>` 1 lan. Khac Zoo
   (chi liet ke dang co), Pet Dex liet ke moi loai da tra, dang co xep truoc. Model: HubPetDex/
   HubPetDexEntry trong HubModels.kt.
-## 3 TAB (BottomNavigationView) - thay doi cau truc man hinh chinh
+## 3 TAB (BottomNavigationView) - thay doi cau truc man hinh chinh  [LICH SU: tab 3 "Tu dong" da go o v16, chi con Hub + Cai dat]
 MainActivity gio CHI la khung chua, dieu khien 3 tab qua supportFragmentManager.replace():
   1. navHub       -> HubFragment       (xem GIAO DIEN v2 ben duoi)
   2. navSettings  -> SettingsFragment  (quyen Accessibility + form ket noi owo-tracker, KHONG

@@ -9,6 +9,9 @@ import android.content.Intent
 import com.starclan.starhub.MainActivity
 import com.starclan.starhub.R
 import com.starclan.starhub.data.HuntbotAlertLogic
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 /**
  * Thong bao tren dien thoai "huntbot con ~10 phut nua ve". Moi chuyen san chi bao 1 lan
@@ -50,10 +53,20 @@ object HuntbotNotifier {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
         val minutes = HuntbotAlertLogic.minutesText(left)
+        // Moc "ve luc" = gio may + so giay CON LAI do BOT tinh (khong so gio bot voi gio may, tranh lech).
+        // Dong ho dem nguoc cua he thong tu chay tiep dung, nen thong bao den tre/Ruby mo may muon van thay
+        // so con lai CHINH XAC (khong bi dong "con khoang N phut" cu).
+        val readyAtMs = HuntbotAlertLogic.readyAtMillis(System.currentTimeMillis(), left)
+        val readyClock = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(readyAtMs))
         val notification = Notification.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification_huntbot)
             .setContentTitle(context.getString(R.string.huntbot_alert_title))
-            .setContentText(context.getString(R.string.huntbot_alert_text, minutes))
+            .setContentText(context.getString(R.string.huntbot_alert_text, minutes, readyClock))
+            .setWhen(readyAtMs)
+            .setShowWhen(true)
+            .setUsesChronometer(true)
+            .setChronometerCountDown(true)
+            .setTimeoutAfter(HuntbotAlertLogic.timeoutAfterMillis(left))
             .setContentIntent(openApp)
             .setAutoCancel(true)
             .setCategory(Notification.CATEGORY_REMINDER)

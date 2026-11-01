@@ -2,13 +2,9 @@
     <string name="app_name">Star Hub</string>
     <string name="accessibility_service_description">Cho phép Star Hub tự động bấm, vuốt và mở ứng dụng theo kịch bản bạn tạo. Chỉ hoạt động khi bạn bật kịch bản.</string>
     <string name="btn_open_accessibility_settings">Bật quyền Accessibility</string>
-    <string name="btn_run_sample">Chạy kịch bản mẫu (test)</string>
-    <string name="btn_record_script">🔴 Ghi kịch bản mới (record)</string>
     <string name="btn_owo_tracker_settings">⚙️ Kết nối owo-tracker</string>
     <string name="title_owo_tracker_settings">Kết nối owo-tracker</string>
     <string name="section_accessibility">Quyền truy cập</string>
-    <string name="label_saved_scripts">Kịch bản đã lưu</string>
-    <string name="empty_scripts">Chưa có kịch bản nào.\nBấm \"Ghi kịch bản mới\" hoặc + để tạo kịch bản đầu tiên.</string>
     <string name="label_owo_api_url">Địa chỉ API (URL public trên Railway)</string>
     <string name="label_owo_api_token">Token (giống AUTOMACRO_API_TOKEN đã đặt)</string>
     <string name="label_owo_sync_enabled">Bật tự động kiểm tra lệnh mới (mỗi 15 giây)</string>
@@ -39,7 +35,6 @@
     <string name="toast_targets_saved">Đã lưu vị trí Discord</string>
     <string name="status_discord_targets_set">Vị trí Discord: đã cài đặt ✅</string>
     <string name="status_discord_targets_not_set">Vị trí Discord: chưa cài đặt ⚠️</string>
-    <string name="toast_recording_started">Đang ghi... Mở app cần tự động hóa và thao tác bình thường. Bấm vào chấm đỏ nổi trên màn hình khi xong để dừng.</string>
     <string name="toast_recording_empty">Không ghi được bước nào — thử mở app và bấm nút chậm hơn 1 chút, hoặc app đó có thể không hỗ trợ Accessibility đầy đủ.</string>
     <string name="toast_service_not_enabled">Chưa bật quyền Accessibility</string>
     <string name="status_service_enabled">✅ Quyền Accessibility đã bật</string>
@@ -126,7 +121,7 @@
     <!-- Thong bao huntbot sap ve -->
     <string name="huntbot_alert_channel">Huntbot sắp về</string>
     <string name="huntbot_alert_title">⏰ Huntbot sắp về</string>
-    <string name="huntbot_alert_text">Còn khoảng %1$d phút nữa là huntbot về</string>
+    <string name="huntbot_alert_text">Huntbot về lúc %2$s, còn khoảng %1$d phút</string>
     <!-- Kiem tra dia chi API luc bam Luu -->
     <string name="toast_api_url_empty">Chưa nhập địa chỉ API</string>
     <string name="toast_api_url_missing_scheme">Địa chỉ API phải bắt đầu bằng https://</string>
@@ -134,5 +129,4 @@
     <!-- 3 tab duoi cung -->
     <string name="tab_hub">Hub</string>
     <string name="tab_settings">Cài đặt</string>
-    <string name="tab_automatic">Tự động</string>
 </resources>

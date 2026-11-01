@@ -23,4 +23,13 @@ class HuntbotAlertLogicTest {
         assertEquals(9L, HuntbotAlertLogic.minutesText(525))
         assertEquals(1L, HuntbotAlertLogic.minutesText(10))
     }
+
+    @Test fun moc_ve_theo_dong_ho_may() {
+        // 9 phut nua tinh tu 1_000_000 ms
+        assertEquals(1_000_000L + 540_000L, HuntbotAlertLogic.readyAtMillis(1_000_000L, 540L))
+    }
+
+    @Test fun tu_go_sau_khi_ve_2_phut() {
+        assertEquals(540_000L + 120_000L, HuntbotAlertLogic.timeoutAfterMillis(540L))
+    }
 }

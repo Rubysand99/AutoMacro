@@ -28,4 +28,10 @@ object HuntbotAlertLogic {
 
     /** So phut de hien thi, lam tron, it nhat 1. */
     fun minutesText(secondsLeft: Long): Long = maxOf(1L, (secondsLeft + 30L) / 60L)
+
+    /** Moc "huntbot ve" theo DONG HO MAY (mili giay) = bay gio + so giay con lai do bot bao. */
+    fun readyAtMillis(nowMs: Long, secondsLeft: Long): Long = nowMs + secondsLeft * 1000L
+
+    /** Thong bao tu go sau khi huntbot da ve them 2 phut (OwO chi bao theo phut nen chua ve han 1 phut la binh thuong). */
+    fun timeoutAfterMillis(secondsLeft: Long): Long = secondsLeft * 1000L + 120_000L
 }

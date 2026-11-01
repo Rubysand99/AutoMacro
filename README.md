@@ -18,7 +18,8 @@ Sau bước build, workflow chạy thêm unit test JVM (`gradle testDebugUnitTes
 3. Nhập **Địa chỉ API** (phải là `https://...`, Android chặn `http://`) và **token** giống `AUTOMACRO_API_TOKEN` của bot, rồi bấm Lưu.
 
 ## Thông báo huntbot
-Khi huntbot còn khoảng 10 phút nữa là về, app hiện thông báo trên điện thoại (mỗi chuyến 1 lần). Service Accessibility hỏi bot
+Khi huntbot còn khoảng 10 phút nữa là về, app hiện thông báo trên điện thoại (mỗi chuyến 1 lần) kèm **giờ về** và
+**đồng hồ đếm ngược** tự chạy, nên mở máy muộn vẫn thấy số còn lại đúng. Service Accessibility hỏi bot
 mỗi phút nên **không cần mở app hay bật Hub nổi**, chỉ cần đã bật "đồng bộ owo-tracker" trong Cài đặt. Lần đầu mở app trên
 Android 13+ sẽ hỏi quyền thông báo — hãy bấm Cho phép. Giờ huntbot do bot tính nên không phụ thuộc đồng hồ điện thoại.
 

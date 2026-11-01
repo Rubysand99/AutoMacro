@@ -8,12 +8,12 @@ import androidx.appcompat.app.AppCompatActivity
 import com.starclan.starhub.databinding.ActivityMainBinding
 
 /**
- * Khung chinh: chi dieu khien 3 tab duoi cung, moi tab la 1 Fragment rieng.
+ * Khung chinh: chi dieu khien 2 tab duoi cung, moi tab la 1 Fragment rieng.
  *  - navHub       -> HubFragment       (xem du lieu OwO tu owo-tracker)
  *  - navSettings  -> SettingsFragment  (quyen Accessibility + ket noi owo-tracker)
- *  - navAutomatic -> AutomaticFragment (danh sach kich ban AutoMacro — chuc nang goc)
+ * (Tab "Tu dong" — danh sach kich ban AutoMacro — da bi go bo.)
  * Mac dinh mo tab Hub. Chuyen tab bang replace() nen moi Fragment tu khoi dong lai
- * (Hub tu lay du lieu moi, danh sach kich ban tu doc lai) — dung y, khong phai loi.
+ * (Hub tu lay du lieu moi) — dung y, khong phai loi.
  */
 class MainActivity : AppCompatActivity() {
 
@@ -28,7 +28,6 @@ class MainActivity : AppCompatActivity() {
             val fragment = when (item.itemId) {
                 R.id.navHub -> HubFragment()
                 R.id.navSettings -> SettingsFragment()
-                R.id.navAutomatic -> AutomaticFragment()
                 else -> return@setOnItemSelectedListener false
             }
             supportFragmentManager.beginTransaction()
