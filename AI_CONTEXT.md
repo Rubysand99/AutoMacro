@@ -29,8 +29,7 @@ dien thoai). Xem muc "Ket noi voi owo-tracker" ben duoi.
   * Cai dat them o "Link kenh Discord" (khong bat buoc). Toa do o nhap/nut Gui chi con la phuong an DU PHONG.
   * accessibility_service_config them flagReportViewIds + flagIncludeNotImportantViews (Discord la React Native).
   * ScriptEngine: buoc Bam gio CHO cu cham xong (performClickAwait) + nghi 0.4s; buoc Go chu dung NodeTools.typeInto.
-- CHUA BIEN DICH TREN MAY: code Kotlin viet khong co Android SDK/Gradle, chi kiem tra tinh (can ngoac, package,
-  import). Neu GitHub Actions bao loi bien dich thi gui log de sua.
+- (Lich su v15) Code Kotlin tung viet khong co Android SDK nen chua bien dich tren may; luon xem ket qua GitHub Actions.
 
 ## Trang thai hien tai (da lam duoc)
 - Khung project: Gradle, AndroidManifest, build qua GitHub Actions (khong dung gradlew,
@@ -226,4 +225,11 @@ app/src/main/java/com/starclan/starhub/
 - `FLAG_KEEP_SCREEN_ON` đặt ngay khi tạo cửa sổ Hub nổi (không còn phụ thuộc đang farm).
 - (OFF = chỉ ngừng giao việc cho app, bot vẫn theo dõi bình thường) `FarmOverlay.show()/hide()` gọi `FarmController.reportHubPower(on)` -> `POST /power {"on": bool}` -> bot `set_app_off(!on)`.
 - Bot: `tracked_guild_id` (`,setserver`) thay `tracked_channel_id` (`,setchannel`); gem `[0/xx]` đặt lệnh đổi gem ngay.
+
+## Sau audit bao mat (11/2026)
+- `data/CommandGuard.kt` (thuan Kotlin, co test): chi cho go lenh `owo ...` 1 dong <= 200 ky tu; ep `click_times` 1..100 va khoang
+  nghi 0.8..10 giay. `AutoAccessibilityService.pollOwoTrackerOnce` goi no truoc khi go; lenh sai bi ack `failed`.
+- Token API luu bang EncryptedSharedPreferences (`OwoTrackerPrefs`, dependency `androidx.security:security-crypto`), tu chuyen
+  token cu o kho thuong. CHUA BIEN DICH tren may: neu Actions bao loi o OwoTrackerPrefs thi gui log de sua.
+- Workflow build: buoc unit test khong con `continue-on-error`.
 

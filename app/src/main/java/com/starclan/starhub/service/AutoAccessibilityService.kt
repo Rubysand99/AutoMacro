@@ -21,6 +21,7 @@ import android.widget.ScrollView
 import android.widget.TextView
 import com.starclan.starhub.R
 import com.starclan.starhub.ScriptEditorActivity
+import com.starclan.starhub.data.CommandGuard
 import com.starclan.starhub.data.OwoTrackerApi
 import com.starclan.starhub.data.OwoTrackerPrefs
 import com.starclan.starhub.data.ScriptJson
@@ -247,6 +248,12 @@ class AutoAccessibilityService : AccessibilityService() {
                 OwoTrackerApi.ack(apiUrl, token, cmd.id, "failed")
                 continue
             }
+            // Chi go lenh OwO hop le (owo ...). Bat ky noi dung khac tu server deu bi tu choi.
+            if (!CommandGuard.isSafeCommand(commandText)) {
+                Log.w(TAG, "Lenh '${cmd.action}' co command_text khong hop le - tu choi")
+                OwoTrackerApi.ack(apiUrl, token, cmd.id, "failed")
+                continue
+            }
 
             // Hub noi bi tat giua chung -> dung ngay, cac lenh con lai de nguyen (chua ack)
             if (!FarmOverlay.isShown()) {
@@ -270,9 +277,10 @@ class AutoAccessibilityService : AccessibilityService() {
             }
             first = false
             if (result == SendResult.OK && !clickLabel.isNullOrBlank()) {
-                val times = cmd.params["click_times"]?.toIntOrNull() ?: 50
-                val minMs = cmd.params["click_min_ms"]?.toLongOrNull() ?: 1_800L
-                val maxMs = cmd.params["click_max_ms"]?.toLongOrNull() ?: 2_800L
+                val times = CommandGuard.clampClickTimes(cmd.params["click_times"]?.toIntOrNull())
+                val (minMs, maxMs) = CommandGuard.clampClickGap(
+                    cmd.params["click_min_ms"]?.toLongOrNull(), cmd.params["click_max_ms"]?.toLongOrNull()
+                )
                 val n = try {
                     ButtonClicker.clickRepeatedly(this, clickLabel, times, minMs, maxMs)
                 } catch (e: Exception) {
