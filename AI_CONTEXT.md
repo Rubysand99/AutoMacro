@@ -11,6 +11,15 @@ repo Python/discord.py rieng) de tao 1 he thong tap trung: owo-tracker la
 "bo nao" (biet luc nao can lam gi), AutoMacro la "tay chan" (thuc thi tren
 dien thoai). Xem muc "Ket noi voi owo-tracker" ben duoi.
 
+## v18 — Chon tier gem duoc phep trong app (2/11/2026)
+- Tab Cai dat co khoi "Tier gem khi thay" + nut "Chinh tier gem" -> `GemTierDialog` (dung code, khong layout XML): moi loai gem (Hunting /
+  Empowering / Lucky / Special) la 1 nhom chip bat/tat tung tier, kem so gem con trong kho. Bam Luu chi gui cac loai DA DOI.
+- API bot: `GET /gemtier` -> {tiers, slots:[{slot,name,allowed,pref,stock}]}; `POST /gemtier` body {"allowed":{"1":["Common",...]}}
+  (danh sach rong = tat het; tier/loai la -> 400 va khong doi gi). Cung nguon voi lenh Discord `,gemtier tat|bat`.
+- Code: `data/GemTierConfig.kt` (model + `GemTierJson`, thuan Kotlin, co `GemTierJsonTest`), `OwoTrackerApi.fetchGemTier/saveGemTier`,
+  `GemTierDialog.kt`, `SettingsFragment.openGemTierDialog`. Can bot >= ban co /gemtier, neu khong app bao "can cap nhat bot".
+- CHUA BIEN DICH tren may: Kotlin chi kiem tra qua GitHub Actions.
+
 ## v17 — So phien ban tu tang (2/11/2026)
 - File `VERSION` o goc repo (dang `1.12`). Workflow `Build APK` TU TANG so cuoi TRUOC khi build (push len main, bo qua commit
   `chore(version)`), build + test xanh moi commit lai `chore(version): v1.13` len main. APK mang dung so moi. Chay tay (workflow_dispatch)

@@ -238,6 +238,49 @@ object OwoTrackerApi {
             }
         }
 
+    /** GET /gemtier — tier gem duoc phep dung cho tung loai. Tra ve null neu loi (mang / sai token / bot chua cap nhat). */
+    suspend fun fetchGemTier(apiUrl: String, token: String): GemTierConfig? =
+        withContext<GemTierConfig?>(Dispatchers.IO) {
+            try {
+                val conn = URL(joinUrl(apiUrl, "/gemtier")).openConnection() as HttpURLConnection
+                conn.requestMethod = "GET"
+                conn.setRequestProperty("Authorization", "Bearer $token")
+                conn.connectTimeout = 10_000
+                conn.readTimeout = 15_000
+                if (conn.responseCode != 200) {
+                    Log.w(TAG, "fetchGemTier: HTTP ${conn.responseCode}")
+                    return@withContext null
+                }
+                GemTierJson.parse(conn.inputStream.bufferedReader().readText())
+            } catch (e: Exception) {
+                Log.w(TAG, "fetchGemTier loi: ${e.message}")
+                null
+            }
+        }
+
+    /** POST /gemtier — luu tier duoc phep cho cac loai da chinh. Tra ve cai dat bot vua luu, hoac null neu loi. */
+    suspend fun saveGemTier(apiUrl: String, token: String, allowedBySlot: Map<String, List<String>>): GemTierConfig? =
+        withContext<GemTierConfig?>(Dispatchers.IO) {
+            try {
+                val conn = URL(joinUrl(apiUrl, "/gemtier")).openConnection() as HttpURLConnection
+                conn.requestMethod = "POST"
+                conn.setRequestProperty("Authorization", "Bearer $token")
+                conn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+                conn.doOutput = true
+                conn.connectTimeout = 10_000
+                conn.readTimeout = 15_000
+                conn.outputStream.use { it.write(GemTierJson.buildSaveBody(allowedBySlot).toByteArray(Charsets.UTF_8)) }
+                if (conn.responseCode != 200) {
+                    Log.w(TAG, "saveGemTier: HTTP ${conn.responseCode}")
+                    return@withContext null
+                }
+                GemTierJson.parse(conn.inputStream.bufferedReader().readText())
+            } catch (e: Exception) {
+                Log.w(TAG, "saveGemTier loi: ${e.message}")
+                null
+            }
+        }
+
     /** Gui chu loi khuyen vu khi (`?tag <vu khi>`) len bot; bot tach passive va gui file cho Ruby. true = bot da nhan. */
     suspend fun uploadWeaponAdvice(apiUrl: String, token: String, tags: Map<String, String>): Boolean =
         withContext(Dispatchers.IO) {

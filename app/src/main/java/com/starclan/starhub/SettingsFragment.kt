@@ -14,6 +14,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
+import com.starclan.starhub.data.OwoTrackerApi
 import com.starclan.starhub.data.ApiUrlCheck
 import com.starclan.starhub.data.OwoTrackerPrefs
 import com.starclan.starhub.databinding.FragmentSettingsBinding
@@ -101,6 +103,8 @@ class SettingsFragment : Fragment() {
             }
         }
 
+        binding.btnGemTier.setOnClickListener { openGemTierDialog() }
+
         binding.btnToggleHub.setOnClickListener {
             val service = AutoAccessibilityService.instance
             if (service == null) {
@@ -176,6 +180,40 @@ class SettingsFragment : Fragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
+    }
+
+    /** Lay tier gem tu bot -> hop thoai bat/tat tung tier -> luu len bot. Dung dia chi + token DA LUU. */
+    private fun openGemTierDialog() {
+        val activityContext = requireContext()
+        val appContext = activityContext.applicationContext
+        val saved = OwoTrackerPrefs.load(activityContext)
+        if (saved.apiUrl.isBlank() || saved.token.isBlank()) {
+            Toast.makeText(appContext, R.string.gem_tier_need_settings, Toast.LENGTH_LONG).show()
+            return
+        }
+        Toast.makeText(appContext, R.string.gem_tier_loading, Toast.LENGTH_SHORT).show()
+        viewLifecycleOwner.lifecycleScope.launch {
+            val config = OwoTrackerApi.fetchGemTier(saved.apiUrl, saved.token)
+            if (_binding == null) return@launch      // roi man hinh trong luc cho
+            if (config == null) {
+                Toast.makeText(appContext, R.string.gem_tier_load_failed, Toast.LENGTH_LONG).show()
+                return@launch
+            }
+            GemTierDialog.show(activityContext, config) { changed ->
+                if (changed.isEmpty()) {
+                    Toast.makeText(appContext, R.string.gem_tier_unchanged, Toast.LENGTH_SHORT).show()
+                    return@show
+                }
+                CoroutineScope(Dispatchers.Main).launch {
+                    val result = OwoTrackerApi.saveGemTier(saved.apiUrl, saved.token, changed)
+                    Toast.makeText(
+                        appContext,
+                        if (result != null) R.string.gem_tier_saved else R.string.gem_tier_save_failed,
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
+        }
     }
 
     /** Ten phien ban cua APK dang chay (lay tu file VERSION luc build). */
