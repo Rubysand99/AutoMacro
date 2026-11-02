@@ -258,8 +258,8 @@ object OwoTrackerApi {
             }
         }
 
-    /** POST /gemtier — luu tier duoc phep cho cac loai da chinh. Tra ve cai dat bot vua luu, hoac null neu loi. */
-    suspend fun saveGemTier(apiUrl: String, token: String, allowedBySlot: Map<String, List<String>>): GemTierConfig? =
+    /** POST /gemtier — luu tier duoc phep va/hoac uu tien cho cac loai da chinh. Tra ve cai dat bot vua luu, hoac null neu loi. */
+    suspend fun saveGemTier(apiUrl: String, token: String, changes: GemTierChanges): GemTierConfig? =
         withContext<GemTierConfig?>(Dispatchers.IO) {
             try {
                 val conn = URL(joinUrl(apiUrl, "/gemtier")).openConnection() as HttpURLConnection
@@ -269,7 +269,7 @@ object OwoTrackerApi {
                 conn.doOutput = true
                 conn.connectTimeout = 10_000
                 conn.readTimeout = 15_000
-                conn.outputStream.use { it.write(GemTierJson.buildSaveBody(allowedBySlot).toByteArray(Charsets.UTF_8)) }
+                conn.outputStream.use { it.write(GemTierJson.buildSaveBody(changes).toByteArray(Charsets.UTF_8)) }
                 if (conn.responseCode != 200) {
                     Log.w(TAG, "saveGemTier: HTTP ${conn.responseCode}")
                     return@withContext null

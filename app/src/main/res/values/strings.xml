@@ -101,12 +101,15 @@
     <string name="hub_loading">Đang lấy dữ liệu từ bot…</string>
     <string name="hub_need_settings">Chưa cài kết nối — vào ⚙️ Kết nối owo-tracker, điền địa chỉ API và token trước.</string>
     <string name="section_gem_tier">Tier gem khi thay</string>
-    <string name="note_gem_tier">Chọn tier nào bot được phép dùng khi gem hết độ bền, riêng từng loại. Tier tắt sẽ không bao giờ được dùng.</string>
+    <string name="note_gem_tier">Chọn tier nào bot được phép dùng và tier ưu tiên khi gem hết độ bền, riêng từng loại. Tier tắt sẽ không bao giờ được dùng.</string>
     <string name="btn_gem_tier">🎚️ Chỉnh tier gem</string>
     <string name="gem_tier_title">Tier gem được phép dùng</string>
     <string name="gem_tier_stock">Kho: %1$s</string>
     <string name="gem_tier_stock_empty">hết</string>
-    <string name="gem_tier_note">Chip sáng = được dùng, chip tắt = không bao giờ dùng. Tắt hết tier của 1 loại thì bot không tự thay gem loại đó.</string>
+    <string name="gem_tier_note">Chip sáng = được dùng, chip tắt = không bao giờ dùng. "Ưu tiên" là tier bot thích dùng trước trong số tier đang bật; hết tier đó thì lấy tier thấp hơn gần nhất. Tắt hết tier của 1 loại thì bot không tự thay gem loại đó.</string>
+    <string name="gem_pref_label">Ưu tiên khi thay:</string>
+    <string name="gem_pref_highest">Tier cao nhất còn viên</string>
+    <string name="gem_pref_lowest">Tier thấp nhất còn viên</string>
     <string name="gem_tier_loading">Đang lấy cài đặt tier gem…</string>
     <string name="gem_tier_load_failed">Không lấy được cài đặt từ bot — kiểm tra mạng, token và cập nhật bot lên bản mới</string>
     <string name="gem_tier_saved">Đã lưu tier gem</string>

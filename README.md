@@ -14,7 +14,8 @@ Sau bước build, workflow chạy thêm unit test JVM (`gradle testDebugUnitTes
 
 ## Chọn tier gem được phép dùng
 Tab **Cài đặt** → khối "Tier gem khi thay" → **Chỉnh tier gem**: mỗi loại gem (Hunting / Empowering / Lucky / Special) có các chip
-bật/tắt từng tier; chip tắt thì bot không bao giờ nhờ app dùng tier đó (kèm số gem còn trong kho). Bấm **Lưu** để gửi lên bot (cùng
+bật/tắt từng tier; chip tắt thì bot không bao giờ nhờ app dùng tier đó (kèm số gem còn trong kho). Dưới chip có ô **Ưu tiên khi thay**
+(tier cao nhất / thấp nhất còn viên, hoặc 1 tier cụ thể; hết tier đó thì lấy tier thấp hơn gần nhất đang bật). Bấm **Lưu** để gửi lên bot (cùng
 nguồn với lệnh Discord `,gemtier tat|bat`). Cần bot bản mới có đường `/gemtier`.
 
 ## Số phiên bản (tự tăng)

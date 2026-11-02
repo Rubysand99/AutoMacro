@@ -31,7 +31,31 @@ class GemTierJsonTest {
         GemTierJson.parse("khong phai json")
     }
 
-    @Test fun body_luu_dung_dang_bot_doc() =
+    @Test fun body_chi_co_allowed() =
         assertEquals("""{"allowed":{"1":["Common","Rare"],"4":[]}}""",
-            GemTierJson.buildSaveBody(linkedMapOf("1" to listOf("Common", "Rare"), "4" to emptyList())))
+            GemTierJson.buildSaveBody(GemTierChanges(allowed = linkedMapOf("1" to listOf("Common", "Rare"), "4" to emptyList()))))
+
+    @Test fun body_chi_co_uu_tien() =
+        assertEquals("""{"pref":{"1":"Rare","4":"lowest"}}""",
+            GemTierJson.buildSaveBody(GemTierChanges(pref = linkedMapOf("1" to "Rare", "4" to "lowest"))))
+
+    @Test fun body_co_ca_hai() =
+        assertEquals("""{"allowed":{"3":["Epic"]},"pref":{"3":"Epic"}}""",
+            GemTierJson.buildSaveBody(GemTierChanges(mapOf("3" to listOf("Epic")), mapOf("3" to "Epic"))))
+
+    @Test fun khong_doi_gi_thi_rong() = assertTrue(GemTierChanges().isEmpty())
+
+    @Test fun o_chon_uu_tien_cao_nhat_thap_nhat_roi_tung_tier() {
+        val tiers = listOf("Common", "Uncommon", "Rare")
+        assertEquals(listOf("highest", "lowest", "Common", "Uncommon", "Rare"), GemPref.options(tiers))
+        assertEquals(0, GemPref.indexOf("highest", tiers))
+        assertEquals(1, GemPref.indexOf("lowest", tiers))
+        assertEquals(4, GemPref.indexOf("Rare", tiers))
+    }
+
+    @Test fun uu_tien_la_hoac_null_thi_ve_cao_nhat() {
+        val tiers = listOf("Common", "Rare")
+        assertEquals(0, GemPref.indexOf(null, tiers))
+        assertEquals(0, GemPref.indexOf("khong-biet", tiers))
+    }
 }

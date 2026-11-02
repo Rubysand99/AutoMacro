@@ -22,6 +22,27 @@ data class GemTierConfig(
     val slots: List<GemTierSlot> = emptyList()
 )
 
+/** Nhung gi Ruby vua doi trong hop thoai: tier duoc phep va/hoac uu tien, chi gom cac loai co thay doi. */
+data class GemTierChanges(
+    val allowed: Map<String, List<String>> = emptyMap(),
+    val pref: Map<String, String> = emptyMap()
+) {
+    fun isEmpty() = allowed.isEmpty() && pref.isEmpty()
+}
+
+/** Cac lua chon "uu tien": cao nhat / thap nhat / 1 tier cu the. Gia tri gui bot: highest | lowest | ten tier. */
+object GemPref {
+    const val HIGHEST = "highest"
+    const val LOWEST = "lowest"
+
+    /** Danh sach gia tri theo thu tu hien trong o chon: [highest, lowest, tier1, tier2, ...]. */
+    fun options(tiers: List<String>): List<String> = listOf(HIGHEST, LOWEST) + tiers
+
+    /** Vi tri cua `pref` trong options(); gia tri la/null thi ve "cao nhat" (giong bot). */
+    fun indexOf(pref: String?, tiers: List<String>): Int =
+        options(tiers).indexOf(pref).let { if (it < 0) 0 else it }
+}
+
 /** Doc / tao JSON cho /gemtier. THUAN Kotlin (khong dung Android) nen test bang JVM duoc. */
 object GemTierJson {
     private val gson = Gson()
@@ -33,7 +54,11 @@ object GemTierJson {
         return cfg
     }
 
-    /** {"allowed":{"1":["Common","Rare"],"4":[]}} — gui cac loai da chinh. */
-    fun buildSaveBody(allowedBySlot: Map<String, List<String>>): String =
-        gson.toJson(mapOf("allowed" to allowedBySlot))
+    /** {"allowed":{"1":["Common","Rare"],"4":[]},"pref":{"1":"highest"}} — chi gom phan da doi (rong thi bo khoa). */
+    fun buildSaveBody(changes: GemTierChanges): String {
+        val body = linkedMapOf<String, Any>()
+        if (changes.allowed.isNotEmpty()) body["allowed"] = changes.allowed
+        if (changes.pref.isNotEmpty()) body["pref"] = changes.pref
+        return gson.toJson(body)
+    }
 }

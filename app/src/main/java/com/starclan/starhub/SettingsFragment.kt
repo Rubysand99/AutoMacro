@@ -199,13 +199,13 @@ class SettingsFragment : Fragment() {
                 Toast.makeText(appContext, R.string.gem_tier_load_failed, Toast.LENGTH_LONG).show()
                 return@launch
             }
-            GemTierDialog.show(activityContext, config) { changed ->
-                if (changed.isEmpty()) {
+            GemTierDialog.show(activityContext, config) { changes ->
+                if (changes.isEmpty()) {
                     Toast.makeText(appContext, R.string.gem_tier_unchanged, Toast.LENGTH_SHORT).show()
                     return@show
                 }
                 CoroutineScope(Dispatchers.Main).launch {
-                    val result = OwoTrackerApi.saveGemTier(saved.apiUrl, saved.token, changed)
+                    val result = OwoTrackerApi.saveGemTier(saved.apiUrl, saved.token, changes)
                     Toast.makeText(
                         appContext,
                         if (result != null) R.string.gem_tier_saved else R.string.gem_tier_save_failed,

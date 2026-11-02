@@ -16,6 +16,8 @@ dien thoai). Xem muc "Ket noi voi owo-tracker" ben duoi.
   Empowering / Lucky / Special) la 1 nhom chip bat/tat tung tier, kem so gem con trong kho. Bam Luu chi gui cac loai DA DOI.
 - API bot: `GET /gemtier` -> {tiers, slots:[{slot,name,allowed,pref,stock}]}; `POST /gemtier` body {"allowed":{"1":["Common",...]}}
   (danh sach rong = tat het; tier/loai la -> 400 va khong doi gi). Cung nguon voi lenh Discord `,gemtier tat|bat`.
+- Hop thoai con o chon "Uu tien khi thay" (Spinner: cao nhat / thap nhat / tung tier); POST them khoa `"pref":{"1":"highest|lowest|<tier>"}`.
+  `GemTierChanges(allowed, pref)` gom cac loai DA DOI; `GemPref` (thuan Kotlin) doi giua gia tri bot va vi tri o chon.
 - Code: `data/GemTierConfig.kt` (model + `GemTierJson`, thuan Kotlin, co `GemTierJsonTest`), `OwoTrackerApi.fetchGemTier/saveGemTier`,
   `GemTierDialog.kt`, `SettingsFragment.openGemTierDialog`. Can bot >= ban co /gemtier, neu khong app bao "can cap nhat bot".
 - CHUA BIEN DICH tren may: Kotlin chi kiem tra qua GitHub Actions.
