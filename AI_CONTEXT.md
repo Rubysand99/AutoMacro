@@ -33,6 +33,12 @@ dien thoai). Xem muc "Ket noi voi owo-tracker" ben duoi.
   Event = nut Event + nhom event (luon hien, chua co du lieu thi bao "Chua thay tin su kien"). Tab dang chon + che do tu thu gon luu o
   SharedPreferences `starhub_overlay` (khong chua token). Them muc vao tab nao thi dung `addTo/addGroupTo(TAB_x, ...)` trong `show()`.
   CHUA BIEN DICH tren may.
+- Thong ke farm theo ngay (Hub noi, tab Misc, nhom "📊 Thong ke"): `data/FarmStats.kt` (thuan Kotlin, co `FarmStatsTest`: `StatsBook`, `DayStats`,
+  `StatsFormat`) + `data/FarmStatsStore.kt` (SharedPreferences `starhub_stats`, giu 14 ngay, khong gui len bot). `FarmController` ghi: so phien + gio chay
+  (`startSession` sau khi qua buoc kiem tra dau vao, `endSession` o `finally` cua job farm), hunt, battle, captcha (1 lan/dot), pet moi, Slow down
+  cao nhat, cowoncy lan doc dau/cuoi ngay (tinh theo NGAY DOC = bay gio - `age_seconds`, nen so lieu cu hom truoc khong bi tinh nham).
+  Hub noi hien hom nay + 6 ngay truoc + tong; nut "🗑 Xoa thong ke" o tab Setting (bam 2 lan). Phien chay qua nua dem: gio chay tinh sang ngay moi.
+  CHUA BIEN DICH tren may.
 - Con ton dong tu ra soat (chua lam): TagCollector doc chu ngoai Discord, "Dump man hinh" ghi clipboard, accessibility config
   khong gioi han package, StateFlow `update` khong atomic, TagCollector/Farm/runScript co the chay chong nhau, keystore debug cong khai.
 

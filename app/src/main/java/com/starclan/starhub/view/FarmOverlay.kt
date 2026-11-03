@@ -14,6 +14,7 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import com.starclan.starhub.data.HubFormat
+import com.starclan.starhub.data.StatsFormat
 import com.starclan.starhub.engine.FarmController
 import com.starclan.starhub.engine.FarmState
 import com.starclan.starhub.engine.TagCollector
@@ -25,6 +26,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 import kotlin.math.abs
 
 /**
@@ -56,6 +58,8 @@ object FarmOverlay {
     private const val PREFS = "starhub_overlay"
     private const val PREF_TAB = "tab"
     private const val PREF_AUTO_COLLAPSE = "auto_collapse"
+    private const val STATS_CLEAR_LABEL = "🗑 Xóa thống kê"
+    private var clearStatsConfirmUntilMs = 0L
 
     // Mau: nen toi, nhan vang giong bong bong. Chu sang tren nen toi de de doc tren man Discord.
     private const val C_PANEL = "#F2161A24"
@@ -416,6 +420,7 @@ object FarmOverlay {
         val closeBtn = pill(service, "✖", C_BTN, 14f)
         val eventBtn = pill(service, "🎉 Event: Tắt", C_BTN)
         val autoBtn = pill(service, "", C_BTN)
+        val clearStatsBtn = pill(service, STATS_CLEAR_LABEL, C_BTN)
         btnToggle = toggle
         btnMute = muteBtn
         btnMode = modeBtn
@@ -477,8 +482,10 @@ object FarmOverlay {
         // Setting: cac cai dat cua Hub noi
         addTo(TAB_SETTING, modeBtn)
         addTo(TAB_SETTING, autoBtn)
-        // Misc: tai nguyen, nhiem vu, zoo + hoc loi khuyen vu khi
+        addTo(TAB_SETTING, clearStatsBtn)
+        // Misc: hoc loi khuyen vu khi, thong ke, tai nguyen, nhiem vu, zoo
         addTo(TAB_MISC, tagBtn)
+        addGroupTo(TAB_MISC, "stats", "📊 Thống kê")
         addGroupTo(TAB_MISC, "res", "💰 Tài nguyên")
         addGroupTo(TAB_MISC, "quest", "📋 Nhiệm vụ")
         addGroupTo(TAB_MISC, "zoo", "🐾 Zoo & pet mới")
@@ -523,6 +530,24 @@ object FarmOverlay {
         }
         modeBtn.setOnClickListener { FarmController.cycleHuntMode(service.applicationContext) }
         autoBtn.setOnClickListener { setAutoCollapse(!autoCollapse) }
+        // Xoa thong ke: bam 2 lan trong 4 giay cho do xoa nham
+        clearStatsBtn.setOnClickListener {
+            val now = System.currentTimeMillis()
+            if (now < clearStatsConfirmUntilMs) {
+                clearStatsConfirmUntilMs = 0L
+                FarmController.clearStats()
+                clearStatsBtn.text = STATS_CLEAR_LABEL
+                render(FarmController.state.value)
+            } else {
+                clearStatsConfirmUntilMs = now + 4_000L
+                clearStatsBtn.text = "⚠️ Bấm lại để xóa hết thống kê"
+                scope?.launch {
+                    delay(4_000L)
+                    clearStatsBtn.text = STATS_CLEAR_LABEL
+                }
+            }
+        }
+        FarmController.initStats(service.applicationContext)
         FarmController.loadHuntMode(service.applicationContext)
         // Chi thu gon menu, bong bong ngoi sao van o lai tren man hinh
         hideBtn.setOnClickListener {
@@ -677,6 +702,49 @@ object FarmOverlay {
 
     // ------------------------------------------------------------------ do du lieu vao giao dien
 
+    /** Nhom "📊 Thong ke": hom nay + cac ngay truoc (so lieu luu o may, khong can bot) */
+    private fun renderStats() {
+        val days = FarmController.statsSnapshot(7)
+        val todayKey = LocalDate.now().toString()
+        val t = days.firstOrNull { it.date == todayKey }
+        val rows = mutableListOf<Row>()
+        if (t == null) {
+            rows.add(Row("Hôm nay", "Chưa có số liệu (bấm Bắt đầu để farm)", Tone.MUTED))
+        } else {
+            rows.add(Row("Hôm nay", "${t.hunts} hunt · ${t.battles} battle"))
+            rows.add(Row("Chạy", "${StatsFormat.duration(t.seconds)} · ${t.sessions} phiên"))
+            rows.add(Row("Pet mới", "${t.newPets}"))
+            rows.add(Row("Captcha", "${t.captchas} lần", if (t.captchas > 0) Tone.WARN else Tone.NORMAL))
+            if (t.maxSlowdown30m > 0) {
+                rows.add(Row("Slow down", "cao nhất ${t.maxSlowdown30m} lần/30 phút", Tone.WARN))
+            }
+            val first = t.cashFirst
+            val last = t.cashLast
+            if (first != null && last != null) {
+                rows.add(Row("Cowoncy", "${StatsFormat.signed(last - first)} (từ lần đọc đầu ngày)"))
+            } else {
+                rows.add(Row("Cowoncy", "Chưa đọc owo cash hôm nay", Tone.MUTED))
+            }
+        }
+        val older = days.filter { it.date != todayKey }
+        if (older.isNotEmpty()) {
+            rows.add(Row("", "Các ngày trước:", Tone.MUTED))
+            for (d in older.take(6)) {
+                val cap = if (d.captchas > 0) " · 🚨${d.captchas}" else ""
+                rows.add(Row(StatsFormat.shortDate(d.date), "${d.hunts} hunt · ${d.battles} battle · ${StatsFormat.duration(d.seconds)}$cap"))
+            }
+        }
+        if (days.size > 1) {
+            rows.add(
+                Row(
+                    "Tổng ${days.size} ngày",
+                    "${days.sumOf { it.hunts }} hunt · ${days.sumOf { it.battles }} battle · ${StatsFormat.duration(days.sumOf { it.seconds })}"
+                )
+            )
+        }
+        setGroup("stats", t?.let { "${it.hunts} hunt · ${it.battles} battle" } ?: "", rows)
+    }
+
     private fun render(st: FarmState) {
         if (root == null) return
         val hub = st.hub
@@ -740,6 +808,8 @@ object FarmOverlay {
             }
             lastExpandedAlert = alertText
         }
+
+        renderStats()
 
         // --- chua co du lieu tu bot ---
         if (hub == null) {

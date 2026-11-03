@@ -2,11 +2,14 @@ package com.starclan.starhub.engine
 
 import android.content.Context
 import android.util.Log
+import com.starclan.starhub.data.DayStats
+import com.starclan.starhub.data.FarmStatsStore
 import com.starclan.starhub.data.HubFormat
 import com.starclan.starhub.data.HubResponse
 import com.starclan.starhub.data.HubResult
 import com.starclan.starhub.data.OwoTrackerApi
 import com.starclan.starhub.data.OwoTrackerPrefs
+import com.starclan.starhub.data.StatsBook
 import com.starclan.starhub.service.AutoAccessibilityService
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -229,6 +232,37 @@ object FarmController {
         }
     }
 
+    // ---------- Thong ke farm theo ngay (luu o may, xem data/FarmStats.kt) ----------
+    private val statsLock = Any()
+    private var statsBook: StatsBook? = null
+    private var statsCtx: Context? = null
+
+    /** Nap thong ke da luu (goi khi bat Hub noi / bat farm). Goi lai nhieu lan khong sao. */
+    fun initStats(context: Context) {
+        val app = context.applicationContext
+        synchronized(statsLock) {
+            statsCtx = app
+            if (statsBook == null) statsBook = FarmStatsStore.load(app)
+        }
+    }
+
+    /** Ghi nhan 1 su kien vao thong ke roi luu ngay (so lieu rat nho). Chua nap thong ke thi bo qua. */
+    private fun recordStats(block: (StatsBook, Long) -> Unit) {
+        synchronized(statsLock) {
+            val book = statsBook ?: return
+            block(book, System.currentTimeMillis())
+            val ctx = statsCtx
+            if (ctx != null && book.dirty) FarmStatsStore.save(ctx, book)
+        }
+    }
+
+    /** Thong ke toi da [days] ngay gan nhat (moi nhat truoc) de Hub noi hien thi. Khong ghi gi ra may. */
+    fun statsSnapshot(days: Int = 7): List<DayStats> = synchronized(statsLock) {
+        statsBook?.recent(System.currentTimeMillis(), days).orEmpty()
+    }
+
+    fun clearStats() = recordStats { book, _ -> book.clear() }
+
     /** Bat Hub noi / bat farm moi: xoa danh sach "pet moi" cua phien truoc, tinh lai tu bay gio */
     fun resetSession() {
         update { it.copy(sessionStartIso = Instant.now().toString(), sessionNewPets = emptyList()) }
@@ -269,6 +303,8 @@ object FarmController {
 
     /** OwO doi captcha: reo chuong + rung, dung farm. (Bot tu nhan tin tag Ruby, app khong can nhan them) */
     private fun handleCaptcha(ctx: Context, ageSeconds: Long = 0L) {
+        // Dem 1 lan cho moi dot captcha (ham nay co the duoc goi lai khi dang cho giai)
+        if (_state.value.captchaEndMs <= 0L) recordStats { b, now -> b.addCaptcha(now) }
         startAlarm(ctx)
         // Dem nguoc 10 phut "thoi gian vang" ke tu luc OwO bao (bot cho biet da bao cach day bao lau)
         val endMs = System.currentTimeMillis() + maxOf(0L, CAPTCHA_GOLDEN_MS - ageSeconds * 1000L)
@@ -306,6 +342,7 @@ object FarmController {
             return
         }
         appCtx = service.applicationContext
+        initStats(service.applicationContext)
         loadHuntMode(service.applicationContext)
         stopAlarm()
         update { it.copy(captchaEndMs = 0L) }
@@ -317,6 +354,9 @@ object FarmController {
             } catch (e: Exception) {
                 Log.e(TAG, "Farm loi: ${e.message}", e)
                 hardStop(service.applicationContext, "Lỗi bất ngờ: ${(e.message ?: "không rõ").take(100)}")
+            } finally {
+                // Moi cach ket thuc (dung tay, captcha, loi, het gio) deu chot gio chay vao thong ke
+                recordStats { b, now -> b.endSession(now) }
             }
         }
     }
@@ -386,6 +426,12 @@ object FarmController {
                         sessionNewPets = pets,
                         alert = newAlert
                     )
+                }
+                // Thong ke: pet moi, so lan Slow down (cao nhat), cowoncy bot vua doc
+                recordStats { b, now ->
+                    b.addNewPets(now, added.size)
+                    hub.slowdown?.count30m?.let { n -> b.observeSlowdown(now, n) }
+                    hub.cowoncy?.amount?.let { amount -> b.observeCash(now, amount, hub.cowoncy?.ageSeconds) }
                 }
             }
             is HubResult.Failure -> update { it.copy(hubError = r.message) }
@@ -835,6 +881,9 @@ object FarmController {
             return
         }
 
+        // Qua het cac buoc kiem tra dau vao: tu day moi tinh la 1 phien farm thuc su chay
+        recordStats { b, now -> b.startSession(now) }
+
         // --- 1. Tim kenh duoc chi dinh ---
         refreshHub(ctx)
         var link = settings.discordLink.trim()
@@ -951,6 +1000,7 @@ object FarmController {
                 if (huntResult == SendResult.OK) {
                     failsInRow = 0
                     update { it.copy(hunts = it.hunts + 1) }
+                    recordStats { b, now -> b.addHunt(now) }
                 } else {
                     failsInRow++
                     if (failsInRow >= MAX_FAILS_IN_ROW) {
@@ -976,6 +1026,7 @@ object FarmController {
             if (battleResult == SendResult.OK) {
                 failsInRow = 0
                 update { it.copy(battles = it.battles + 1) }
+                recordStats { b, now -> b.addBattle(now) }
             } else {
                 failsInRow++
                 if (failsInRow >= MAX_FAILS_IN_ROW) {
