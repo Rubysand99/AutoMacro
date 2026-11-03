@@ -28,6 +28,11 @@ dien thoai). Xem muc "Ket noi voi owo-tracker" ben duoi.
 - Hub noi (FarmOverlay): sua loi "bam ➖ thu gon xong menu tu bat lai" — `render()` truoc day ep mo menu MOI LAN chay khi con canh bao;
   nay chi tu mo 1 LAN cho moi canh bao moi (`lastExpandedAlert`). Them tu thu gon menu sau 8 giay khong cham (`AUTO_COLLAPSE_MS`,
   `TouchAwareLinearLayout` tinh lai gio moi lan cham); dang co canh bao (vd captcha) thi KHONG tu thu gon. CHUA BIEN DICH tren may.
+- Hub noi chia 4 TAB (Farm / Setting / Misc / Event) trong `FarmOverlay`: phan dau (trang thai, dem nguoc, canh bao, Bat dau/Dung, ➖, ✖)
+  co dinh o moi tab. Farm = nhom farm+gem+hb; Setting = nut Hunt mode + bat/tat tu thu gon menu; Misc = hoc tag + res+quest+zoo;
+  Event = nut Event + nhom event (luon hien, chua co du lieu thi bao "Chua thay tin su kien"). Tab dang chon + che do tu thu gon luu o
+  SharedPreferences `starhub_overlay` (khong chua token). Them muc vao tab nao thi dung `addTo/addGroupTo(TAB_x, ...)` trong `show()`.
+  CHUA BIEN DICH tren may.
 - Con ton dong tu ra soat (chua lam): TagCollector doc chu ngoai Discord, "Dump man hinh" ghi clipboard, accessibility config
   khong gioi han package, StateFlow `update` khong atomic, TagCollector/Farm/runScript co the chay chong nhau, keystore debug cong khai.
 

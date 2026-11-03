@@ -32,13 +32,30 @@ import kotlin.math.abs
  * KHONG can them quyen "Hien thi tren ung dung khac". Bong bong ngoi sao: cham de mo/thu gon,
  * keo de di chuyen.
  *
- * Bo cuc (v29): phan dau co dinh (trang thai + nut) roi cac NHOM the rieng: Farm, Gem, Tai nguyen,
- * Huntbot, Nhiem vu, Zoo & pet moi, Su kien. Cham tieu de nhom de thu gon / mo rong; tieu de luon
- * kem 1 dong tom tat nen thu gon van doc duoc nhanh.
+ * Bo cuc: phan dau co dinh (trang thai, dem nguoc, canh bao, nut Bat dau/Dung + ➖ + ✖) luon hien o moi tab,
+ * roi thanh 4 TAB:
+ *   Farm    = nhom Farm, Gem, Huntbot
+ *   Setting = nut Hunt mode + bat/tat tu thu gon menu
+ *   Misc    = nut hoc loi khuyen vu khi + nhom Tai nguyen, Nhiem vu, Zoo & pet moi
+ *   Event   = nut Event + nhom Su kien
+ * Cham tieu de nhom de thu gon / mo rong; tieu de luon kem 1 dong tom tat nen thu gon van doc duoc nhanh.
  */
 object FarmOverlay {
     private const val REFRESH_MS = 15_000L
     private const val AUTO_COLLAPSE_MS = 8_000L
+
+    // 4 tab cua menu: chi la cach sap xep giao dien, khong doi logic farm
+    private const val TAB_FARM = 0
+    private const val TAB_SETTING = 1
+    private const val TAB_MISC = 2
+    private const val TAB_EVENT = 3
+    private val TAB_LABELS = listOf("⚔️ Farm", "⚙️ Setting", "🧰 Misc", "🎉 Event")
+    private const val C_TAB_ON = "#6A4FB3"
+
+    // Nho tab dang chon + cai dat tu thu gon giua cac lan bat Hub (SharedPreferences rieng, khong chua token)
+    private const val PREFS = "starhub_overlay"
+    private const val PREF_TAB = "tab"
+    private const val PREF_AUTO_COLLAPSE = "auto_collapse"
 
     // Mau: nen toi, nhan vang giong bong bong. Chu sang tren nen toi de de doc tren man Discord.
     private const val C_PANEL = "#F2161A24"
@@ -99,6 +116,12 @@ object FarmOverlay {
     private var btnMode: TextView? = null
     private var btnEvent: TextView? = null
     private var btnTags: TextView? = null
+    private var btnAuto: TextView? = null
+
+    private val tabButtons = mutableListOf<TextView>()
+    private val tabContainers = mutableListOf<LinearLayout>()
+    private var currentTab = TAB_FARM
+    private var autoCollapse = true
 
     private val groups = mutableMapOf<String, Group>()
     private val collapsed = mutableSetOf<String>()   // nho trang thai thu gon trong luc app chay
@@ -143,6 +166,9 @@ object FarmOverlay {
         windowManager = null
         viewCtx = null
         groups.clear()
+        tabButtons.clear()
+        tabContainers.clear()
+        btnAuto = null
         // Hub TAT = bot OFF (khong giao viec cho app nua)
         if (ctxForPower != null) FarmController.reportHubPower(ctxForPower, false)
     }
@@ -389,49 +415,77 @@ object FarmOverlay {
         val hideBtn = pill(service, "➖", C_BTN, 14f)
         val closeBtn = pill(service, "✖", C_BTN, 14f)
         val eventBtn = pill(service, "🎉 Event: Tắt", C_BTN)
+        val autoBtn = pill(service, "", C_BTN)
         btnToggle = toggle
         btnMute = muteBtn
         btnMode = modeBtn
         btnEvent = eventBtn
+        btnAuto = autoBtn
         val tagBtn = pill(service, "📚 Học lời khuyên vũ khí", C_BTN, 12f)
         btnTags = tagBtn
 
+        // Dung moi tab de bam duoc: hang tren cung (Bat dau/Dung + thu gon + tat Hub) luon hien o moi tab
         val rowMute = LinearLayout(service)
         rowMute.orientation = LinearLayout.HORIZONTAL
         rowMute.addView(muteBtn, lparams(0, LinearLayout.LayoutParams.WRAP_CONTENT, weight = 1f, margin = dp(2)))
         val row1 = LinearLayout(service)
         row1.orientation = LinearLayout.HORIZONTAL
-        row1.addView(toggle, lparams(0, LinearLayout.LayoutParams.WRAP_CONTENT, weight = 2f, margin = dp(2)))
-        row1.addView(eventBtn, lparams(0, LinearLayout.LayoutParams.WRAP_CONTENT, weight = 1.6f, margin = dp(2)))
-        val row2 = LinearLayout(service)
-        row2.orientation = LinearLayout.HORIZONTAL
-        row2.addView(modeBtn, lparams(0, LinearLayout.LayoutParams.WRAP_CONTENT, weight = 3f, margin = dp(2)))
-        row2.addView(hideBtn, lparams(0, LinearLayout.LayoutParams.WRAP_CONTENT, weight = 0.8f, margin = dp(2)))
-        row2.addView(closeBtn, lparams(0, LinearLayout.LayoutParams.WRAP_CONTENT, weight = 0.8f, margin = dp(2)))
-        val row3 = LinearLayout(service)
-        row3.orientation = LinearLayout.HORIZONTAL
-        row3.addView(tagBtn, lparams(0, LinearLayout.LayoutParams.WRAP_CONTENT, weight = 1f, margin = dp(2)))
+        row1.addView(toggle, lparams(0, LinearLayout.LayoutParams.WRAP_CONTENT, weight = 3f, margin = dp(2)))
+        row1.addView(hideBtn, lparams(0, LinearLayout.LayoutParams.WRAP_CONTENT, weight = 0.8f, margin = dp(2)))
+        row1.addView(closeBtn, lparams(0, LinearLayout.LayoutParams.WRAP_CONTENT, weight = 0.8f, margin = dp(2)))
 
-        // -- Cac nhom (cuon duoc) --
+        // -- Thanh 4 tab: Farm / Setting / Misc / Event --
+        val prefs = service.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        autoCollapse = prefs.getBoolean(PREF_AUTO_COLLAPSE, true)
+        currentTab = prefs.getInt(PREF_TAB, TAB_FARM).coerceIn(0, TAB_LABELS.size - 1)
+        val tabBar = LinearLayout(service)
+        tabBar.orientation = LinearLayout.HORIZONTAL
+        tabBar.setPadding(0, dp(6), 0, dp(6))
+        tabButtons.clear()
+        for ((i, label) in TAB_LABELS.withIndex()) {
+            val t = pill(service, label, C_BTN, 11.5f)
+            t.minHeight = dp(34)
+            t.setOnClickListener { showTab(i) }
+            tabButtons.add(t)
+            tabBar.addView(t, lparams(0, LinearLayout.LayoutParams.WRAP_CONTENT, weight = 1f, margin = dp(2)))
+        }
+
+        // -- Noi dung 4 tab (cuon duoc): moi tab 1 khung rieng, moi luc chi hien 1 khung --
         val content = LinearLayout(service)
         content.orientation = LinearLayout.VERTICAL
-        val keys = listOf(
-            "farm" to "⚔️ Farm",
-            "gem" to "💎 Gem",
-            "res" to "💰 Tài nguyên",
-            "hb" to "🤖 Huntbot",
-            "quest" to "📋 Nhiệm vụ",
-            "zoo" to "🐾 Zoo & pet mới",
-            "event" to "🎉 Sự kiện"
-        )
-        for ((key, title) in keys) {
-            content.addView(
-                makeGroup(service, key, title),
+        tabContainers.clear()
+        repeat(TAB_LABELS.size) {
+            val c = LinearLayout(service)
+            c.orientation = LinearLayout.VERTICAL
+            tabContainers.add(c)
+            content.addView(c, lparams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT))
+        }
+        fun addTo(tab: Int, v: View) {
+            tabContainers[tab].addView(
+                v,
                 lparams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).also {
                     it.setMargins(0, 0, 0, dp(6))
                 }
             )
         }
+        fun addGroupTo(tab: Int, key: String, title: String) = addTo(tab, makeGroup(service, key, title))
+
+        // Farm: tinh hinh farm, gem, huntbot
+        addGroupTo(TAB_FARM, "farm", "⚔️ Farm")
+        addGroupTo(TAB_FARM, "gem", "💎 Gem")
+        addGroupTo(TAB_FARM, "hb", "🤖 Huntbot")
+        // Setting: cac cai dat cua Hub noi
+        addTo(TAB_SETTING, modeBtn)
+        addTo(TAB_SETTING, autoBtn)
+        // Misc: tai nguyen, nhiem vu, zoo + hoc loi khuyen vu khi
+        addTo(TAB_MISC, tagBtn)
+        addGroupTo(TAB_MISC, "res", "💰 Tài nguyên")
+        addGroupTo(TAB_MISC, "quest", "📋 Nhiệm vụ")
+        addGroupTo(TAB_MISC, "zoo", "🐾 Zoo & pet mới")
+        // Event: bat/tat che do event + dem su kien
+        addTo(TAB_EVENT, eventBtn)
+        addGroupTo(TAB_EVENT, "event", "🎉 Sự kiện")
+
         val scroll = MaxHeightScrollView(service, (screenH * 0.46f).toInt())
         scroll.isVerticalScrollBarEnabled = false
         scroll.addView(content)
@@ -443,8 +497,7 @@ object FarmOverlay {
         panelBox.addView(alert, LinearLayout.LayoutParams(panelWidth, wrap).also { it.setMargins(0, 0, 0, dp(6)) })
         panelBox.addView(rowMute, LinearLayout.LayoutParams(panelWidth, wrap))
         panelBox.addView(row1, LinearLayout.LayoutParams(panelWidth, wrap))
-        panelBox.addView(row2, LinearLayout.LayoutParams(panelWidth, wrap))
-        panelBox.addView(row3, LinearLayout.LayoutParams(panelWidth, wrap).also { it.setMargins(0, 0, 0, dp(8)) })
+        panelBox.addView(tabBar, LinearLayout.LayoutParams(panelWidth, wrap))
         panelBox.addView(scroll, LinearLayout.LayoutParams(panelWidth, wrap))
         container.addView(panelBox, LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT))
@@ -469,6 +522,7 @@ object FarmOverlay {
             scope?.launch { FarmController.setEventMode(service.applicationContext, !nowOn) }
         }
         modeBtn.setOnClickListener { FarmController.cycleHuntMode(service.applicationContext) }
+        autoBtn.setOnClickListener { setAutoCollapse(!autoCollapse) }
         FarmController.loadHuntMode(service.applicationContext)
         // Chi thu gon menu, bong bong ngoi sao van o lai tren man hinh
         hideBtn.setOnClickListener {
@@ -526,6 +580,8 @@ object FarmOverlay {
 
         wm.addView(container, lp)
         root = container
+        showTab(currentTab)
+        updateAutoBtn()
 
         // ---- Cap nhat theo trang thai farm + lam moi so lieu dinh ky ----
         val s = CoroutineScope(SupervisorJob() + Dispatchers.Main)
@@ -555,6 +611,33 @@ object FarmOverlay {
         }
     }
 
+    /** Chuyen sang tab i (Farm/Setting/Misc/Event): chi tab do hien, tab bam duoc to mau, nho lai cho lan bat sau */
+    private fun showTab(i: Int) {
+        if (tabContainers.isEmpty()) return
+        currentTab = i.coerceIn(0, tabContainers.size - 1)
+        for ((k, c) in tabContainers.withIndex()) c.visibility = if (k == currentTab) View.VISIBLE else View.GONE
+        for ((k, b) in tabButtons.withIndex()) setPillColor(b, if (k == currentTab) C_TAB_ON else C_BTN)
+        viewCtx?.getSharedPreferences(PREFS, Context.MODE_PRIVATE)?.edit()?.putInt(PREF_TAB, currentTab)?.apply()
+        relayout()
+    }
+
+    private fun setAutoCollapse(on: Boolean) {
+        autoCollapse = on
+        viewCtx?.getSharedPreferences(PREFS, Context.MODE_PRIVATE)?.edit()?.putBoolean(PREF_AUTO_COLLAPSE, on)?.apply()
+        updateAutoBtn()
+        if (on) {
+            if (panel?.visibility == View.VISIBLE) scheduleAutoCollapse()
+        } else {
+            idleJob?.cancel()
+            idleJob = null
+        }
+    }
+
+    private fun updateAutoBtn() {
+        btnAuto?.text = if (autoCollapse) "⏱ Tự thu gọn menu: BẬT" else "⏱ Tự thu gọn menu: Tắt"
+        setPillColor(btnAuto, if (autoCollapse) C_TAB_ON else C_BTN)
+    }
+
     private fun togglePanel() {
         val p = panel ?: return
         p.visibility = if (p.visibility == View.VISIBLE) View.GONE else View.VISIBLE
@@ -568,6 +651,7 @@ object FarmOverlay {
      */
     private fun scheduleAutoCollapse() {
         idleJob?.cancel()
+        if (!autoCollapse) return
         val s = scope ?: return
         idleJob = s.launch {
             delay(AUTO_COLLAPSE_MS)
@@ -662,8 +746,7 @@ object FarmOverlay {
             val err = st.hubError
             val msg = if (err.isNullOrBlank()) "Đang tải dữ liệu từ bot…" else "⚠️ $err"
             setGroup("farm", "", listOf(Row("", msg, if (err.isNullOrBlank()) Tone.MUTED else Tone.WARN)))
-            for (k in listOf("gem", "res", "hb", "quest", "zoo")) setGroup(k, "", emptyList())
-            setGroup("event", "", emptyList(), visible = false)
+            for (k in listOf("gem", "res", "hb", "quest", "zoo", "event")) setGroup(k, "", emptyList())
             return
         }
 
@@ -845,10 +928,10 @@ object FarmOverlay {
         ).joinToString(" · ")
         setGroup("zoo", zooSummary, zooRows)
 
-        // ===== Su kien (chi hien khi bot thay tin su kien) =====
+        // ===== Su kien (nam trong tab Event; chua thay tin su kien thi hien dong bao chua co) =====
         val evCounters = hub.event?.counters.orEmpty()
         if (evCounters.isEmpty()) {
-            setGroup("event", "", emptyList(), visible = false)
+            setGroup("event", "", listOf(Row("", "Chưa thấy tin sự kiện nào từ bot", Tone.MUTED)))
         } else {
             val evRows = mutableListOf<Row>()
             for (c in evCounters) {
