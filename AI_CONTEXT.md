@@ -25,6 +25,9 @@ dien thoai). Xem muc "Ket noi voi owo-tracker" ben duoi.
   KHONG go lai. Lenh gui di la ban da `trim()`.
 - `FarmController`: ID vu khi tu /hub phai khop `^[A-Za-z0-9]{4,8}$` moi duoc ghep vao `owo weapon <ID>`.
 - CHUA BIEN DICH tren may (khong co Android SDK): chi kiem tra regex bang Python + doc lai diff. Xem ket qua GitHub Actions.
+- Hub noi (FarmOverlay): sua loi "bam ➖ thu gon xong menu tu bat lai" — `render()` truoc day ep mo menu MOI LAN chay khi con canh bao;
+  nay chi tu mo 1 LAN cho moi canh bao moi (`lastExpandedAlert`). Them tu thu gon menu sau 8 giay khong cham (`AUTO_COLLAPSE_MS`,
+  `TouchAwareLinearLayout` tinh lai gio moi lan cham); dang co canh bao (vd captcha) thi KHONG tu thu gon. CHUA BIEN DICH tren may.
 - Con ton dong tu ra soat (chua lam): TagCollector doc chu ngoai Discord, "Dump man hinh" ghi clipboard, accessibility config
   khong gioi han package, StateFlow `update` khong atomic, TagCollector/Farm/runScript co the chay chong nhau, keystore debug cong khai.
 

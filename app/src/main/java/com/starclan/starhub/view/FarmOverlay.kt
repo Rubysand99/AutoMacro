@@ -38,6 +38,7 @@ import kotlin.math.abs
  */
 object FarmOverlay {
     private const val REFRESH_MS = 15_000L
+    private const val AUTO_COLLAPSE_MS = 8_000L
 
     // Mau: nen toi, nhan vang giong bong bong. Chu sang tren nen toi de de doc tren man Discord.
     private const val C_PANEL = "#F2161A24"
@@ -72,6 +73,14 @@ object FarmOverlay {
         }
     }
 
+    /** LinearLayout bao cho noi ngoai moi khi co ngon tay cham xuong (ke ca cham len nut con), de tinh lai gio tu thu gon */
+    private class TouchAwareLinearLayout(ctx: Context, private val onTouchDown: () -> Unit) : LinearLayout(ctx) {
+        override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
+            if (ev.actionMasked == MotionEvent.ACTION_DOWN) onTouchDown()
+            return super.dispatchTouchEvent(ev)
+        }
+    }
+
     private var root: LinearLayout? = null
     private var params: WindowManager.LayoutParams? = null
     private var windowManager: WindowManager? = null
@@ -96,6 +105,8 @@ object FarmOverlay {
 
     private var scope: CoroutineScope? = null
     private var refreshJob: Job? = null
+    private var idleJob: Job? = null
+    private var lastExpandedAlert: String? = null   // canh bao da lam menu tu mo (chi mo lai khi canh bao doi)
 
     fun isShown(): Boolean = root != null
 
@@ -113,6 +124,9 @@ object FarmOverlay {
         if (TagCollector.isRunning()) TagCollector.stop()
         refreshJob?.cancel()
         refreshJob = null
+        idleJob?.cancel()
+        idleJob = null
+        lastExpandedAlert = null
         scope?.cancel()
         scope = null
         val r = removedRoot
@@ -300,7 +314,7 @@ object FarmOverlay {
 
         // ---- Khung chinh ----
         val panelWidth = minOf(dp(300), screenW - dp(40))
-        val panelBox = LinearLayout(service)
+        val panelBox = TouchAwareLinearLayout(service) { if (panel?.visibility == View.VISIBLE) scheduleAutoCollapse() }
         panelBox.orientation = LinearLayout.VERTICAL
         panelBox.setPadding(dp(10), dp(10), dp(10), dp(10))
         val panelBg = GradientDrawable()
@@ -545,6 +559,24 @@ object FarmOverlay {
         val p = panel ?: return
         p.visibility = if (p.visibility == View.VISIBLE) View.GONE else View.VISIBLE
         relayout()
+        if (p.visibility == View.VISIBLE) scheduleAutoCollapse()
+    }
+
+    /**
+     * Menu mo ma khong cham vao AUTO_COLLAPSE_MS thi tu thu gon ve bong bong ⭐ (menu che nut tren man hinh Discord).
+     * Moi lan cham vao menu thi tinh lai. Dang co canh bao (vd captcha) thi KHONG tu thu gon de khong bo lo.
+     */
+    private fun scheduleAutoCollapse() {
+        idleJob?.cancel()
+        val s = scope ?: return
+        idleJob = s.launch {
+            delay(AUTO_COLLAPSE_MS)
+            val p = panel
+            if (p != null && p.visibility == View.VISIBLE && tvAlert?.visibility != View.VISIBLE) {
+                p.visibility = View.GONE
+                relayout()
+            }
+        }
     }
 
     private fun relayout() {
@@ -611,14 +643,18 @@ object FarmOverlay {
         val alertText = st.alert
         if (alertText.isNullOrBlank()) {
             tvAlert?.visibility = View.GONE
+            lastExpandedAlert = null
         } else {
             tvAlert?.text = alertText
             tvAlert?.visibility = View.VISIBLE
+            // Canh bao MOI -> tu mo rong 1 LAN. Truoc day moi lan render() (rat thuong xuyen) deu ep mo lai, nen bam ➖
+            // thu gon xong la menu bat lai ngay khi canh bao con do.
             val p = panel
-            if (p != null && p.visibility != View.VISIBLE) {
-                p.visibility = View.VISIBLE // co canh bao -> tu mo rong
+            if (p != null && p.visibility != View.VISIBLE && alertText != lastExpandedAlert) {
+                p.visibility = View.VISIBLE
                 relayout()
             }
+            lastExpandedAlert = alertText
         }
 
         // --- chua co du lieu tu bot ---
