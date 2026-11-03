@@ -86,6 +86,8 @@ object FarmController {
     private const val CYCLE_MAX_MS = 21_000L
     private const val TEAM_REFRESH_GAP_MS = 30 * 60_000L          // owo team: cap nhat doi hinh cho ,teamcheck cua bot
     private const val WEAPON_DETAIL_GAP_MS = 6 * 60 * 60_000L     // owo weapon <ID> cua pet trong doi: it thay doi
+    /** ID vu khi lay tu JSON cua bot roi ghep vao lenh `owo weapon <ID>`: chi nhan dang ID that, khong tin tuyet doi vao server */
+    private val WEAPON_ID_RE = Regex("^[A-Za-z0-9]{4,8}$")
     private const val CHORE_REQUEUE_MS = 2 * 60_000L     // lenh vua go thanh cong -> cho 2 phut moi quay lai danh sach random
     private const val FILLER_MIN_REMAINING_MS = 8_000L   // con it nhat chung nay trong vong thi moi chen them 1 lenh kiem tra
 
@@ -689,7 +691,7 @@ object FarmController {
             pool += Chore("team") { runChoreCommands(sender, settings, "team_refresh", listOf("owo team")) }
         }
         for (m in hub?.team?.members.orEmpty()) {
-            val wid = m.weaponId ?: continue
+            val wid = m.weaponId?.takeIf { WEAPON_ID_RE.matches(it) } ?: continue
             if (choreDue("weapon_$wid", WEAPON_DETAIL_GAP_MS)) {
                 pool += Chore("wpn_$wid") { runChoreCommands(sender, settings, "weapon_$wid", listOf("owo weapon $wid")) }
             }

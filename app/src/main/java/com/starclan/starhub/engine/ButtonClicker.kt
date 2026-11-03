@@ -44,6 +44,8 @@ object ButtonClicker {
 
     private fun findBottomMost(service: AutoAccessibilityService, target: String): AccessibilityNodeInfo? {
         val root = service.rootInActiveWindow ?: return null
+        // Chi bam trong Discord: nguoi dung chuyen sang app khac giua chung thi DUNG, khong bam nham nut app do
+        if (root.packageName?.toString() != DiscordSender.DISCORD_PACKAGE) return null
         val nodes = NodeTools.collect(root, maxNodes = 1500) { it.isVisibleToUser && exactLabel(it, target) }
         val clickable = nodes.filter { it.isClickable }
         val pool = if (clickable.isNotEmpty()) clickable else nodes
@@ -72,7 +74,7 @@ object ButtonClicker {
             }
             val node = findBottomMost(service, target)
             if (node == null) {
-                Log.i(TAG, "Khong thay nut '$target' - dung sau $clicked lan")
+                Log.i(TAG, "Khong thay nut '$target' (hoac khong con o Discord) - dung sau $clicked lan")
                 break
             }
             if (!effectivelyEnabled(node)) {

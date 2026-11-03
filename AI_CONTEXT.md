@@ -11,6 +11,23 @@ repo Python/discord.py rieng) de tao 1 he thong tap trung: owo-tracker la
 "bo nao" (biet luc nao can lam gi), AutoMacro la "tay chan" (thuc thi tren
 dien thoai). Xem muc "Ket noi voi owo-tracker" ben duoi.
 
+## v19 — Siet an toan lenh tu server sau ra soat bao mat (3/11/2026)
+- `CommandGuard.isSafeCommand` doi tu "bat dau bang `owo `" sang DANH SACH CHO PHEP theo dong tu: `owo hb [<so>[h|m|d] [<ma>]]`,
+  `owo use <ma>...` (toi 12 ma 1-4 chu so), `owo dex <ten>`, `owo w <ID 4-8 ky tu>`, `owo weapon|cash|inv|quest|ws|zoo`.
+  `owo give/sell/pay/sacrifice/...` bi chan. **Them lenh moi o bot (owo-tracker) thi PHAI them 1 dong o CommandGuard + 1 test**,
+  neu khong app tu choi lenh do (ack `failed`). Test: `CommandGuardTest`.
+- `click_label` tu server chi nhan `forward` (`CommandGuard.isAllowedClickLabel`); `ButtonClicker` chi bam khi cua so dang
+  hien la Discord (`com.discord`), nguoi dung chuyen app giua chung thi dung.
+- `AutoAccessibilityService.onDestroy` goi `FarmOverlay.hide()` (dung farm + tu hoc tag, go Hub noi) — truoc day service chet
+  ma farm van chay tiep.
+- `OwoTrackerApi.ack` tra `Boolean`, thu toi 3 lan (0s/1s/3s) khi loi mang/5xx, dong ket noi. Service nho 200 lenh gan nhat
+  (`handledCommands`, trong bo nho, kem chu ky action+command_text): lenh da lam ma ack that bai thi lan poll sau CHI bao lai ket qua,
+  KHONG go lai. Lenh gui di la ban da `trim()`.
+- `FarmController`: ID vu khi tu /hub phai khop `^[A-Za-z0-9]{4,8}$` moi duoc ghep vao `owo weapon <ID>`.
+- CHUA BIEN DICH tren may (khong co Android SDK): chi kiem tra regex bang Python + doc lai diff. Xem ket qua GitHub Actions.
+- Con ton dong tu ra soat (chua lam): TagCollector doc chu ngoai Discord, "Dump man hinh" ghi clipboard, accessibility config
+  khong gioi han package, StateFlow `update` khong atomic, TagCollector/Farm/runScript co the chay chong nhau, keystore debug cong khai.
+
 ## v18 — Chon tier gem duoc phep trong app (2/11/2026)
 - Tab Cai dat co khoi "Tier gem khi thay" + nut "Chinh tier gem" -> `GemTierDialog` (dung code, khong layout XML): moi loai gem (Hunting /
   Empowering / Lucky / Special) la 1 nhom chip bat/tat tung tier, kem so gem con trong kho. Bam Luu chi gui cac loai DA DOI.

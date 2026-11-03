@@ -5,6 +5,7 @@ import com.google.gson.Gson
 import com.google.gson.JsonParseException
 import com.google.gson.annotations.SerializedName
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import java.net.HttpURLConnection
 import java.net.URL
@@ -303,21 +304,37 @@ object OwoTrackerApi {
         }
 
     /** Bao owo-tracker biet 1 lenh da xu ly xong (hoac that bai), de no khong gui lai lenh do nua. */
-    suspend fun ack(apiUrl: String, token: String, commandId: Int, status: String) = withContext(Dispatchers.IO) {
-        try {
-            val url = URL(joinUrl(apiUrl, "/commands/$commandId/ack"))
-            val conn = url.openConnection() as HttpURLConnection
-            conn.requestMethod = "POST"
-            conn.setRequestProperty("Authorization", "Bearer $token")
-            conn.setRequestProperty("Content-Type", "application/json")
-            conn.doOutput = true
-            conn.connectTimeout = 10_000
-            conn.readTimeout = 10_000
-            conn.outputStream.use { it.write("""{"status":"$status"}""".toByteArray()) }
-            conn.responseCode // can doc de request thuc su duoc gui di
-        } catch (e: Exception) {
-            Log.w(TAG, "ack loi: ${e.message}")
+    /**
+     * Bao ket qua 1 lenh cho bot. Thu toi 3 lan (cach nhau 1s, 3s) neu loi mang / HTTP 5xx; loi 4xx (sai token, id la)
+     * thi thu lai cung vo ich nen dung ngay. Tra ve true khi bot xac nhan (HTTP 2xx), false neu van that bai -
+     * noi goi nho lenh da xu ly de lan poll sau khong go lai.
+     */
+    suspend fun ack(apiUrl: String, token: String, commandId: Int, status: String): Boolean = withContext(Dispatchers.IO) {
+        val waitsMs = longArrayOf(0L, 1_000L, 3_000L)
+        for ((i, waitMs) in waitsMs.withIndex()) {
+            if (waitMs > 0) delay(waitMs)
+            var conn: HttpURLConnection? = null
+            try {
+                val url = URL(joinUrl(apiUrl, "/commands/$commandId/ack"))
+                conn = url.openConnection() as HttpURLConnection
+                conn.requestMethod = "POST"
+                conn.setRequestProperty("Authorization", "Bearer $token")
+                conn.setRequestProperty("Content-Type", "application/json")
+                conn.doOutput = true
+                conn.connectTimeout = 10_000
+                conn.readTimeout = 10_000
+                conn.outputStream.use { it.write("""{"status":"$status"}""".toByteArray()) }
+                val code = conn.responseCode // can doc de request thuc su duoc gui di
+                if (code in 200..299) return@withContext true
+                Log.w(TAG, "ack lenh $commandId: HTTP $code (lan ${i + 1}/${waitsMs.size})")
+                if (code in 400..499) return@withContext false
+            } catch (e: Exception) {
+                Log.w(TAG, "ack loi (lan ${i + 1}/${waitsMs.size}): ${e.message}")
+            } finally {
+                conn?.disconnect()
+            }
         }
+        false
     }
 
     private fun joinUrl(base: String, path: String): String = base.trimEnd('/') + path

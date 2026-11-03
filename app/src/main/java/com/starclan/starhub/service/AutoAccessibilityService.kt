@@ -107,6 +107,9 @@ class AutoAccessibilityService : AccessibilityService() {
     companion object {
         private const val TAG = "AutoAccessibilityService"
 
+        /** So lenh gan nhat nho lai de khong go lai khi ack that bai (xem handledCommands) */
+        private const val MAX_HANDLED = 200
+
         /** Tham chieu toi service dang chay, de noi khac (VD: MainActivity) goi runScript()/startRecording() */
         var instance: AutoAccessibilityService? = null
             private set
@@ -167,6 +170,9 @@ class AutoAccessibilityService : AccessibilityService() {
 
     override fun onDestroy() {
         super.onDestroy()
+        // Service chet (nguoi dung tat quyen Accessibility, he thong don dep...) thi MOI hoat dong tu dong phai dung:
+        // hide() dung farm + tu hoc tag + vong refresh va go Hub noi (neu khong, isShown() van true va farm go lenh vao hu khong)
+        FarmOverlay.hide()
         hideOverlay()
         hidePicker()
         instance = null
@@ -223,6 +229,28 @@ class AutoAccessibilityService : AccessibilityService() {
         if (sent) Log.i(TAG, "Da thong bao huntbot sap ve (con ${info.huntbotSecondsLeft}s)")
     }
 
+    /**
+     * Lenh da xu ly (kem chu ky action+command_text va ket qua). Neu ack that bai (mat mang) thi lan poll sau bot van
+     * tra lai lenh do - khi do chi BAO LAI ket qua, KHONG go lai. Chu ky de phong bot reset bo dem id lam trung id.
+     * Chi giu trong bo nho (mat khi service khoi dong lai), toi da MAX_HANDLED lenh gan nhat.
+     */
+    private data class HandledCommand(val signature: String, val status: String)
+    private val handledCommands = LinkedHashMap<Int, HandledCommand>()
+
+    private fun commandSignature(action: String, commandText: String?): String = "$action|${commandText.orEmpty()}"
+
+    private suspend fun ackAndRemember(
+        apiUrl: String, token: String, id: Int, signature: String, status: String
+    ) {
+        handledCommands[id] = HandledCommand(signature, status)
+        while (handledCommands.size > MAX_HANDLED) {
+            handledCommands.remove(handledCommands.keys.first())
+        }
+        if (!OwoTrackerApi.ack(apiUrl, token, id, status)) {
+            Log.w(TAG, "Chua bao duoc ket qua lenh $id ($status) - se bao lai o lan poll sau")
+        }
+    }
+
     private suspend fun pollOwoTrackerOnce(apiUrl: String, token: String) {
         // App chi tu hanh dong khi Hub noi dang BAT. Hub tat -> khong dong vao lenh nao (lenh cua bot cu nam cho,
         // het han sau 10 phut)
@@ -243,15 +271,23 @@ class AutoAccessibilityService : AccessibilityService() {
         var first = true
         for (cmd in commands) {
             val commandText = cmd.params["command_text"]
-            if (commandText.isNullOrBlank()) {
-                Log.w(TAG, "Lenh '${cmd.action}' khong co command_text - bo qua")
-                OwoTrackerApi.ack(apiUrl, token, cmd.id, "failed")
+            val signature = commandSignature(cmd.action, commandText)
+            // Da xu ly roi (ack lan truoc bi loi mang) -> chi bao lai ket qua, khong go lai
+            val handled = handledCommands[cmd.id]
+            if (handled != null && handled.signature == signature) {
+                Log.i(TAG, "Lenh '${cmd.action}' (${cmd.id}) da xu ly truoc do - chi bao lai ket qua ${handled.status}")
+                OwoTrackerApi.ack(apiUrl, token, cmd.id, handled.status)
                 continue
             }
-            // Chi go lenh OwO hop le (owo ...). Bat ky noi dung khac tu server deu bi tu choi.
+            if (commandText.isNullOrBlank()) {
+                Log.w(TAG, "Lenh '${cmd.action}' khong co command_text - bo qua")
+                ackAndRemember(apiUrl, token, cmd.id, signature, "failed")
+                continue
+            }
+            // Chi go dung cac lenh OwO ma bot that su gui (danh sach cho phep o CommandGuard). Con lai bi tu choi.
             if (!CommandGuard.isSafeCommand(commandText)) {
                 Log.w(TAG, "Lenh '${cmd.action}' co command_text khong hop le - tu choi")
-                OwoTrackerApi.ack(apiUrl, token, cmd.id, "failed")
+                ackAndRemember(apiUrl, token, cmd.id, signature, "failed")
                 continue
             }
 
@@ -263,14 +299,20 @@ class AutoAccessibilityService : AccessibilityService() {
             // Lenh co "click_label" (vd quet danh sach vu khi nhieu trang): sau khi go lenh se BAM nut do nhieu lan.
             // Khong lam khi dang farm vi cac tin moi se day danh sach ra khoi man hinh.
             val clickLabel = cmd.params["click_label"]
+            // Chi cho bam dung nhan trong danh sach cho phep (hien chi "forward"), khong bam nut tuy y theo server
+            if (!clickLabel.isNullOrBlank() && !CommandGuard.isAllowedClickLabel(clickLabel)) {
+                Log.w(TAG, "Lenh '${cmd.action}' co click_label khong duoc phep - tu choi")
+                ackAndRemember(apiUrl, token, cmd.id, signature, "failed")
+                continue
+            }
             if (!clickLabel.isNullOrBlank() && FarmController.isRunning()) {
                 Log.w(TAG, "Lenh '${cmd.action}' can man hinh yen tinh nhung dang farm - bo qua")
-                OwoTrackerApi.ack(apiUrl, token, cmd.id, "failed")
+                ackAndRemember(apiUrl, token, cmd.id, signature, "failed")
                 continue
             }
 
             var result = try {
-                sender.send(commandText, settings, reopenChannel = first)
+                sender.send(commandText.trim(), settings, reopenChannel = first)
             } catch (e: Exception) {
                 Log.e(TAG, "Loi khi chay lenh '${cmd.action}': ${e.message}")
                 SendResult.SEND_FAILED
@@ -292,7 +334,7 @@ class AutoAccessibilityService : AccessibilityService() {
             }
             Log.d(TAG, "Lenh '${cmd.action}' (${cmd.id}) -> $result")
 
-            OwoTrackerApi.ack(apiUrl, token, cmd.id, if (result == SendResult.OK) "done" else "failed")
+            ackAndRemember(apiUrl, token, cmd.id, signature, if (result == SendResult.OK) "done" else "failed")
 
             if (result == SendResult.CAPTCHA) {
                 alertCaptcha()
