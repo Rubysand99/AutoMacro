@@ -12,7 +12,7 @@ repo Python/discord.py rieng) de tao 1 he thong tap trung: owo-tracker la
 dien thoai). Xem muc "Ket noi voi owo-tracker" ben duoi.
 
 ## v21 — 3 che do toc do farm: Nhanh / Thuong / Cham
-- `data/SpeedMode.kt` (thuan Kotlin, co test): moi muc co khoang nghi giua lenh, do dai vong (>=15,5s = cooldown OwO), tan suat + do dai nghi giai lao.
+- `data/SpeedMode.kt` (thuan Kotlin, co test): KHONG nghi giua lenh khac nhau (hunt->battle go luon; chi cooldown cung lenh hunt->hunt phai cho); moi muc co do dai vong (>=15,5s = cooldown OwO), tan suat + do dai nghi giai lao.
   Thuong = nhip cu. Gioi han burst (3 lenh/12s) va CommandGuard KHONG doi. `FarmState.speed`, luu o prefs "star_farm"/"speed_mode",
   `FarmController.setSpeed`. Vong farm doc `speed` moi vong nen doi giua chung co hieu luc ngay. UI: 3 nut o tab Setting cua Hub noi.
 - Nhanh = rui ro bi OwO nghi ngo cao hon (da ghi chu tren giao dien). CHUA BIEN DICH tren may.

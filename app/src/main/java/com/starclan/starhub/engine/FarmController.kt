@@ -1023,7 +1023,7 @@ object FarmController {
                     waitWithCountdown(minOf(4_000L * failsInRow, 30_000L), "Thử lại sau lỗi gõ lệnh")
                     continue
                 }
-                delay(Random.nextLong(sp.gapMinMs, sp.gapMaxMs))
+                // Khac lenh (hunt -> battle) thi go luon, khong nghi. Chi cooldown cua CHINH lenh do (hunt -> hunt) moi phai cho.
             } else {
                 update { it.copy(status = "Hunt tạm dừng — $pauseReason") }
             }
@@ -1071,7 +1071,6 @@ object FarmController {
                     break
                 }
                 update { it.copy(status = "Đang farm…") }
-                delay(Random.nextLong(sp.gapMinMs, sp.gapMaxMs))
             }
             val left = target - (System.currentTimeMillis() - cycleStart)
             if (left > 0) waitWithCountdown(left, "Chờ cooldown hunt/battle") else delay(800)
