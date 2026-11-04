@@ -235,9 +235,13 @@ class SettingsFragment : Fragment() {
         binding.tvServiceStatus.text = getString(
             if (enabled) R.string.status_service_enabled else R.string.status_service_disabled
         )
-        binding.tvServiceStatus.setTextColor(
-            requireContext().getColor(if (enabled) R.color.hub_ok else R.color.hub_bad)
-        )
+        // Huy hieu: xanh nhat khi bat, do nhat khi chua bat (luon kem chu)
+        val ctx = requireContext()
+        binding.tvServiceStatus.setTextColor(ctx.getColor(if (enabled) R.color.ok else R.color.bad))
+        val badge = android.graphics.drawable.GradientDrawable()
+        badge.cornerRadius = 10f * resources.displayMetrics.density
+        badge.setColor(ctx.getColor(if (enabled) R.color.ok_tint else R.color.bad_tint))
+        binding.tvServiceStatus.background = badge
     }
 
     private fun isAccessibilityServiceEnabled(): Boolean {

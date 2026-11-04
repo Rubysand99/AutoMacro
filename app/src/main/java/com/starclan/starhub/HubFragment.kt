@@ -137,11 +137,10 @@ class HubFragment : Fragment() {
     private fun setupCard(key: String, ui: ItemHubCardBinding, titleRes: Int, accentRes: Int): Card {
         val accentColor = requireContext().getColor(accentRes)
         ui.tvCardTitle.setText(titleRes)
-        ui.vAccent.setBackgroundColor(accentColor)
-        ui.flCardIconBg.background = circleDrawable(withAlpha(accentColor, 40))
+        ui.flCardIconBg.background = roundDrawable(withAlpha(accentColor, 40), 10)
         ui.ivCardIcon.bind(viewLifecycleOwner.lifecycleScope, IconSpec(unicode = "•"))
         ui.tvCardSummary.text = ""
-        ui.tvCardArrow.text = if (key in expanded) ARROW_OPEN else ARROW_CLOSED
+        setArrow(ui, key in expanded)
         ui.root.setOnClickListener {
             if (!expanded.add(key)) expanded.remove(key)
             rerenderCard(key)
@@ -236,14 +235,14 @@ class HubFragment : Fragment() {
     /** Ve dong tom tat + icon tieu de + noi dung (neu dang mo) cua 1 the. */
     private fun renderCard(card: Card, h: HubResponse) {
         val error = h.sectionErrors?.get(card.key)
-        val line = if (error != null) LineState("⚠️ Không đọc được mục này", Tone.BAD) else summaryOf(card.key, h)
+        val line = if (error != null) LineState("Không đọc được mục này", Tone.BAD) else summaryOf(card.key, h)
         val ui = card.ui
         ui.tvCardSummary.text = line.text
         ui.tvCardSummary.setTextColor(toneColor(line.tone))
         ui.ivCardIcon.bind(viewLifecycleOwner.lifecycleScope, if (error != null) IconSpec(unicode = "⚠️") else cardIconFor(card.key, h))
 
         val open = card.key in expanded
-        ui.tvCardArrow.text = if (open) ARROW_OPEN else ARROW_CLOSED
+        setArrow(ui, open)
         ui.llCardBody.removeAllViews()
         ui.llCardBody.visibility = if (open) View.VISIBLE else View.GONE
         if (open) {
@@ -357,7 +356,7 @@ class HubFragment : Fragment() {
         }
         for ((i, e) in equipped.withIndex()) {
             val p = HubFormat.pct(e.percent)
-            val warn = if (p <= 15) "  ⚠️ sắp hết" else ""
+            val warn = if (p <= 15) "  · sắp hết" else ""
             val icon = iconOf(e.emojiId, e.emojiAnimated, e.emoji, e.tier)
             val color = toneColor(HubSummary.gemTone(p))
             addIconTextRow(body, icon, "${HubFormat.gemType(e.slot)} · ${e.tier ?: "?"}$warn",
@@ -392,7 +391,7 @@ class HubFragment : Fragment() {
             val pct = if (qi.current != null && qi.max != null && qi.max > 0)
                 (qi.current * 100 / qi.max).toInt().coerceIn(0, 100) else null
             val progressText = if (pct != null) "${HubFormat.num(qi.current)}/${HubFormat.num(qi.max)} ($pct%)" else null
-            addIconTextRow(body, icon, "${if (done) "✅ " else ""}${qi.index ?: "?"}. ${qi.title ?: "?"}", progressText,
+            addIconTextRow(body, icon, "${if (done) "Xong · " else ""}${qi.index ?: "?"}. ${qi.title ?: "?"}", progressText,
                 ringPercent = pct, ringColor = toneColor(if (done) Tone.OK else Tone.INFO), topDp = if (i == 0) 0 else 18)
             if (!qi.description.isNullOrBlank()) addText(body, qi.description, sizeSp = 13f, dim = true, topDp = 4)
             addRewardsRow(body, qi.rewards.orEmpty(), topDp = 6)
@@ -477,11 +476,9 @@ class HubFragment : Fragment() {
         tile.root.tag = applied
 
         val color = toneColor(state.tone)
-        tile.tvTileValue.setTextColor(color)
-        tile.root.strokeColor = color
-        tile.flTileIconBg.background = circleDrawable(withAlpha(color, 32))
-        tile.rvTileRing.ringColor = color
-        tile.rvTileRing.percent = state.ringPercent ?: 0
+        // So lon luon trang; mau trang thai chi o dong phu + o icon (vien the trung tinh)
+        tile.tvTileSub.setTextColor(color)
+        tile.flTileIconBg.background = roundDrawable(withAlpha(color, 36), 10)
         tile.ivTileIcon.bind(viewLifecycleOwner.lifecycleScope, state.icon, unicodeSp = 16f, letterSp = 12f)
     }
 
@@ -504,12 +501,19 @@ class HubFragment : Fragment() {
 
     private fun withAlpha(color: Int, alpha: Int): Int = (color and 0x00FFFFFF) or (alpha.coerceIn(0, 255) shl 24)
 
-    private fun circleDrawable(color: Int): GradientDrawable {
+    private fun roundDrawable(color: Int, radiusDp: Int): GradientDrawable {
         val d = GradientDrawable()
-        d.shape = GradientDrawable.OVAL
+        d.cornerRadius = dp(radiusDp).toFloat()
         d.setColor(color)
         return d
     }
+
+    private fun setArrow(ui: ItemHubCardBinding, open: Boolean) {
+        ui.ivCardArrow.setImageResource(if (open) R.drawable.ic_chevron_up else R.drawable.ic_chevron_down)
+    }
+
+    private fun primaryText(): Int = requireContext().getColor(R.color.text_primary)
+    private fun secondaryText(): Int = requireContext().getColor(R.color.text_secondary)
 
     // ------------------------------------------------------------------
     // Ham dung view nho (dung trong noi dung the chi tiet)
@@ -535,16 +539,17 @@ class HubFragment : Fragment() {
             chip.text = label
             chip.textSize = 13f
             chip.gravity = Gravity.CENTER
+            chip.minHeight = dp(36)
             chip.setPadding(dp(12), dp(7), dp(12), dp(7))
             if (on) {
-                chip.setTextColor(android.graphics.Color.WHITE)
+                chip.setTextColor(violet)
                 chip.setTypeface(chip.typeface, android.graphics.Typeface.BOLD)
             } else {
-                chip.setTextColor(binding.tvHubStatus.textColors)
+                chip.setTextColor(secondaryText())
             }
             val bg = GradientDrawable()
             bg.cornerRadius = dp(16).toFloat()
-            bg.setColor(if (on) violet else android.graphics.Color.TRANSPARENT)
+            bg.setColor(if (on) ctx.getColor(R.color.selected_tint) else android.graphics.Color.TRANSPARENT)
             bg.setStroke(dp(1), if (on) violet else border)
             chip.background = bg
             chip.setOnClickListener {
@@ -564,15 +569,14 @@ class HubFragment : Fragment() {
     }
 
     private fun addText(
-        parent: LinearLayout, text: CharSequence, sizeSp: Float = 15f,
+        parent: LinearLayout, text: CharSequence, sizeSp: Float = 13f,
         bold: Boolean = false, dim: Boolean = false, topDp: Int = 0
     ): TextView {
         val tv = TextView(requireContext())
         tv.text = text
         tv.textSize = sizeSp
-        tv.setTextColor(binding.tvHubStatus.textColors)
+        tv.setTextColor(if (dim) secondaryText() else primaryText())
         if (bold) tv.setTypeface(tv.typeface, android.graphics.Typeface.BOLD)
-        if (dim) tv.alpha = 0.75f
         tv.setLineSpacing(0f, 1.15f)
         val lp = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
         lp.topMargin = dp(topDp)
@@ -616,15 +620,15 @@ class HubFragment : Fragment() {
         col.orientation = LinearLayout.VERTICAL
         val tvTitle = TextView(requireContext())
         tvTitle.text = title
-        tvTitle.textSize = 15f
-        tvTitle.setTextColor(binding.tvHubStatus.textColors)
+        tvTitle.textSize = 13f
+        tvTitle.setTextColor(primaryText())
         col.addView(tvTitle)
         if (!subtitle.isNullOrEmpty()) {
             val tvSub = TextView(requireContext())
             tvSub.text = subtitle
             tvSub.textSize = 13f
-            tvSub.alpha = 0.75f
-            tvSub.setTextColor(binding.tvHubStatus.textColors)
+            tvSub.textSize = 11.5f
+            tvSub.setTextColor(secondaryText())
             col.addView(tvSub)
         }
         val colLp = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
@@ -653,7 +657,7 @@ class HubFragment : Fragment() {
             tv.text = "+${HubFormat.num(r.amount)}"
             tv.textSize = 13f
             tv.alpha = 0.85f
-            tv.setTextColor(binding.tvHubStatus.textColors)
+            tv.setTextColor(primaryText())
             val tvLp = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
             tvLp.marginStart = dp(4)
             row.addView(tv, tvLp)
@@ -665,8 +669,6 @@ class HubFragment : Fragment() {
 
     companion object {
         private const val REFRESH_INTERVAL_MS = 30_000L
-        private const val ARROW_OPEN = "▾"
-        private const val ARROW_CLOSED = "▸"
         private const val KEY_GEMS = "gems"
         private const val KEY_QUEST = "quest"
         private const val KEY_TEAM = "team"

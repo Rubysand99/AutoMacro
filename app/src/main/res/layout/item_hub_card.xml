@@ -1,98 +1,84 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- The chi tiet: gon, bo goc 16, khong con vach mau day ben trai; mui ten la icon chevron -->
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    style="@style/Widget.AutoMacro.Card"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="5dp"
+    android:layout_margin="4dp"
     android:clickable="true"
     android:focusable="true"
-    android:foreground="?attr/selectableItemBackground"
-    app:cardCornerRadius="14dp"
-    app:cardElevation="0dp"
-    app:strokeColor="@color/border_subtle"
-    app:strokeWidth="1dp">
+    android:foreground="?attr/selectableItemBackground">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
-
-        <View
-            android:id="@+id/vAccent"
-            android:layout_width="6dp"
-            android:layout_height="match_parent" />
+        android:orientation="vertical"
+        android:padding="14dp">
 
         <LinearLayout
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:padding="14dp">
+            android:gravity="center_vertical"
+            android:minHeight="32dp"
+            android:orientation="horizontal">
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
+            <FrameLayout
+                android:id="@+id/flCardIconBg"
+                android:layout_width="32dp"
+                android:layout_height="32dp">
 
-                <FrameLayout
-                    android:id="@+id/flCardIconBg"
-                    android:layout_width="30dp"
-                    android:layout_height="30dp">
-
-                    <com.starclan.starhub.view.IconView
-                        android:id="@+id/ivCardIcon"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:layout_margin="4dp" />
-                </FrameLayout>
-
-                <TextView
-                    android:id="@+id/tvCardTitle"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:layout_weight="1"
-                    android:textSize="17sp"
-                    android:textStyle="bold"
-                    tools:text="Gem" />
-
-                <TextView
-                    android:id="@+id/tvCardAge"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:alpha="0.7"
-                    android:textSize="12sp"
-                    tools:text="10 phút trước" />
-
-                <TextView
-                    android:id="@+id/tvCardArrow"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="10dp"
-                    android:alpha="0.7"
-                    android:textSize="16sp"
-                    tools:text="▸" />
-
-            </LinearLayout>
+                <com.starclan.starhub.view.IconView
+                    android:id="@+id/ivCardIcon"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_margin="5dp" />
+            </FrameLayout>
 
             <TextView
-                android:id="@+id/tvCardSummary"
-                android:layout_width="match_parent"
+                android:id="@+id/tvCardTitle"
+                style="@style/TextAppearance.StarHub.CardTitle"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:textSize="15sp"
-                tools:text="2 gem đang dùng · thấp nhất 63%" />
+                android:layout_marginStart="10dp"
+                android:layout_weight="1"
+                tools:text="Gem" />
 
-            <LinearLayout
-                android:id="@+id/llCardBody"
-                android:layout_width="match_parent"
+            <TextView
+                android:id="@+id/tvCardAge"
+                style="@style/TextAppearance.StarHub.Caption"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:orientation="vertical"
-                android:visibility="gone" />
+                android:textColor="@color/text_muted"
+                tools:text="10 phút trước" />
+
+            <ImageView
+                android:id="@+id/ivCardArrow"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_marginStart="6dp"
+                android:importantForAccessibility="no"
+                android:src="@drawable/ic_chevron_down"
+                app:tint="@color/text_muted"
+                xmlns:app="http://schemas.android.com/apk/res-auto" />
 
         </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvCardSummary"
+            style="@style/TextAppearance.StarHub.Body"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            tools:text="2 gem đang dùng · thấp nhất 63%" />
+
+        <LinearLayout
+            android:id="@+id/llCardBody"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:orientation="vertical"
+            android:visibility="gone" />
+
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

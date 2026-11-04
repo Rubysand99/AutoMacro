@@ -22,7 +22,9 @@ dien thoai). Xem muc "Ket noi voi owo-tracker" ben duoi.
 - Dot 2 (xong): FarmOverlay dung UiTheme; tab co icon (ic_bolt/ic_sliders/ic_grid/ic_star), nut theo `Btn` (PRIMARY vang/DANGER/ACTIVE/SECONDARY) qua `styleBtn`,
   o so lon Hunt/Battle (tab Farm), thanh do ben gem 4dp, vong % Huntbot (RingView), thong ke 3 so lon + `DayBarsView` 7 ngay,
   bong bong 3 trang thai (vang / tim khi cho / do khi captcha). Row co `build` de chen view tuy y. Icon cho overlay KHONG duoc dung ?attr/theme (Service khong co theme).
-- Dot 3 (chua lam): man hinh Hub + Cai dat cua app. CHUA BIEN DICH tren may.
+- Dot 3 (xong): man Hub (thanh tren "Star Hub" + dong trang thai + nut lam moi icon; o tom tat vien trung tinh, so 26 trang, dong phu mang mau trang thai,
+  o icon nen nhat bo goc 10; the chi tiet khong con vach mau, chevron icon), man Cai dat (4 the: Quyen truy cap voi huy hieu, Ket noi owo-tracker voi Switch,
+  Hub noi & farm, Tier gem; 1 nut vang Luu o cuoi). Da bo emoji trong strings.xml (icon that do IconView/Vector). CHUA BIEN DICH tren may.
 
 ## v19 — Siet an toan lenh tu server sau ra soat bao mat (3/11/2026)
 - `CommandGuard.isSafeCommand` doi tu "bat dau bang `owo `" sang DANH SACH CHO PHEP theo dong tu: `owo hb [<so>[h|m|d] [<ma>]]`,

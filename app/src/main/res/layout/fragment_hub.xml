@@ -1,35 +1,53 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/bg_app_root"
     android:orientation="vertical">
 
+    <!-- Thanh tren: ten app + dong trang thai ket noi + nut lam moi (icon) -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingStart="16dp"
-        android:paddingTop="10dp"
-        android:paddingEnd="8dp">
+        android:paddingTop="12dp"
+        android:paddingEnd="8dp"
+        android:paddingBottom="4dp">
 
-        <TextView
-            android:id="@+id/tvHubStatus"
+        <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:alpha="0.75"
-            android:textSize="13sp"
-            tools:text="Cập nhật lúc 22:45:48 · tự làm mới mỗi 30 giây" />
+            android:orientation="vertical">
 
-        <com.google.android.material.button.MaterialButton
+            <TextView
+                style="@style/TextAppearance.StarHub.Title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Star Hub" />
+
+            <TextView
+                android:id="@+id/tvHubStatus"
+                style="@style/TextAppearance.StarHub.Caption"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:textColor="@color/text_muted"
+                tools:text="Cập nhật lúc 22:45:48 · tự làm mới mỗi 30 giây" />
+        </LinearLayout>
+
+        <ImageButton
             android:id="@+id/btnHubRefresh"
-            style="@style/Widget.MaterialComponents.Button.TextButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/hub_refresh" />
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/hub_refresh"
+            android:src="@drawable/ic_refresh"
+            app:tint="@color/text_secondary" />
 
     </LinearLayout>
 
@@ -43,8 +61,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingStart="7dp"
-            android:paddingEnd="7dp"
+            android:paddingStart="11dp"
+            android:paddingEnd="11dp"
             android:paddingBottom="16dp">
 
             <!-- 6 o tom tat: nhin la biet, khong can mo gi -->

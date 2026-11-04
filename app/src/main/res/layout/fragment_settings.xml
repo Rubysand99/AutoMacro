@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Cai dat: moi nhom la 1 the (Quyen truy cap / Ket noi / Hub noi & farm / Tier gem), 1 nut vang "Luu" duy nhat o cuoi -->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -13,75 +14,83 @@
         android:padding="16dp">
 
         <TextView
+            style="@style/TextAppearance.StarHub.Title"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="14dp"
-            android:text="@string/tab_settings"
-            android:textAppearance="@style/TextAppearance.AutoMacro.SectionTitle" />
+            android:text="@string/tab_settings" />
 
-        <!-- Khoi 1: Quyen truy cap -->
         <com.google.android.material.card.MaterialCardView
             style="@style/Widget.AutoMacro.Card"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:layout_marginTop="0dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="14dp">
 
-                <TextView
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:fontFamily="sans-serif-medium"
-                    android:text="@string/section_accessibility"
-                    android:textSize="16sp" />
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
 
-                <TextView
-                    android:id="@+id/tvServiceStatus"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:layout_marginBottom="12dp"
-                    android:textSize="15sp"
-                    tools:text="✅ Đã bật" />
+                    <TextView
+                        style="@style/TextAppearance.StarHub.CardTitle"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/section_accessibility" />
+
+                    <TextView
+                        android:id="@+id/tvServiceStatus"
+                        style="@style/TextAppearance.StarHub.Caption"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:paddingStart="10dp"
+                        android:paddingTop="4dp"
+                        android:paddingEnd="10dp"
+                        android:paddingBottom="4dp"
+                        android:textStyle="bold"
+                        tools:text="Quyền Accessibility đã bật" />
+                </LinearLayout>
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnOpenAccessibilitySettings"
                     style="@style/Widget.AutoMacro.Button.Outlined"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
                     android:text="@string/btn_open_accessibility_settings" />
-
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
-
-        <!-- Khoi 2: Ket noi owo-tracker -->
         <com.google.android.material.card.MaterialCardView
             style="@style/Widget.AutoMacro.Card"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="14dp">
+            android:layout_marginTop="12dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="14dp">
 
                 <TextView
+                    style="@style/TextAppearance.StarHub.CardTitle"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:fontFamily="sans-serif-medium"
-                    android:text="@string/title_owo_tracker_settings"
-                    android:textSize="16sp" />
+                    android:text="@string/title_owo_tracker_settings" />
 
                 <com.google.android.material.textfield.TextInputLayout
                     style="@style/Widget.AutoMacro.TextInputLayout"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
+                    android:layout_marginTop="12dp"
                     android:hint="@string/label_owo_api_url">
 
                     <com.google.android.material.textfield.TextInputEditText
@@ -95,7 +104,7 @@
                     style="@style/Widget.AutoMacro.TextInputLayout"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
+                    android:layout_marginTop="10dp"
                     android:hint="@string/label_owo_api_token"
                     app:endIconMode="password_toggle">
 
@@ -106,18 +115,11 @@
                         android:inputType="textPassword" />
                 </com.google.android.material.textfield.TextInputLayout>
 
-                <com.google.android.material.checkbox.MaterialCheckBox
-                    android:id="@+id/cbOwoSyncEnabled"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:text="@string/label_owo_sync_enabled" />
-
                 <com.google.android.material.textfield.TextInputLayout
                     style="@style/Widget.AutoMacro.TextInputLayout"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
+                    android:layout_marginTop="10dp"
                     android:hint="@string/label_discord_link">
 
                     <com.google.android.material.textfield.TextInputEditText
@@ -128,108 +130,30 @@
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <TextView
+                    style="@style/TextAppearance.StarHub.Caption"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
-                    android:alpha="0.7"
-                    android:text="@string/note_discord_link"
-                    android:textSize="11sp" />
+                    android:text="@string/note_discord_link" />
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnTestOpenDiscord"
-                    style="@style/Widget.AutoMacro.Button.Outlined"
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/cbOwoSyncEnabled"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="10dp"
-                    android:text="@string/btn_test_open_discord" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnToggleHub"
-                    style="@style/Widget.AutoMacro.Button.Outlined"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="@string/btn_toggle_hub" />
+                    android:minHeight="44dp"
+                    android:text="@string/label_owo_sync_enabled"
+                    android:textColor="@color/text_primary"
+                    android:textSize="13sp" />
 
                 <TextView
+                    style="@style/TextAppearance.StarHub.Caption"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:text="@string/note_toggle_hub"
-                    android:textSize="11sp" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnBatterySettings"
-                    style="@style/Widget.AutoMacro.Button.Outlined"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="@string/btn_battery_settings" />
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:text="@string/note_battery_settings"
-                    android:textSize="11sp" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnDumpScreen"
-                    style="@style/Widget.AutoMacro.Button.Outlined"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="@string/btn_dump_screen" />
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:text="@string/note_dump_screen"
-                    android:textSize="11sp" />
-
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:layout_marginTop="16dp"
-                    android:layout_marginBottom="14dp"
-                    android:background="@color/border_subtle" />
-
-                <TextView
-                    android:id="@+id/tvDiscordTargetsStatus"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:textSize="13sp"
-                    tools:text="Vị trí Discord: chưa cài đặt" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnSetupDiscordTargets"
-                    style="@style/Widget.AutoMacro.Button.Outlined"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:text="@string/btn_setup_discord_targets" />
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:alpha="0.7"
-                    android:text="@string/note_owo_sync"
-                    android:textSize="11sp" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnSaveOwoSettings"
-                    style="@style/Widget.AutoMacro.Button.Tonal"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="18dp"
-                    android:text="@string/btn_save" />
-
+                    android:layout_marginTop="2dp"
+                    android:text="@string/note_owo_sync" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
-
-        <!-- Khoi 3: Tier gem khi thay -->
         <com.google.android.material.card.MaterialCardView
             style="@style/Widget.AutoMacro.Card"
             android:layout_width="match_parent"
@@ -240,43 +164,141 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="14dp">
 
                 <TextView
+                    style="@style/TextAppearance.StarHub.CardTitle"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:fontFamily="sans-serif-medium"
-                    android:text="@string/section_gem_tier"
-                    android:textSize="16sp" />
+                    android:text="@string/title_hub_farm" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnToggleHub"
+                    style="@style/Widget.AutoMacro.Button.Outlined"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="@string/btn_toggle_hub" />
 
                 <TextView
+                    style="@style/TextAppearance.StarHub.Caption"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="@string/note_toggle_hub" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnTestOpenDiscord"
+                    style="@style/Widget.AutoMacro.Button.Outlined"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:text="@string/btn_test_open_discord" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnBatterySettings"
+                    style="@style/Widget.AutoMacro.Button.Outlined"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:text="@string/btn_battery_settings" />
+
+                <TextView
+                    style="@style/TextAppearance.StarHub.Caption"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="@string/note_battery_settings" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnDumpScreen"
+                    style="@style/Widget.AutoMacro.Button.Outlined"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:text="@string/btn_dump_screen" />
+
+                <TextView
+                    style="@style/TextAppearance.StarHub.Caption"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="@string/note_dump_screen" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginTop="14dp"
+                    android:layout_marginBottom="12dp"
+                    android:background="@color/line" />
+
+                <TextView
+                    android:id="@+id/tvDiscordTargetsStatus"
+                    style="@style/TextAppearance.StarHub.Body"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    tools:text="Vị trí Discord: chưa cài đặt" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSetupDiscordTargets"
+                    style="@style/Widget.AutoMacro.Button.Outlined"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:text="@string/btn_setup_discord_targets" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+        <com.google.android.material.card.MaterialCardView
+            style="@style/Widget.AutoMacro.Card"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="14dp">
+
+                <TextView
+                    style="@style/TextAppearance.StarHub.CardTitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/section_gem_tier" />
+
+                <TextView
+                    style="@style/TextAppearance.StarHub.Caption"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
-                    android:layout_marginBottom="12dp"
-                    android:alpha="0.75"
-                    android:text="@string/note_gem_tier"
-                    android:textSize="13sp" />
+                    android:text="@string/note_gem_tier" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnGemTier"
                     style="@style/Widget.AutoMacro.Button.Outlined"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
                     android:text="@string/btn_gem_tier" />
-
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnSaveOwoSettings"
+            style="@style/Widget.AutoMacro.Button.Tonal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="@string/btn_save" />
+
         <TextView
             android:id="@+id/tvAppVersion"
+            style="@style/TextAppearance.StarHub.Caption"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="14dp"
-            android:alpha="0.6"
             android:gravity="center"
-            android:textSize="12sp"
-            tools:text="Star Hub 1.12" />
+            tools:text="Star Hub v1.8" />
 
     </LinearLayout>
 </ScrollView>

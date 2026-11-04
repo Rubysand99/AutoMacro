@@ -1,23 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- O tom tat: vien trung tinh (khong to vien theo mau trang thai), o icon nen nhat theo trang thai, so lon 26 dam trang, dong phu mang mau trang thai -->
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    style="@style/Widget.AutoMacro.Card"
     android:layout_width="0dp"
     android:layout_height="wrap_content"
-    android:layout_margin="5dp"
-    android:layout_weight="1"
-    app:cardCornerRadius="16dp"
-    app:cardElevation="0dp"
-    app:strokeColor="@color/hub_idle"
-    app:strokeWidth="2dp">
+    android:layout_margin="4dp"
+    android:layout_weight="1">
 
     <LinearLayout
         android:id="@+id/llTileContent"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:minHeight="108dp"
+        android:minHeight="104dp"
         android:orientation="vertical"
-        android:padding="12dp">
+        android:padding="14dp">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -27,13 +24,8 @@
 
             <FrameLayout
                 android:id="@+id/flTileIconBg"
-                android:layout_width="38dp"
-                android:layout_height="38dp">
-
-                <com.starclan.starhub.view.RingView
-                    android:id="@+id/rvTileRing"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent" />
+                android:layout_width="34dp"
+                android:layout_height="34dp">
 
                 <com.starclan.starhub.view.IconView
                     android:id="@+id/ivTileIcon"
@@ -44,39 +36,37 @@
 
             <TextView
                 android:id="@+id/tvTileLabel"
+                style="@style/TextAppearance.StarHub.Body"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
                 android:layout_weight="1"
-                android:alpha="0.75"
-                android:textSize="13sp"
-                android:textStyle="bold"
+                android:textColor="@color/text_secondary"
                 tools:text="Daily" />
 
         </LinearLayout>
 
         <TextView
             android:id="@+id/tvTileValue"
+            style="@style/TextAppearance.StarHub.Number"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
+            android:layout_marginTop="10dp"
             android:autoSizeMaxTextSize="26sp"
             android:autoSizeMinTextSize="15sp"
             android:autoSizeStepGranularity="1sp"
             android:autoSizeTextType="uniform"
-            android:fontFamily="sans-serif-black"
             android:maxLines="1"
             tools:text="3g 11p" />
 
         <TextView
             android:id="@+id/tvTileSub"
+            style="@style/TextAppearance.StarHub.Caption"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="2dp"
-            android:alpha="0.75"
             android:maxLines="2"
-            android:textSize="13sp"
-            tools:text="🔥 337 · +5,000" />
+            tools:text="337 · +5,000" />
 
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>
