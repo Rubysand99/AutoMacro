@@ -11,6 +11,12 @@ repo Python/discord.py rieng) de tao 1 he thong tap trung: owo-tracker la
 "bo nao" (biet luc nao can lam gi), AutoMacro la "tay chan" (thuc thi tren
 dien thoai). Xem muc "Ket noi voi owo-tracker" ben duoi.
 
+## v21 — 3 che do toc do farm: Nhanh / Thuong / Cham
+- `data/SpeedMode.kt` (thuan Kotlin, co test): moi muc co khoang nghi giua lenh, do dai vong (>=15,5s = cooldown OwO), tan suat + do dai nghi giai lao.
+  Thuong = nhip cu. Gioi han burst (3 lenh/12s) va CommandGuard KHONG doi. `FarmState.speed`, luu o prefs "star_farm"/"speed_mode",
+  `FarmController.setSpeed`. Vong farm doc `speed` moi vong nen doi giua chung co hieu luc ngay. UI: 3 nut o tab Setting cua Hub noi.
+- Nhanh = rui ro bi OwO nghi ngo cao hon (da ghi chu tren giao dien). CHUA BIEN DICH tren may.
+
 ## v20 — Giao dien moi: toi, gon, kieu dashboard (4/11/2026) — DOT 1/3: he mau + style chung
 - Chi con giao dien TOI (da xoa values-night/drawable-night/color-night). Token mau o `res/values/colors.xml`;
   ban sao cho code ve tay o `view/UiTheme.kt`; `UiThemeColorsTest` doi chieu 2 noi + kiem tra tuong phan WCAG 4.5:1. Doi mau thi sua CA HAI.

@@ -18,6 +18,7 @@ import android.widget.ScrollView
 import android.widget.TextView
 import com.starclan.starhub.R
 import com.starclan.starhub.data.HubFormat
+import com.starclan.starhub.data.SpeedMode
 import com.starclan.starhub.data.StatsFormat
 import com.starclan.starhub.engine.FarmController
 import com.starclan.starhub.engine.FarmState
@@ -132,6 +133,7 @@ object FarmOverlay {
 
     private val tabButtons = mutableListOf<TextView>()
     private val tabContainers = mutableListOf<LinearLayout>()
+    private val speedButtons = mutableListOf<TextView>()
     private var currentTab = TAB_FARM
     private var autoCollapse = true
 
@@ -180,6 +182,7 @@ object FarmOverlay {
         groups.clear()
         tabButtons.clear()
         tabContainers.clear()
+        speedButtons.clear()
         btnAuto = null
         tvHuntBig = null
         tvBattleBig = null
@@ -685,6 +688,21 @@ object FarmOverlay {
         addGroupTo(TAB_FARM, "gem", "Gem", R.drawable.ic_gem)
         addGroupTo(TAB_FARM, "hb", "Huntbot", R.drawable.ic_huntbot)
         // Setting: cac cai dat cua Hub noi
+        // Toc do farm: 3 nut Nhanh / Thuong / Cham (nut dang chon to tim); doi la co hieu luc o vong ke tiep
+        val speedRow = LinearLayout(service)
+        speedRow.orientation = LinearLayout.HORIZONTAL
+        speedButtons.clear()
+        for ((i, m) in SpeedMode.values().withIndex()) {
+            val b = pill(service, m.label, Btn.SECONDARY, 13f)
+            b.setOnClickListener { FarmController.setSpeed(service.applicationContext, m) }
+            speedButtons.add(b)
+            speedRow.addView(b, lparams(0, LinearLayout.LayoutParams.WRAP_CONTENT, weight = 1f).also {
+                it.setMargins(if (i == 0) 0 else dp(3), 0, if (i == SpeedMode.values().size - 1) 0 else dp(3), 0)
+            })
+        }
+        addTo(TAB_SETTING, caption(service, "Tốc độ farm"))
+        addTo(TAB_SETTING, speedRow)
+        addTo(TAB_SETTING, caption(service, "Nhanh: nhiều lệnh hơn nhưng dễ bị OwO nghi ngờ hơn. Chậm: an toàn hơn. Có hiệu lực từ vòng kế tiếp.", C_MUTED))
         addTo(TAB_SETTING, modeBtn)
         addTo(TAB_SETTING, autoBtn)
         addTo(TAB_SETTING, clearStatsBtn)
@@ -997,6 +1015,9 @@ object FarmOverlay {
             else -> "không dừng"
         }
         btnMode?.text = "Hunt mode ${st.huntMode} · $modeShort"
+        for ((i, m) in SpeedMode.values().withIndex()) {
+            styleBtn(speedButtons.getOrNull(i), if (st.speed == m) Btn.ACTIVE else Btn.SECONDARY)
+        }
         setBtnState(btnToggle, if (st.running) "Dừng" else "Bắt đầu", if (st.running) Btn.DANGER else Btn.PRIMARY, if (st.running) R.drawable.ic_stop else R.drawable.ic_play)
         btnMute?.visibility = if (st.ringing) View.VISIBLE else View.GONE
         val eventOn = hub?.eventMode == true

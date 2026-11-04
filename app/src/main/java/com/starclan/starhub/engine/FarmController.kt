@@ -9,6 +9,7 @@ import com.starclan.starhub.data.HubResponse
 import com.starclan.starhub.data.HubResult
 import com.starclan.starhub.data.OwoTrackerApi
 import com.starclan.starhub.data.OwoTrackerPrefs
+import com.starclan.starhub.data.SpeedMode
 import com.starclan.starhub.data.StatsBook
 import com.starclan.starhub.service.AutoAccessibilityService
 import kotlinx.coroutines.CancellationException
@@ -48,6 +49,8 @@ data class FarmState(
     val resting: Boolean = false,
     /** Che do hunt: 1 = dung khi du lootbox hang ngay, 2 = dung khi thieu gem, 3 = khong dung */
     val huntMode: Int = 3,
+    /** Toc do farm: Nhanh / Thuong / Cham (doi nhip go lenh, xem SpeedMode) */
+    val speed: SpeedMode = SpeedMode.NORMAL,
     /** Ly do hunt dang tam dung (null = dang hunt binh thuong) */
     val huntPaused: String? = null,
     /** Dang CHO (nghi, gian nhip, doi cooldown...): gio het cho (epoch ms, 0 = khong cho), tong thoi gian cho, ly do.
@@ -83,11 +86,7 @@ object FarmController {
     // Nhip go lenh
     private const val BURST_MAX = 3                   // toi da 3 lenh trong BURST_WINDOW_MS (OwO bao "Slow down" khi go qua day)
     private const val BURST_WINDOW_MS = 12_000L
-    private const val GAP_MIN_MS = 1_200L         // nghi giua cac lenh lien tiep
-    private const val GAP_MAX_MS = 2_800L
     // 1 vong (hunt + battle). OwO bat cooldown 15 giay moi lenh, nen vong ngan nhat 16.5 giay la sat nhat co the.
-    private const val CYCLE_MIN_MS = 16_500L
-    private const val CYCLE_MAX_MS = 21_000L
     private const val TEAM_REFRESH_GAP_MS = 30 * 60_000L          // owo team: cap nhat doi hinh cho ,teamcheck cua bot
     private const val WEAPON_DETAIL_GAP_MS = 6 * 60 * 60_000L     // owo weapon <ID> cua pet trong doi: it thay doi
     /** ID vu khi lay tu JSON cua bot roi ghep vao lenh `owo weapon <ID>`: chi nhan dang ID that, khong tin tuyet doi vao server */
@@ -96,10 +95,6 @@ object FarmController {
     private const val FILLER_MIN_REMAINING_MS = 8_000L   // con it nhat chung nay trong vong thi moi chen them 1 lenh kiem tra
 
     // Nghi giai lao ngan: sau 45-80 vong nghi 1.5 - 4 phut
-    private const val REST_EVERY_MIN = 45
-    private const val REST_EVERY_MAX = 80
-    private const val REST_MIN_MS = 90_000L
-    private const val REST_MAX_MS = 240_000L
 
     // Nghi theo phien: chay 90-150 phut roi nghi 15-45 phut
     private const val SESSION_MIN_MS = 90 * 60_000L
@@ -122,6 +117,7 @@ object FarmController {
     // Che do hunt (Ruby chon tren Hub noi, luu lai cho lan sau)
     private const val PREFS_NAME = "star_farm"
     private const val KEY_HUNT_MODE = "hunt_mode"
+    private const val KEY_SPEED_MODE = "speed_mode"
     private val REQUIRED_GEM_SLOTS = setOf("1", "3", "4")   // 3 slot gem thuong ngay
 
     // Huntbot: app chi NHAN thanh qua (owo hb) khi da xong. App KHONG tu chay lai huntbot vi
@@ -561,7 +557,14 @@ object FarmController {
     /** Doc che do hunt da luu (mac dinh 3 = khong dung) va dua vao trang thai */
     fun loadHuntMode(context: Context) {
         val mode = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getInt(KEY_HUNT_MODE, 3)
-        update { it.copy(huntMode = if (mode in 1..3) mode else 3) }
+        val speed = SpeedMode.fromId(context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getInt(KEY_SPEED_MODE, SpeedMode.NORMAL.id))
+        update { it.copy(huntMode = if (mode in 1..3) mode else 3, speed = speed) }
+    }
+
+    /** Doi toc do farm (co hieu luc ngay o vong ke tiep, ke ca khi dang chay) va nho cho lan sau */
+    fun setSpeed(context: Context, speed: SpeedMode) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit().putInt(KEY_SPEED_MODE, speed.id).apply()
+        update { it.copy(speed = speed) }
     }
 
     /** Bam nut tren Hub noi: doi qua lai che do 1 -> 2 -> 3 -> 1 */
@@ -952,11 +955,12 @@ object FarmController {
         var sessionStartMs = runStartMs
         var sessionLimitMs = Random.nextLong(SESSION_MIN_MS, SESSION_MAX_MS)
         var failsInRow = 0
-        var cyclesUntilRest = Random.nextInt(REST_EVERY_MIN, REST_EVERY_MAX + 1)
+        var cyclesUntilRest = _state.value.speed.let { Random.nextInt(it.restEveryMin, it.restEveryMax + 1) }
         silenceBaselineMs = System.currentTimeMillis()
 
         while (isActive) {
             val cycleStart = System.currentTimeMillis()
+            val sp = _state.value.speed   // doc moi vong: doi toc do giua chung co hieu luc ngay
 
             // 4.0 Het tong gio chay toi da
             if (cycleStart - runStartMs > MAX_TOTAL_HOURS * 3_600_000L) {
@@ -1019,7 +1023,7 @@ object FarmController {
                     waitWithCountdown(minOf(4_000L * failsInRow, 30_000L), "Thử lại sau lỗi gõ lệnh")
                     continue
                 }
-                delay(Random.nextLong(GAP_MIN_MS, GAP_MAX_MS))
+                delay(Random.nextLong(sp.gapMinMs, sp.gapMaxMs))
             } else {
                 update { it.copy(status = "Hunt tạm dừng — $pauseReason") }
             }
@@ -1046,13 +1050,13 @@ object FarmController {
             // 4.7 Nghi giai lao ngan cho giong nguoi that
             cyclesUntilRest--
             if (cyclesUntilRest <= 0) {
-                cyclesUntilRest = Random.nextInt(REST_EVERY_MIN, REST_EVERY_MAX + 1)
-                restFor(Random.nextLong(REST_MIN_MS, REST_MAX_MS), "Nghỉ giải lao")
+                cyclesUntilRest = Random.nextInt(sp.restEveryMin, sp.restEveryMax + 1)
+                restFor(Random.nextLong(sp.restMinMs, sp.restMaxMs), "Nghỉ giải lao")
                 continue
             }
 
             // 4.8 Luc cho cooldown: cap nhat du lieu, roi chen viec vat / lenh kiem tra cho den het vong
-            val target = Random.nextLong(CYCLE_MIN_MS, CYCLE_MAX_MS)
+            val target = Random.nextLong(sp.cycleMinMs, sp.cycleMaxMs)
             refreshHub(ctx)
             while (isActive && target - (System.currentTimeMillis() - cycleStart) >= FILLER_MIN_REMAINING_MS) {
                 val before = sendCounter
@@ -1067,7 +1071,7 @@ object FarmController {
                     break
                 }
                 update { it.copy(status = "Đang farm…") }
-                delay(Random.nextLong(GAP_MIN_MS, GAP_MAX_MS))
+                delay(Random.nextLong(sp.gapMinMs, sp.gapMaxMs))
             }
             val left = target - (System.currentTimeMillis() - cycleStart)
             if (left > 0) waitWithCountdown(left, "Chờ cooldown hunt/battle") else delay(800)
