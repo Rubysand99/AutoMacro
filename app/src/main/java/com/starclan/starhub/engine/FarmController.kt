@@ -80,6 +80,7 @@ object FarmController {
     // ================= Cau hinh mac dinh (muon doi thi sua o day) =================
     private const val HUNT_COMMAND = "owo hunt"
     private const val BATTLE_COMMAND = "owo battle"
+    private const val OWO_COMMAND = "owo"          // lenh "owo" dung mot minh, go moi vong ngay sau battle
     private const val ZOO_COMMAND = "owo zoo"
     private const val DAILY_COMMAND = "owo daily"
     private const val QUEST_COMMAND = "owo quest"
@@ -179,7 +180,6 @@ object FarmController {
     private class Chore(val key: String, val run: suspend () -> SendResult)
 
     private val FILLERS = listOf(
-        Filler("say_owo", "owo"),       // noi "owo"
         Filler("inv", "owo inv"),       // kho: de bot biet con gem nao de thay
         Filler("cash", "owo cash"),     // cowoncy
         Filler("ws", "owo ws"),         // weapon shards
@@ -1085,6 +1085,15 @@ object FarmController {
                     return
                 }
                 if (failsInRow >= 2) reopenChannel(sender, link)
+            }
+
+            // 4.6b Moi vong go them 1 lan "owo" (ngay sau battle, khong nghi). Loi go chi bo qua: khong tinh vao failsInRow.
+            if (battleResult == SendResult.OK) {
+                val owoResult = sendCommand(sender, settings, OWO_COMMAND)
+                if (owoResult == SendResult.CAPTCHA) {
+                    handleCaptcha(ctx)
+                    return
+                }
             }
 
             // 4.7 Nghi giai lao ngan cho giong nguoi that

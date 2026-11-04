@@ -22,6 +22,7 @@ dien thoai). Xem muc "Ket noi voi owo-tracker" ben duoi.
 - `data/SpeedMode.kt` (thuan Kotlin, co test): KHONG nghi giua lenh khac nhau (hunt->battle go luon; chi cooldown cung lenh hunt->hunt phai cho); moi muc co do dai vong (>=15,5s = cooldown OwO), tan suat + do dai nghi giai lao.
   Thuong = nhip cu. Gioi han burst (3 lenh/12s) va CommandGuard KHONG doi. `FarmState.speed`, luu o prefs "star_farm"/"speed_mode",
   `FarmController.setSpeed`. Vong farm doc `speed` moi vong nen doi giua chung co hieu luc ngay. UI: 3 nut o tab Setting cua Hub noi.
+- Moi vong farm go them 1 lan "owo" ngay sau battle (4.6b); da bo "say_owo" khoi danh sach lenh chen.
 - Nhanh = rui ro bi OwO nghi ngo cao hon (da ghi chu tren giao dien). CHUA BIEN DICH tren may.
 
 ## v20 — Giao dien moi: toi, gon, kieu dashboard (4/11/2026) — DOT 1/3: he mau + style chung
