@@ -31,6 +31,7 @@ import com.starclan.starhub.data.summarizeStep
 import com.starclan.starhub.engine.ButtonClicker
 import com.starclan.starhub.engine.DiscordSender
 import com.starclan.starhub.engine.FarmController
+import com.starclan.starhub.engine.TagCollector
 import com.starclan.starhub.engine.HuntbotNotifier
 import com.starclan.starhub.engine.ScriptEngine
 import com.starclan.starhub.engine.SendResult
@@ -100,6 +101,7 @@ class AutoAccessibilityService : AccessibilityService() {
 
     // --- Dong bo voi owo-tracker: cu vai giay kiem tra lenh moi 1 lan ---
     private var syncJob: Job? = null
+    private var scriptJob: Job? = null
 
     // Khi OwO doi giai captcha: tam dung gui lenh toi moc nay (de Ruby tu giai), tranh gui don dap
     private var captchaPauseUntilMs = 0L
@@ -181,7 +183,12 @@ class AutoAccessibilityService : AccessibilityService() {
 
     /** Chay 1 kich ban (danh sach cac buoc) trong nen, khong lam dung giao dien */
     fun runScript(steps: List<ScriptStep>) {
-        serviceScope.launch {
+        // Khong chay chong: dang co kich ban, farm hoac hoc tag thi bo qua lan bam nay
+        if (scriptJob?.isActive == true || FarmController.isRunning() || TagCollector.isRunning()) {
+            Log.w(TAG, "Bo qua runScript: dang co tac vu khac chay")
+            return
+        }
+        scriptJob = serviceScope.launch {
             ScriptEngine(this@AutoAccessibilityService).run(steps)
         }
     }

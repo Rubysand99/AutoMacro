@@ -19,6 +19,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.withLock
@@ -192,7 +193,8 @@ object FarmController {
     fun isRunning(): Boolean = job?.isActive == true
 
     private fun update(block: (FarmState) -> FarmState) {
-        _state.value = block(_state.value)
+        // update{} la nguyen tu: nhieu luong (farm, lam moi hub, canh bao) cung ghi khong de mat cap nhat cua nhau
+        _state.update(block)
     }
 
     fun clearAlert() {
@@ -339,6 +341,11 @@ object FarmController {
         if (isRunning()) return
         if (!FarmOverlay.isShown()) {
             update { it.copy(alert = "Bật Hub nổi trước rồi mới bắt đầu farm được") }
+            return
+        }
+        // Dang hoc tag thi dang goi lenh / doc man hinh Discord: chay chong len nhau se bam nham
+        if (TagCollector.isRunning()) {
+            update { it.copy(alert = "Đang học lời khuyên vũ khí — dừng lại rồi mới bắt đầu farm được") }
             return
         }
         appCtx = service.applicationContext
