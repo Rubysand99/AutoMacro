@@ -2,6 +2,7 @@ package com.starclan.starhub.engine
 
 import android.content.Context
 import android.util.Log
+import com.starclan.starhub.data.CommandGuard
 import com.starclan.starhub.data.DayStats
 import com.starclan.starhub.data.FarmStatsStore
 import com.starclan.starhub.data.HubFormat
@@ -396,6 +397,45 @@ object FarmController {
             return
         }
         update { st -> st.copy(hub = st.hub?.copy(eventMode = saved)) }
+    }
+
+    private val reviewBusy = java.util.concurrent.atomic.AtomicBoolean(false)
+
+    /**
+     * Hub noi bam Giu / Bo cho cay vu khi dang duyet: bao bot ghi lai, roi (neu KHONG dang farm) go `owo w <cay ke tiep>`.
+     * CHI ghi danh sach - khong dismantle / ban gi. Bam lien tuc: bo qua lan bam trong luc dang xu ly lan truoc.
+     */
+    suspend fun reviewDecision(service: AutoAccessibilityService, decision: String) {
+        if (!reviewBusy.compareAndSet(false, true)) return
+        try {
+            val s = OwoTrackerPrefs.load(service)
+            if (s.apiUrl.isBlank() || s.token.isBlank()) return
+            val res = OwoTrackerApi.postWeaponReview(s.apiUrl, s.token, decision)
+            if (res == null) {
+                update { it.copy(status = "Không ghi được quyết định Giữ/Bỏ (mất kết nối bot?) — bấm lại") }
+                return
+            }
+            update { st ->
+                val hub = st.hub
+                val rv = hub?.weaponReview
+                if (hub == null || rv == null) st
+                else st.copy(hub = hub.copy(weaponReview = rv.copy(
+                    currentId = res.nextId, remaining = res.remaining,
+                    kept = (rv.kept ?: 0) + if (decision == "keep") 1 else 0,
+                    dropped = (rv.dropped ?: 0) + if (decision == "drop") 1 else 0)))
+            }
+            val next = res.nextId ?: return
+            if (isRunning() || TagCollector.isRunning()) {
+                update { it.copy(status = "Đã ghi. Cây kế tiếp: $next — đang farm nên chưa tự gõ, hãy dừng farm") }
+                return
+            }
+            val cmd = "owo w $next"
+            if (!CommandGuard.isSafeCommand(cmd)) return
+            val r = DiscordSender(service).send(cmd, s, reopenChannel = false)
+            if (r != SendResult.OK) update { it.copy(status = "Không gõ được $cmd (${describeSend(r)})") }
+        } finally {
+            reviewBusy.set(false)
+        }
     }
 
     suspend fun refreshHub(context: Context) {

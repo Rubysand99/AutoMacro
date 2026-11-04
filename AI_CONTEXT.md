@@ -11,6 +11,13 @@ repo Python/discord.py rieng) de tao 1 he thong tap trung: owo-tracker la
 "bo nao" (biet luc nao can lam gi), AutoMacro la "tay chan" (thuc thi tren
 dien thoai). Xem muc "Ket noi voi owo-tracker" ben duoi.
 
+## v22 — Duyet vu khi Giu / Bo bang 2 nut tren Hub noi
+- Tracker: `,weaponreview` (start|stop|undo|export|reset) -> embed danh sach (dang kiem tra / con lai / ID Giu / ID Bo), queue `owo w <id>` dau tien;
+  `POST /weapon-review {decision}` ghi quyet dinh, XOA tin lenh + tin tra loi OwO cua cay do (chua embed danh sach), tra `next_id`; `/hub` co `weapon_review`.
+  Cay co SAO hoac dang trang bi = GIU mac dinh, khong dua vao hang doi. CHI GHI DANH SACH, khong tu dismantle/ban.
+- App: `FarmController.reviewDecision` (POST roi go `owo w <next>` neu KHONG farm), 2 nut Giu/Bo canh bong bong (chi hien khi phien duyet dang chay).
+  Bot can quyen Manage Messages trong kenh de xoa tin. CHUA BIEN DICH tren may.
+
 ## v21 — 3 che do toc do farm: Nhanh / Thuong / Cham
 - `data/SpeedMode.kt` (thuan Kotlin, co test): KHONG nghi giua lenh khac nhau (hunt->battle go luon; chi cooldown cung lenh hunt->hunt phai cho); moi muc co do dai vong (>=15,5s = cooldown OwO), tan suat + do dai nghi giai lao.
   Thuong = nhip cu. Gioi han burst (3 lenh/12s) va CommandGuard KHONG doi. `FarmState.speed`, luu o prefs "star_farm"/"speed_mode",

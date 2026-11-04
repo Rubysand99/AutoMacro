@@ -60,6 +60,7 @@ object HubParser {
             zoo = section("zoo", HubZoo::class.java),
             inventory = section("inventory", HubInventory::class.java),
             weapons = section("weapons", HubWeapons::class.java),
+            weaponReview = section("weapon_review", HubWeaponReview::class.java),
             petDex = section("pet_dex", HubPetDex::class.java),
             battle = section("battle", HubBattle::class.java),
             newPets = section("new_pets", HubNewPets::class.java),

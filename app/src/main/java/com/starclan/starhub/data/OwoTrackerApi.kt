@@ -219,6 +219,32 @@ object OwoTrackerApi {
             }
         }
 
+    /** Bam Giu ("keep") / Bo ("drop") cho cay vu khi dang duyet. Tra ve cay ke tiep, hoac null neu loi / khong co phien duyet. */
+    suspend fun postWeaponReview(apiUrl: String, token: String, decision: String): ReviewDecisionResult? =
+        withContext<ReviewDecisionResult?>(Dispatchers.IO) {
+            try {
+                if (decision != "keep" && decision != "drop") return@withContext null
+                val url = URL(joinUrl(apiUrl, "/weapon-review"))
+                val conn = url.openConnection() as HttpURLConnection
+                try {
+                    conn.requestMethod = "POST"
+                    conn.setRequestProperty("Authorization", "Bearer $token")
+                    conn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+                    conn.doOutput = true
+                    conn.connectTimeout = 8_000
+                    conn.readTimeout = 10_000
+                    conn.outputStream.use { it.write("""{"decision":"$decision"}""".toByteArray(Charsets.UTF_8)) }
+                    if (conn.responseCode != 200) return@withContext null
+                    ReviewDecisionResult.parse(conn.inputStream.bufferedReader().use { it.readText() })
+                } finally {
+                    conn.disconnect()
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "postWeaponReview loi: ${e.message}")
+                null
+            }
+        }
+
     /** Bao bot Hub noi BAT (on=true) / TAT (on=false): Hub tat = bot khong giao viec cho app (nhu `,off`). true = bot da nhan. */
     suspend fun setPower(apiUrl: String, token: String, on: Boolean): Boolean =
         withContext(Dispatchers.IO) {

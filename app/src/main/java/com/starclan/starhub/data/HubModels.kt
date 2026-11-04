@@ -25,6 +25,7 @@ data class HubResponse(
     val zoo: HubZoo? = null,
     val inventory: HubInventory? = null,
     val weapons: HubWeapons? = null,
+    @SerializedName("weapon_review") val weaponReview: HubWeaponReview? = null,
     val petDex: HubPetDex? = null,
     val battle: HubBattle? = null,
     val newPets: HubNewPets? = null,
@@ -321,6 +322,28 @@ data class HubItem(
     val count: Long? = null,
     @SerializedName("is_gem") val isGem: Boolean? = null
 )
+
+// ---- Duyet vu khi Giu/Bo (nut tren Hub noi) ----
+data class HubWeaponReview(
+    val active: Boolean? = null,
+    @SerializedName("current_id") val currentId: String? = null,
+    val remaining: Int? = null,
+    val kept: Int? = null,
+    val dropped: Int? = null
+)
+
+/** Tra loi cua bot sau khi bam Giu/Bo: cay ke tiep can kiem tra (null = het cay) */
+data class ReviewDecisionResult(val decided: String?, val nextId: String?, val remaining: Int) {
+    companion object {
+        fun parse(json: String): ReviewDecisionResult? = try {
+            val o = com.google.gson.JsonParser.parseString(json).asJsonObject
+            fun str(k: String) = o.get(k)?.takeIf { it.isJsonPrimitive }?.asString?.takeIf { it.isNotBlank() }
+            ReviewDecisionResult(str("decided"), str("next_id"), o.get("remaining")?.takeIf { it.isJsonPrimitive }?.asInt ?: 0)
+        } catch (e: Exception) {
+            null
+        }
+    }
+}
 
 // ---- Vu khi ----
 data class HubWeapons(

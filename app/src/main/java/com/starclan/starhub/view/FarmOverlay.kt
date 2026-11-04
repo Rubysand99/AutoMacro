@@ -78,7 +78,7 @@ object FarmOverlay {
     private const val C_OFF = UiTheme.TEXT_MUTED
 
     /** Kieu nut: PRIMARY = vang (duy nhat 1 nut chinh), DANGER = do nhat, ACTIVE = tim nhat (dang bat), SECONDARY = nen noi */
-    private enum class Btn { PRIMARY, DANGER, ACTIVE, SECONDARY }
+    private enum class Btn { PRIMARY, DANGER, ACTIVE, SECONDARY, GOOD }
 
     private enum class Tone { NORMAL, GOOD, WARN, MUTED }
 
@@ -121,6 +121,8 @@ object FarmOverlay {
     private var tvBattleBig: TextView? = null
     private var bubbleBg: GradientDrawable? = null
     private var bubbleIcon: ImageView? = null
+    private var reviewRow: LinearLayout? = null
+    private var tvReviewInfo: TextView? = null
     private var tvStatusDetail: TextView? = null
     private var tvAlert: TextView? = null
     private var waitView: WaitCountdownView? = null
@@ -188,6 +190,8 @@ object FarmOverlay {
         tvBattleBig = null
         bubbleBg = null
         bubbleIcon = null
+        reviewRow = null
+        tvReviewInfo = null
         // Hub TAT = bot OFF (khong giao viec cho app nua)
         if (ctxForPower != null) FarmController.reportHubPower(ctxForPower, false)
     }
@@ -220,6 +224,7 @@ object FarmOverlay {
             Btn.DANGER -> { bg = UiTheme.BAD_TINT; line = UiTheme.BAD_LINE; fg = UiTheme.BAD }
             Btn.ACTIVE -> { bg = UiTheme.SELECTED_TINT; line = UiTheme.SELECTED; fg = UiTheme.SELECTED }
             Btn.SECONDARY -> { bg = UiTheme.RAISED; line = UiTheme.LINE; fg = UiTheme.TEXT_PRIMARY }
+            Btn.GOOD -> { bg = UiTheme.OK_TINT; line = UiTheme.OK; fg = UiTheme.OK }
         }
         v.background = roundBg(bg, 12, line)
         if (v is TextView) {
@@ -534,6 +539,30 @@ object FarmOverlay {
         bubbleBox.addView(starIcon, FrameLayout.LayoutParams(dp(46), dp(46)))
         bubbleBox.addView(bubble, FrameLayout.LayoutParams(dp(46), dp(46)))
         container.addView(bubbleBox, LinearLayout.LayoutParams(dp(46), dp(46)))
+
+        // ---- Duyet vu khi: 2 nut nho GIU / BO canh bong bong (chi hien khi `,weaponreview` dang chay), hien ca khi menu thu gon ----
+        val rvRow = LinearLayout(service)
+        rvRow.orientation = LinearLayout.HORIZONTAL
+        rvRow.gravity = Gravity.CENTER_VERTICAL
+        rvRow.setPadding(dp(6), dp(6), dp(6), dp(6))
+        rvRow.background = roundBg(C_PANEL, 14, UiTheme.LINE)
+        rvRow.visibility = View.GONE
+        val rvInfo = TextView(service)
+        rvInfo.textSize = 11.5f
+        rvInfo.setTextColor(Color.parseColor(C_LABEL))
+        rvInfo.setPadding(dp(4), 0, dp(8), 0)
+        val keepBtn = pill(service, "Giữ", Btn.GOOD, 13f)
+        val dropBtn = pill(service, "Bỏ", Btn.DANGER, 13f)
+        for (b in listOf(keepBtn, dropBtn)) { b.minHeight = dp(40); b.minWidth = dp(54); b.setPadding(dp(8), dp(4), dp(8), dp(4)) }
+        rvRow.addView(rvInfo, lparams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT))
+        rvRow.addView(keepBtn, lparams(LinearLayout.LayoutParams.WRAP_CONTENT, dp(40)).also { it.rightMargin = dp(6) })
+        rvRow.addView(dropBtn, lparams(LinearLayout.LayoutParams.WRAP_CONTENT, dp(40)))
+        reviewRow = rvRow
+        tvReviewInfo = rvInfo
+        keepBtn.setOnClickListener { scope?.launch { FarmController.reviewDecision(service, "keep") } }
+        dropBtn.setOnClickListener { scope?.launch { FarmController.reviewDecision(service, "drop") } }
+        container.addView(rvRow, LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).also { it.topMargin = dp(6) })
 
         // ---- Khung chinh ----
         val panelWidth = minOf(dp(300), screenW - dp(40))
@@ -1044,6 +1073,15 @@ object FarmOverlay {
                 else -> UiTheme.ACCENT
             }
         )
+
+        val rv = st.hub?.weaponReview
+        val reviewing = rv?.active == true && !rv.currentId.isNullOrBlank()
+        val wantVisible = if (reviewing) View.VISIBLE else View.GONE
+        if (reviewRow?.visibility != wantVisible) {
+            reviewRow?.visibility = wantVisible
+            relayout()
+        }
+        if (reviewing) tvReviewInfo?.text = "Cây ${rv?.currentId} · còn ${rv?.remaining ?: 0}"
 
         val alertText = st.alert
         if (alertText.isNullOrBlank()) {
