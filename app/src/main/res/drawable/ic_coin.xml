@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Bo icon net 1.8dp, bo tron; mau lay tu tint cua view -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24"
+    android:tint="?attr/colorControlNormal">
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FF000000"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M12,3 a9,9 0 1 0 0.01,0 z M14.5,9 c-0.5,-1 -1.4,-1.5 -2.5,-1.5 c-1.5,0 -2.5,0.8 -2.5,2 c0,3 5,1.5 5,4.5 c0,1.2 -1,2 -2.5,2 c-1.2,0 -2.1,-0.6 -2.6,-1.6 M12,6 v1.5 M12,16.5 v1.5" />
+</vector>

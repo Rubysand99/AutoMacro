@@ -11,6 +11,16 @@ repo Python/discord.py rieng) de tao 1 he thong tap trung: owo-tracker la
 "bo nao" (biet luc nao can lam gi), AutoMacro la "tay chan" (thuc thi tren
 dien thoai). Xem muc "Ket noi voi owo-tracker" ben duoi.
 
+## v20 — Giao dien moi: toi, gon, kieu dashboard (4/11/2026) — DOT 1/3: he mau + style chung
+- Chi con giao dien TOI (da xoa values-night/drawable-night/color-night). Token mau o `res/values/colors.xml`;
+  ban sao cho code ve tay o `view/UiTheme.kt`; `UiThemeColorsTest` doi chieu 2 noi + kiem tra tuong phan WCAG 4.5:1. Doi mau thi sua CA HAI.
+- Quy tac: nhan vang `accent` CHI cho nut chinh (1 nut/man hinh); tim `selected` cho tab dang chon/cot hom nay; xanh/xanh duong/vang/do
+  chi la trang thai va luon kem chu hoac icon. Co chu: so 26, tieu de man 20, tieu de the 14, chu thuong 13, chu phu 11.5. Bo goc the 16, o con/nut 12.
+- Style: `Widget.AutoMacro.Card/Button(.Tonal=nut vang/.Outlined/.Danger)`, `TextAppearance.StarHub.*`.
+- Icon net 1.8dp (`ic_gem, ic_huntbot, ic_quest, ic_daily, ic_coin, ic_chart, ic_alert, ic_pets, ic_sliders, ic_bolt, ic_star, ic_refresh, ic_play, ic_stop...`)
+  thay emoji; mau lay tu tint cua view.
+- Dot 2: viet lai FarmOverlay theo UiTheme. Dot 3: man hinh Hub + Cai dat cua app. CHUA BIEN DICH tren may.
+
 ## v19 — Siet an toan lenh tu server sau ra soat bao mat (3/11/2026)
 - `CommandGuard.isSafeCommand` doi tu "bat dau bang `owo `" sang DANH SACH CHO PHEP theo dong tu: `owo hb [<so>[h|m|d] [<ma>]]`,
   `owo use <ma>...` (toi 12 ma 1-4 chu so), `owo dex <ten>`, `owo w <ID 4-8 ky tu>`, `owo weapon|cash|inv|quest|ws|zoo`.

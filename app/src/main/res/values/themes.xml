@@ -1,10 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.AutoMacro" parent="Theme.MaterialComponents.DayNight.NoActionBar">
-        <item name="colorPrimary">@color/brand_violet</item>
+    <!-- Giao dien TOI duy nhat (parent khong DayNight): khong con ban sang / ban toi rieng -->
+    <style name="Theme.AutoMacro" parent="Theme.MaterialComponents.NoActionBar">
+        <item name="colorPrimary">@color/selected</item>
         <item name="colorPrimaryVariant">@color/brand_violet_dark</item>
-        <item name="colorOnPrimary">#FFFFFF</item>
-        <item name="colorSecondary">@color/brand_amber</item>
-        <item name="colorOnSecondary">#2A1E00</item>
+        <item name="colorOnPrimary">@color/bg</item>
+        <item name="colorSecondary">@color/accent</item>
+        <item name="colorSecondaryVariant">@color/accent</item>
+        <item name="colorOnSecondary">@color/accent_on</item>
+        <item name="colorSurface">@color/surface</item>
+        <item name="colorOnSurface">@color/text_primary</item>
+        <item name="android:colorBackground">@color/bg</item>
+        <item name="colorOnBackground">@color/text_primary</item>
+        <item name="colorError">@color/bad</item>
+        <item name="colorOnError">@color/bg</item>
+
+        <item name="android:windowBackground">@color/bg</item>
+        <item name="android:statusBarColor">@color/bg</item>
+        <item name="android:navigationBarColor">@color/nav_bg</item>
+        <item name="android:textColorPrimary">@color/text_primary</item>
+        <item name="android:textColorSecondary">@color/text_secondary</item>
+        <item name="android:textColorHint">@color/text_muted</item>
 
         <!-- Bo goc mac dinh cho MOI nut/the trong app (dong bo, khong can khai bao tung noi) -->
         <item name="shapeAppearanceSmallComponent">@style/ShapeAppearance.AutoMacro.Small</item>
@@ -12,11 +28,12 @@
         <item name="materialButtonStyle">@style/Widget.AutoMacro.Button</item>
     </style>
 
+    <!-- Bo goc: 12 cho nut / o nhap / khoi trong the, 16 cho the -->
     <style name="ShapeAppearance.AutoMacro.Small" parent="ShapeAppearance.MaterialComponents.SmallComponent">
         <item name="cornerSize">12dp</item>
     </style>
 
     <style name="ShapeAppearance.AutoMacro.Medium" parent="ShapeAppearance.MaterialComponents.MediumComponent">
-        <item name="cornerSize">14dp</item>
+        <item name="cornerSize">16dp</item>
     </style>
 </resources>

@@ -1,21 +1,54 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- HE MAU STAR HUB (giao dien TOI duy nhat, kieu dashboard). Day la nguon su that cho man hinh XML;
+     Hub noi (FarmOverlay, ve bang code) dung ban sao trong view/UiTheme.kt - UiThemeColorsTest bao loi neu 2 noi lech nhau. -->
 <resources>
-    <!-- Mau thuong hieu chung ca app (dung trong themes.xml + cac man hinh) -->
-    <color name="brand_violet">#6C5CE7</color>
-    <color name="brand_violet_dark">#4A3FCC</color>
-    <color name="brand_amber">#F5A623</color>
-    <color name="surface_card_light">#F7F5FE</color>
-    <!-- Vien/duong ke mo: den nhat tren nen sang, trang nhat tren nen toi (truoc day hardcode den, bien mat o che do toi) -->
-    <color name="border_subtle">#22000000</color>
+    <!-- Nen -->
+    <color name="bg">#0B0D12</color>             <!-- nen app -->
+    <color name="surface">#12151C</color>        <!-- the, menu -->
+    <color name="raised">#1A1F2A</color>         <!-- khoi noi trong the, o nhap, nut phu -->
+    <color name="line">#262C3A</color>           <!-- duong ke, vien the, nen thanh tien do -->
+    <color name="nav_bg">#0F121A</color>         <!-- thanh tab duoi, thanh tab cua Hub noi -->
+    <color name="nav_line">#1E2330</color>
+    <color name="bar_idle">#2B3245</color>       <!-- cot bieu do ngay cu -->
 
-    <!-- Mau trang thai cua man hinh Hub (nen sang). Ban toi o values-night/colors.xml -->
-    <color name="hub_ok">#2E7D32</color>
-    <color name="hub_info">#1565C0</color>
-    <color name="hub_warn">#E65100</color>
-    <color name="hub_bad">#C62828</color>
-    <color name="hub_idle">#757575</color>
+    <!-- Chu -->
+    <color name="text_primary">#EEF1F6</color>
+    <color name="text_secondary">#B4BCCB</color>
+    <color name="text_muted">#8B94A7</color>
 
-    <!-- Mau vach ben trai moi the chi tiet: moi muc 1 mau de de phan biet -->
+    <!-- Nhan -->
+    <color name="accent">#FFC24B</color>         <!-- nut hanh dong chinh (1 nut / man hinh), ngoi sao -->
+    <color name="accent_on">#1A1200</color>      <!-- chu tren nen accent -->
+    <color name="selected">#9B8CFF</color>       <!-- dang chon: tab, cot hom nay, thanh dem nguoc -->
+
+    <!-- Trang thai (luon kem chu / icon, khong chi dua vao mau) -->
+    <color name="ok">#4ADE80</color>
+    <color name="info">#60A5FA</color>
+    <color name="warn">#FBBF24</color>
+    <color name="bad">#F87171</color>
+
+    <!-- Nen nhat cua tung trang thai (o icon, canh bao, nut nguy hiem) -->
+    <color name="ok_tint">#12261B</color>
+    <color name="info_tint">#14233A</color>
+    <color name="warn_tint">#2A2210</color>
+    <color name="bad_tint">#2A1719</color>
+    <color name="selected_tint">#1F1A33</color>
+    <color name="warn_line">#5A4513</color>
+    <color name="bad_line">#6B3A3F</color>
+
+    <!-- Ten cu, tro ve mau moi (de cac man hinh chua chuyen van bien dich duoc) -->
+    <color name="brand_violet">@color/selected</color>
+    <color name="brand_violet_dark">#6C5CE7</color>
+    <color name="brand_amber">@color/accent</color>
+    <color name="surface_card_light">@color/surface</color>
+    <color name="border_subtle">@color/line</color>
+    <color name="hub_ok">@color/ok</color>
+    <color name="hub_info">@color/info</color>
+    <color name="hub_warn">@color/warn</color>
+    <color name="hub_bad">@color/bad</color>
+    <color name="hub_idle">@color/text_muted</color>
+
+    <!-- Mau nhan tung the chi tiet trong tab Hub (se bo khi the chi tiet doi sang kieu moi) -->
     <color name="hub_accent_gems">#00ACC1</color>
     <color name="hub_accent_quest">#7E57C2</color>
     <color name="hub_accent_team">#FF7043</color>
@@ -24,6 +57,6 @@
     <color name="hub_accent_inventory">#FFB300</color>
     <color name="hub_accent_pet_dex">#7CB342</color>
 
-    <!-- Icon app Star Hub (mau A: sao vang tren nen tim) -->
+    <!-- Icon app Star Hub (sao vang tren nen tim) -->
     <color name="ic_launcher_background">#3C3489</color>
 </resources>
