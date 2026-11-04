@@ -38,7 +38,7 @@ object HubSummary {
         val left = d.secondsLeft ?: return TileState("?", "Chưa rõ giờ nhận", Tone.IDLE)
         val remain = left - elapsedSec
         val extras = mutableListOf<String>()
-        if (d.streak != null) extras.add("🔥 ${d.streak}")
+        if (d.streak != null) extras.add("chuỗi ${d.streak}")
         if (d.lastReward != null) extras.add("+${HubFormat.num(d.lastReward)}")
         val icon = dailyTileIcon(d)
         return if (remain > 0) {

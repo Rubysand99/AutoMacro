@@ -85,7 +85,7 @@ object HubFormat {
     }
 
     /** Hien thay cho noi dung 1 muc khi muc do khong doc duoc (cac muc khac van binh thuong). */
-    fun sectionError(reason: String): String = "⚠️ Không đọc được mục này:\n$reason"
+    fun sectionError(reason: String): String = "Không đọc được mục này:\n$reason"
 
     private fun noData(hint: String?): String =
         "Chưa có dữ liệu — bot chưa thấy tin nhắn nào cho mục này." +
@@ -108,13 +108,13 @@ object HubFormat {
         } else {
             val remain = left - elapsedSec
             if (remain > 0) {
-                sb.append("⏳ Còn ${duration(remain)} nữa mới nhận được")
+                sb.append("Còn ${duration(remain)} nữa mới nhận được")
             } else {
-                sb.append("✅ Daily đã sẵn sàng — gõ owo daily để nhận")
+                sb.append("Daily đã sẵn sàng — gõ owo daily để nhận")
             }
         }
         val extras = mutableListOf<String>()
-        if (d.streak != null) extras.add("🔥 Streak: ${num(d.streak)} ngày")
+        if (d.streak != null) extras.add("Streak: ${num(d.streak)} ngày")
         if (d.lastReward != null) extras.add("Lần nhận gần nhất: ${num(d.lastReward)} cowoncy")
         if (extras.isNotEmpty()) sb.append("\n").append(extras.joinToString(" · "))
         return sb.toString()
@@ -134,7 +134,7 @@ object HubFormat {
         } else {
             sb.append("Đang dùng:")
             for (e in equipped) {
-                val warn = if ((e.percent ?: 100) <= LOW_GEM_PERCENT) " ⚠️ sắp hết" else ""
+                val warn = if ((e.percent ?: 100) <= LOW_GEM_PERCENT) " sắp hết" else ""
                 sb.append("\n• ${gemType(e.slot)} — ${e.tier ?: "?"}$warn")
                 sb.append("\n   ${bar(e.percent)} ${e.current ?: "?"}/${e.max ?: "?"} (${pct(e.percent)}%)")
             }
@@ -163,14 +163,14 @@ object HubFormat {
             if (left != null) {
                 val remain = left - elapsedSec
                 if (remain > 0) {
-                    sb.append("\n⏳ Còn ${duration(remain)}")
+                    sb.append("\nCòn ${duration(remain)}")
                 } else {
-                    sb.append("\n✅ Đã tới giờ xong — HuntBot có thể đã về (tính theo lần bot thấy gần nhất)")
+                    sb.append("\nĐã tới giờ xong — HuntBot có thể đã về (tính theo lần bot thấy gần nhất)")
                 }
             } else if (!h.timeRemainingText.isNullOrBlank()) {
-                sb.append("\n⏳ Còn khoảng ${h.timeRemainingText}")
+                sb.append("\nCòn khoảng ${h.timeRemainingText}")
             } else {
-                sb.append("\n⏳ Chưa rõ giờ xong")
+                sb.append("\nChưa rõ giờ xong")
             }
         } else {
             sb.append("Không đang đi săn (theo lần bot thấy gần nhất)")
@@ -186,9 +186,9 @@ object HubFormat {
         if (q == null) return noData(null)
         val items = q.quests.orEmpty()
         val header = when {
-            q.allDone == true -> "✅ Đã xong hết quest"
-            items.isNotEmpty() -> "📋 Còn ${items.count { it.done != true }}/${items.size} quest chưa xong"
-            else -> "📋 Còn quest chưa xong"
+            q.allDone == true -> "Đã xong hết quest"
+            items.isNotEmpty() -> "Còn ${items.count { it.done != true }}/${items.size} quest chưa xong"
+            else -> "Còn quest chưa xong"
         }
         val sb = StringBuilder(header)
         if (q.seals != null) sb.append(" · Seals: ${num(q.seals)}")
@@ -204,7 +204,7 @@ object HubFormat {
             sb.append("\nKế tiếp: ${q.nextQuest}")
         }
         for (qi in items) {
-            val mark = if (qi.done == true) "✅" else "•"
+            val mark = if (qi.done == true) "Xong:" else "•"
             val rarity = if (qi.rarity.isNullOrBlank()) "" else " (${qi.rarity})"
             sb.append("\n\n$mark ${qi.index ?: "?"}. ${qi.title ?: "?"}$rarity")
             if (qi.current != null && qi.max != null && qi.max > 0) {
@@ -247,7 +247,7 @@ object HubFormat {
                 sb.append(list.joinToString(", ") { "${it.name ?: "?"} ×${num(it.count)}" })
             }
         } else if (z.pets.orEmpty().isNotEmpty()) {
-            sb.append("\n\n👆 Chạm để xem từng loài")
+            sb.append("\n\nChạm để xem từng loài")
         }
         return sb.toString()
     }
@@ -262,7 +262,7 @@ object HubFormat {
             }
         }
         val sb = StringBuilder("${num(inv.kinds)} loại · ${num(inv.totalItems)} món")
-        if (items.isNotEmpty()) sb.append("\n\n👆 Chạm để xem toàn bộ")
+        if (items.isNotEmpty()) sb.append("\n\nChạm để xem toàn bộ")
         return sb.toString()
     }
 
@@ -276,7 +276,7 @@ object HubFormat {
             if (!x.passiveName.isNullOrBlank()) sb.append(" · ${x.passiveName}")
             if (expanded && !x.passiveDesc.isNullOrBlank()) sb.append("\n   ${x.passiveDesc}")
         }
-        if (!expanded && list.size > shown.size) sb.append("\n\n👆 Chạm để xem hết ${list.size} cây")
+        if (!expanded && list.size > shown.size) sb.append("\n\nChạm để xem hết ${list.size} cây")
         return sb.toString()
     }
 }

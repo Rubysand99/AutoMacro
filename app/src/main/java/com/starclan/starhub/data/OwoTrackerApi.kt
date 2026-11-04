@@ -111,7 +111,7 @@ object OwoTrackerApi {
 
             val code = conn.responseCode
             if (code == 401) {
-                return@withContext HubResult.Failure("Token chưa đúng (401) — kiểm tra lại trong ⚙️ Kết nối owo-tracker")
+                return@withContext HubResult.Failure("Token chưa đúng (401) — kiểm tra lại trong Kết nối owo-tracker")
             }
             if (code == 404) {
                 return@withContext HubResult.Failure("Bot chưa có đường /hub (404) — cần cập nhật bot lên bản mới")

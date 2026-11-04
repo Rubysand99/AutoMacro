@@ -381,7 +381,7 @@ class HubFragment : Fragment() {
     private fun fillQuest(body: LinearLayout, q: HubQuest?) {
         val items = q?.quests.orEmpty()
         if (items.isEmpty()) {
-            val msg = if (q?.allDone == true) "🎉 Đã xong hết quest hôm nay" else "Chưa có chi tiết quest — gõ owo quest để bot ghi nhận."
+            val msg = if (q?.allDone == true) "Đã xong hết quest hôm nay" else "Chưa có chi tiết quest — gõ owo quest để bot ghi nhận."
             addText(body, msg, dim = q?.allDone != true)
             return
         }
