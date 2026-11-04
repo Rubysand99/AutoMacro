@@ -19,7 +19,10 @@ dien thoai). Xem muc "Ket noi voi owo-tracker" ben duoi.
 - Style: `Widget.AutoMacro.Card/Button(.Tonal=nut vang/.Outlined/.Danger)`, `TextAppearance.StarHub.*`.
 - Icon net 1.8dp (`ic_gem, ic_huntbot, ic_quest, ic_daily, ic_coin, ic_chart, ic_alert, ic_pets, ic_sliders, ic_bolt, ic_star, ic_refresh, ic_play, ic_stop...`)
   thay emoji; mau lay tu tint cua view.
-- Dot 2: viet lai FarmOverlay theo UiTheme. Dot 3: man hinh Hub + Cai dat cua app. CHUA BIEN DICH tren may.
+- Dot 2 (xong): FarmOverlay dung UiTheme; tab co icon (ic_bolt/ic_sliders/ic_grid/ic_star), nut theo `Btn` (PRIMARY vang/DANGER/ACTIVE/SECONDARY) qua `styleBtn`,
+  o so lon Hunt/Battle (tab Farm), thanh do ben gem 4dp, vong % Huntbot (RingView), thong ke 3 so lon + `DayBarsView` 7 ngay,
+  bong bong 3 trang thai (vang / tim khi cho / do khi captcha). Row co `build` de chen view tuy y. Icon cho overlay KHONG duoc dung ?attr/theme (Service khong co theme).
+- Dot 3 (chua lam): man hinh Hub + Cai dat cua app. CHUA BIEN DICH tren may.
 
 ## v19 — Siet an toan lenh tu server sau ra soat bao mat (3/11/2026)
 - `CommandGuard.isSafeCommand` doi tu "bat dau bang `owo `" sang DANH SACH CHO PHEP theo dong tu: `owo hb [<so>[h|m|d] [<ma>]]`,

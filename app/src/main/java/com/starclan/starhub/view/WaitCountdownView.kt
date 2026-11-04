@@ -40,11 +40,11 @@ class WaitCountdownView(context: Context) : LinearLayout(context) {
         orientation = VERTICAL
         visibility = View.GONE
         val d = resources.displayMetrics.density
-        title.textSize = 13f
+        title.textSize = 12f
         title.setTypeface(null, Typeface.BOLD)
         bar.max = BAR_MAX
         addView(title, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
-        addView(bar, LayoutParams(LayoutParams.MATCH_PARENT, (6 * d).toInt()).also { it.topMargin = (3 * d).toInt() })
+        addView(bar, LayoutParams(LayoutParams.MATCH_PARENT, (5 * d).toInt()).also { it.topMargin = (4 * d).toInt() })
     }
 
     /** Bat dau / cap nhat dem nguoc. Goi lai voi cung gia tri thi khong lam gi (khong giat). */
@@ -54,10 +54,10 @@ class WaitCountdownView(context: Context) : LinearLayout(context) {
         this.totalMs = if (totalMs > 0L) totalMs else 1L
         this.label = label
         this.danger = danger
-        val color = Color.parseColor(if (danger) "#FF5252" else "#FFD54F")
+        val color = Color.parseColor(if (danger) UiTheme.BAD else UiTheme.SELECTED)
         title.setTextColor(color)
         bar.progressTintList = ColorStateList.valueOf(color)
-        bar.progressBackgroundTintList = ColorStateList.valueOf(Color.parseColor("#343B4F"))
+        bar.progressBackgroundTintList = ColorStateList.valueOf(Color.parseColor(UiTheme.BAR_IDLE))
         visibility = View.VISIBLE
         handler.removeCallbacks(ticker)
         lastText = null

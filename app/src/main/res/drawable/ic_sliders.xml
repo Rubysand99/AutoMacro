@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Bo icon net 1.8dp, bo tron; mau lay tu tint cua view -->
+<!-- Bo icon net 1.8dp, bo tron; to mau bang tint cua view (khong dung thuoc tinh theme de dung duoc trong Hub noi) -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
     android:viewportWidth="24"
-    android:viewportHeight="24"
-    android:tint="?attr/colorControlNormal">
+    android:viewportHeight="24">
     <path
         android:fillColor="#00000000"
         android:strokeColor="#FF000000"

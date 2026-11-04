@@ -4,15 +4,19 @@ import android.content.Context
 import android.graphics.Color
 import android.graphics.PixelFormat
 import android.graphics.Typeface
+import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.text.TextUtils
 import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
+import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import com.starclan.starhub.R
 import com.starclan.starhub.data.HubFormat
 import com.starclan.starhub.data.StatsFormat
 import com.starclan.starhub.engine.FarmController
@@ -51,34 +55,34 @@ object FarmOverlay {
     private const val TAB_SETTING = 1
     private const val TAB_MISC = 2
     private const val TAB_EVENT = 3
-    private val TAB_LABELS = listOf("⚔️ Farm", "⚙️ Setting", "🧰 Misc", "🎉 Event")
-    private const val C_TAB_ON = "#6A4FB3"
+    private val TAB_LABELS = listOf("Farm", "Setting", "Misc", "Event")
+    private val TAB_ICONS = listOf(R.drawable.ic_bolt, R.drawable.ic_sliders, R.drawable.ic_grid, R.drawable.ic_star)
 
     // Nho tab dang chon + cai dat tu thu gon giua cac lan bat Hub (SharedPreferences rieng, khong chua token)
     private const val PREFS = "starhub_overlay"
     private const val PREF_TAB = "tab"
     private const val PREF_AUTO_COLLAPSE = "auto_collapse"
-    private const val STATS_CLEAR_LABEL = "🗑 Xóa thống kê"
+    private const val STATS_CLEAR_LABEL = "Xóa thống kê"
     private var clearStatsConfirmUntilMs = 0L
 
-    // Mau: nen toi, nhan vang giong bong bong. Chu sang tren nen toi de de doc tren man Discord.
-    private const val C_PANEL = "#F2161A24"
-    private const val C_CARD = "#252A3A"
-    private const val C_TITLE = "#FFFFFF"
-    private const val C_TEXT = "#F2F4F8"
-    private const val C_MUTED = "#A8B3C7"
-    private const val C_GOLD = "#FFD54F"
-    private const val C_GOOD = "#6EE7A0"
-    private const val C_WARN = "#FFAB91"
-    private const val C_OFF = "#8A93A6"
-    private const val C_BTN = "#343B4F"
-    private const val C_START = "#2E7D32"
-    private const val C_STOP = "#C62828"
+    // Mau lay tu UiTheme (cung he mau voi man hinh XML cua app). C_PANEL = SURFACE + do trong suot F2.
+    private const val C_PANEL = "#F212151C"
+    private const val C_CARD = UiTheme.RAISED
+    private const val C_TITLE = UiTheme.TEXT_PRIMARY
+    private const val C_TEXT = UiTheme.TEXT_PRIMARY
+    private const val C_LABEL = UiTheme.TEXT_SECONDARY
+    private const val C_MUTED = UiTheme.TEXT_MUTED
+    private const val C_GOOD = UiTheme.OK
+    private const val C_WARN = UiTheme.WARN
+    private const val C_OFF = UiTheme.TEXT_MUTED
+
+    /** Kieu nut: PRIMARY = vang (duy nhat 1 nut chinh), DANGER = do nhat, ACTIVE = tim nhat (dang bat), SECONDARY = nen noi */
+    private enum class Btn { PRIMARY, DANGER, ACTIVE, SECONDARY }
 
     private enum class Tone { NORMAL, GOOD, WARN, MUTED }
 
     /** 1 dong: nhan (cot trai, co the de trong) + gia tri */
-    private class Row(val label: String, val value: String, val tone: Tone = Tone.NORMAL)
+    private class Row(val label: String, val value: String, val tone: Tone = Tone.NORMAL, val build: ((Context) -> View)? = null)
 
     private class Group(
         val card: LinearLayout,
@@ -112,6 +116,10 @@ object FarmOverlay {
     private var tvDot: TextView? = null
     private var tvStatusTitle: TextView? = null
     private var tvStatusCounts: TextView? = null
+    private var tvHuntBig: TextView? = null
+    private var tvBattleBig: TextView? = null
+    private var bubbleBg: GradientDrawable? = null
+    private var bubbleIcon: ImageView? = null
     private var tvStatusDetail: TextView? = null
     private var tvAlert: TextView? = null
     private var waitView: WaitCountdownView? = null
@@ -173,32 +181,195 @@ object FarmOverlay {
         tabButtons.clear()
         tabContainers.clear()
         btnAuto = null
+        tvHuntBig = null
+        tvBattleBig = null
+        bubbleBg = null
+        bubbleIcon = null
         // Hub TAT = bot OFF (khong giao viec cho app nua)
         if (ctxForPower != null) FarmController.reportHubPower(ctxForPower, false)
     }
 
     // ------------------------------------------------------------------ dung giao dien
 
-    private fun pill(ctx: Context, text: String, bg: String, size: Float = 12.5f): TextView {
+    private fun iconDrawable(ctx: Context, res: Int, sizePx: Int, color: String = UiTheme.TEXT_PRIMARY): Drawable? {
+        val d = ctx.getDrawable(res)?.mutate() ?: return null
+        d.setBounds(0, 0, sizePx, sizePx)
+        d.setTint(Color.parseColor(color))
+        return d
+    }
+
+    private fun roundBg(color: String, radiusDp: Int, strokeColor: String? = null): GradientDrawable {
+        val d = GradientDrawable()
+        d.cornerRadius = dp(radiusDp).toFloat()
+        d.setColor(Color.parseColor(color))
+        if (strokeColor != null) d.setStroke(dp(1), Color.parseColor(strokeColor))
+        return d
+    }
+
+    /** To nen + vien + mau chu (va icon kem theo) cua 1 nut theo kieu Btn */
+    private fun styleBtn(v: View?, kind: Btn) {
+        if (v == null) return
+        val bg: String
+        val line: String
+        val fg: String
+        when (kind) {
+            Btn.PRIMARY -> { bg = UiTheme.ACCENT; line = UiTheme.ACCENT; fg = UiTheme.ACCENT_ON }
+            Btn.DANGER -> { bg = UiTheme.BAD_TINT; line = UiTheme.BAD_LINE; fg = UiTheme.BAD }
+            Btn.ACTIVE -> { bg = UiTheme.SELECTED_TINT; line = UiTheme.SELECTED; fg = UiTheme.SELECTED }
+            Btn.SECONDARY -> { bg = UiTheme.RAISED; line = UiTheme.LINE; fg = UiTheme.TEXT_PRIMARY }
+        }
+        v.background = roundBg(bg, 12, line)
+        if (v is TextView) {
+            v.setTextColor(Color.parseColor(fg))
+            for (dr in v.compoundDrawables) dr?.setTint(Color.parseColor(fg))
+        }
+        if (v is ImageView) v.drawable?.setTint(Color.parseColor(fg))
+    }
+
+    /** Doi chu + icon + kieu nut cung luc (nut Bat dau / Dung) */
+    private fun setBtnState(t: TextView?, text: String, kind: Btn, icon: Int?) {
+        if (t == null) return
+        t.text = text
+        val ctx = viewCtx
+        if (ctx != null && icon != null) t.setCompoundDrawables(iconDrawable(ctx, icon, dp(18)), null, null, null)
+        styleBtn(t, kind)
+    }
+
+    private fun pill(ctx: Context, text: String, kind: Btn = Btn.SECONDARY, size: Float = 13f, icon: Int? = null): TextView {
         val t = TextView(ctx)
         t.text = text
         t.textSize = size
-        t.setTextColor(Color.parseColor(C_TEXT))
         t.setTypeface(null, Typeface.BOLD)
         t.gravity = Gravity.CENTER
-        t.setPadding(dp(6), dp(8), dp(6), dp(8))
-        t.minHeight = dp(40)
+        t.setPadding(dp(10), dp(8), dp(10), dp(8))
+        t.minHeight = dp(44)
         t.maxLines = 2
-        val d = GradientDrawable()
-        d.cornerRadius = dp(10).toFloat()
-        d.setColor(Color.parseColor(bg))
-        t.background = d
+        if (icon != null) {
+            t.setCompoundDrawables(iconDrawable(ctx, icon, dp(18)), null, null, null)
+            t.compoundDrawablePadding = dp(8)
+        }
         t.isClickable = true
+        styleBtn(t, kind)
         return t
     }
 
-    private fun setPillColor(t: TextView?, color: String) {
-        (t?.background as? GradientDrawable)?.setColor(Color.parseColor(color))
+    /** Nut chi co icon (thu gon, tat Hub): 44x44dp */
+    private fun iconButton(ctx: Context, res: Int): ImageView {
+        val v = ImageView(ctx)
+        v.setImageDrawable(iconDrawable(ctx, res, dp(20)))
+        v.scaleType = ImageView.ScaleType.CENTER
+        v.isClickable = true
+        styleBtn(v, Btn.SECONDARY)
+        return v
+    }
+
+    /** Nut tab: icon tren, chu duoi. Dang chon = nen noi + tim; khong chon = trong suot + xam mo */
+    private fun styleTab(t: TextView, selected: Boolean) {
+        val fg = if (selected) UiTheme.SELECTED else UiTheme.TEXT_MUTED
+        t.background = if (selected) roundBg(UiTheme.RAISED, 10, UiTheme.LINE) else null
+        t.setTextColor(Color.parseColor(fg))
+        for (dr in t.compoundDrawables) dr?.setTint(Color.parseColor(fg))
+    }
+
+    private fun setBubbleState(color: String) {
+        bubbleBg?.setStroke(dp(2), Color.parseColor(color))
+        bubbleIcon?.drawable?.setTint(Color.parseColor(color))
+    }
+
+    private fun caption(ctx: Context, text: String, color: String = C_LABEL): TextView {
+        val t = TextView(ctx)
+        t.text = text
+        t.textSize = 11.5f
+        t.setTextColor(Color.parseColor(color))
+        return t
+    }
+
+    /** Hang cac o so lon (so 26 dam + nhan nho). Tra ve ca cac TextView so de cap nhat sau. */
+    private fun tileRow(ctx: Context, items: List<Triple<String, String, String>>): Pair<LinearLayout, List<TextView>> {
+        val row = LinearLayout(ctx)
+        row.orientation = LinearLayout.HORIZONTAL
+        val numbers = mutableListOf<TextView>()
+        for ((i, item) in items.withIndex()) {
+            val tile = LinearLayout(ctx)
+            tile.orientation = LinearLayout.VERTICAL
+            tile.setPadding(dp(10), dp(8), dp(10), dp(8))
+            tile.background = roundBg(UiTheme.BG, 12, UiTheme.LINE)
+            val n = TextView(ctx)
+            n.text = item.second
+            n.textSize = 26f
+            n.setTypeface(null, Typeface.BOLD)
+            n.setTextColor(Color.parseColor(item.third))
+            n.maxLines = 1
+            tile.addView(n, lparams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT))
+            tile.addView(caption(ctx, item.first), lparams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT))
+            numbers.add(n)
+            val lp = lparams(0, LinearLayout.LayoutParams.WRAP_CONTENT, weight = 1f)
+            lp.setMargins(if (i == 0) 0 else dp(3), 0, if (i == items.size - 1) 0 else dp(3), 0)
+            row.addView(tile, lp)
+        }
+        return Pair(row, numbers)
+    }
+
+    /** Dong gem: ten + [hien tai/toi da] + thanh do ben 4dp (vang khi sap het) */
+    private fun gemBarRow(ctx: Context, name: String, text: String, percent: Int, low: Boolean): View {
+        val box = LinearLayout(ctx)
+        box.orientation = LinearLayout.VERTICAL
+        box.setPadding(0, dp(4), 0, dp(4))
+        val top = LinearLayout(ctx)
+        top.orientation = LinearLayout.HORIZONTAL
+        val l = caption(ctx, name)
+        val v = TextView(ctx)
+        v.text = if (low) "$text · sắp hết" else text
+        v.textSize = 13f
+        v.setTextColor(Color.parseColor(if (low) C_WARN else C_TEXT))
+        v.gravity = Gravity.END
+        top.addView(l, lparams(0, LinearLayout.LayoutParams.WRAP_CONTENT, weight = 1f))
+        top.addView(v, lparams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT))
+        val pct = percent.coerceIn(0, 100)
+        val bar = LinearLayout(ctx)
+        bar.orientation = LinearLayout.HORIZONTAL
+        bar.background = roundBg(UiTheme.BAR_IDLE, 2)
+        val fill = View(ctx)
+        fill.background = roundBg(if (low) UiTheme.WARN else UiTheme.OK, 2)
+        if (pct > 0) bar.addView(fill, LinearLayout.LayoutParams(0, dp(4), pct.toFloat()))
+        if (pct < 100) bar.addView(View(ctx), LinearLayout.LayoutParams(0, dp(4), (100 - pct).toFloat()))
+        box.addView(top, lparams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT))
+        box.addView(bar, lparams(LinearLayout.LayoutParams.MATCH_PARENT, dp(4)).also { it.topMargin = dp(4) })
+        return box
+    }
+
+    /** Huntbot: vong tron % + tieu de + dong phu */
+    private fun ringRow(ctx: Context, pct: Int, title: String, sub: String): View {
+        val row = LinearLayout(ctx)
+        row.orientation = LinearLayout.HORIZONTAL
+        row.gravity = Gravity.CENTER_VERTICAL
+        row.setPadding(0, dp(2), 0, dp(4))
+        val holder = FrameLayout(ctx)
+        val ring = RingView(ctx)
+        ring.strokeWidthDp = 4f
+        ring.ringColor = Color.parseColor(UiTheme.OK)
+        ring.trackColor = Color.parseColor(UiTheme.BAR_IDLE)
+        ring.percent = pct
+        holder.addView(ring, FrameLayout.LayoutParams(dp(44), dp(44)))
+        val label = TextView(ctx)
+        label.text = "$pct%"
+        label.textSize = 11f
+        label.setTypeface(null, Typeface.BOLD)
+        label.setTextColor(Color.parseColor(C_TEXT))
+        label.gravity = Gravity.CENTER
+        holder.addView(label, FrameLayout.LayoutParams(dp(44), dp(44)))
+        val texts = LinearLayout(ctx)
+        texts.orientation = LinearLayout.VERTICAL
+        val t1 = TextView(ctx)
+        t1.text = title
+        t1.textSize = 13f
+        t1.setTypeface(null, Typeface.BOLD)
+        t1.setTextColor(Color.parseColor(C_GOOD))
+        texts.addView(t1)
+        texts.addView(caption(ctx, sub))
+        row.addView(holder, lparams(dp(44), dp(44)))
+        row.addView(texts, lparams(0, LinearLayout.LayoutParams.WRAP_CONTENT, weight = 1f).also { it.leftMargin = dp(10) })
+        return row
     }
 
     private fun lparams(w: Int, h: Int, weight: Float = 0f, margin: Int = 0): LinearLayout.LayoutParams {
@@ -207,14 +378,11 @@ object FarmOverlay {
         return p
     }
 
-    private fun makeGroup(ctx: Context, key: String, title: String): LinearLayout {
+    private fun makeGroup(ctx: Context, key: String, title: String, icon: Int? = null): LinearLayout {
         val card = LinearLayout(ctx)
         card.orientation = LinearLayout.VERTICAL
-        card.setPadding(dp(10), dp(8), dp(10), dp(8))
-        val bg = GradientDrawable()
-        bg.cornerRadius = dp(10).toFloat()
-        bg.setColor(Color.parseColor(C_CARD))
-        card.background = bg
+        card.setPadding(dp(12), dp(10), dp(12), dp(10))
+        card.background = roundBg(C_CARD, 12, UiTheme.LINE)
 
         val header = LinearLayout(ctx)
         header.orientation = LinearLayout.HORIZONTAL
@@ -222,9 +390,13 @@ object FarmOverlay {
 
         val titleTv = TextView(ctx)
         titleTv.text = title
-        titleTv.textSize = 13.5f
+        titleTv.textSize = 13f
         titleTv.setTypeface(null, Typeface.BOLD)
         titleTv.setTextColor(Color.parseColor(C_TITLE))
+        if (icon != null) {
+            titleTv.setCompoundDrawables(iconDrawable(ctx, icon, dp(18), UiTheme.TEXT_SECONDARY), null, null, null)
+            titleTv.compoundDrawablePadding = dp(8)
+        }
 
         val summary = TextView(ctx)
         summary.textSize = 11.5f
@@ -237,6 +409,7 @@ object FarmOverlay {
         val chevron = TextView(ctx)
         chevron.textSize = 13f
         chevron.setTextColor(Color.parseColor(C_MUTED))
+        chevron.minimumHeight = dp(24)
 
         header.addView(titleTv, lparams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT))
         header.addView(summary, lparams(0, LinearLayout.LayoutParams.WRAP_CONTENT, weight = 1f))
@@ -264,10 +437,17 @@ object FarmOverlay {
         val g = groups[key] ?: return
         val isCollapsed = key in collapsed
         g.body.visibility = if (isCollapsed) View.GONE else View.VISIBLE
-        g.chevron.text = if (isCollapsed) "►" else "▼"
+        val ctx = viewCtx
+        if (ctx != null) {
+            g.chevron.setCompoundDrawables(
+                iconDrawable(ctx, if (isCollapsed) R.drawable.ic_chevron_down else R.drawable.ic_chevron_up, dp(18), UiTheme.TEXT_MUTED),
+                null, null, null
+            )
+        }
     }
 
     private fun rowView(ctx: Context, r: Row): View {
+        r.build?.let { return it(ctx) }
         val color = when (r.tone) {
             Tone.GOOD -> C_GOOD
             Tone.WARN -> C_WARN
@@ -276,12 +456,12 @@ object FarmOverlay {
         }
         val line = LinearLayout(ctx)
         line.orientation = LinearLayout.HORIZONTAL
-        line.setPadding(0, dp(3), 0, dp(3))
+        line.setPadding(0, dp(4), 0, dp(4))
         if (r.label.isNotEmpty()) {
             val l = TextView(ctx)
             l.text = r.label
-            l.textSize = 12f
-            l.setTextColor(Color.parseColor(C_MUTED))
+            l.textSize = 11.5f
+            l.setTextColor(Color.parseColor(C_LABEL))
             line.addView(l, lparams(dp(92), LinearLayout.LayoutParams.WRAP_CONTENT))
         }
         val v = TextView(ctx)
@@ -330,27 +510,34 @@ object FarmOverlay {
         val container = LinearLayout(service)
         container.orientation = LinearLayout.VERTICAL
 
-        // ---- Bong bong ----
+        // ---- Bong bong: vien vang (binh thuong) / tim + dem nguoc (dang cho) / do (captcha) ----
+        val bubbleBox = FrameLayout(service)
+        val bgOval = GradientDrawable()
+        bgOval.shape = GradientDrawable.OVAL
+        bgOval.setColor(Color.parseColor("#F00F121A"))
+        bgOval.setStroke(dp(2), Color.parseColor(UiTheme.ACCENT))
+        bubbleBox.background = bgOval
+        bubbleBg = bgOval
+        val starIcon = ImageView(service)
+        starIcon.setImageDrawable(iconDrawable(service, R.drawable.ic_star, dp(22), UiTheme.ACCENT))
+        starIcon.scaleType = ImageView.ScaleType.CENTER
+        bubbleIcon = starIcon
         val bubble = TextView(service)
-        bubble.text = "⭐"
-        bubble.textSize = 20f
+        bubble.textSize = 11f
+        bubble.setTypeface(null, Typeface.BOLD)
+        bubble.setTextColor(Color.parseColor(UiTheme.TEXT_PRIMARY))
         bubble.gravity = Gravity.CENTER
-        val bubbleBg = GradientDrawable()
-        bubbleBg.shape = GradientDrawable.OVAL
-        bubbleBg.setColor(Color.parseColor("#E61B1F2A"))
-        bubbleBg.setStroke(dp(2), Color.parseColor(C_GOLD))
-        bubble.background = bubbleBg
-        container.addView(bubble, LinearLayout.LayoutParams(dp(46), dp(46)))
+        bubble.visibility = View.GONE
+        bubbleBox.addView(starIcon, FrameLayout.LayoutParams(dp(46), dp(46)))
+        bubbleBox.addView(bubble, FrameLayout.LayoutParams(dp(46), dp(46)))
+        container.addView(bubbleBox, LinearLayout.LayoutParams(dp(46), dp(46)))
 
         // ---- Khung chinh ----
         val panelWidth = minOf(dp(300), screenW - dp(40))
         val panelBox = TouchAwareLinearLayout(service) { if (panel?.visibility == View.VISIBLE) scheduleAutoCollapse() }
         panelBox.orientation = LinearLayout.VERTICAL
-        panelBox.setPadding(dp(10), dp(10), dp(10), dp(10))
-        val panelBg = GradientDrawable()
-        panelBg.cornerRadius = dp(14).toFloat()
-        panelBg.setColor(Color.parseColor(C_PANEL))
-        panelBox.background = panelBg
+        panelBox.setPadding(dp(12), dp(12), dp(12), dp(12))
+        panelBox.background = roundBg(C_PANEL, 16, UiTheme.LINE)
         panelBox.visibility = View.GONE
         panel = panelBox
 
@@ -360,35 +547,33 @@ object FarmOverlay {
         statusRow.gravity = Gravity.CENTER_VERTICAL
         val dot = TextView(service)
         dot.text = "●"
-        dot.textSize = 14f
+        dot.textSize = 12f
         dot.setTextColor(Color.parseColor(C_OFF))
         dot.setPadding(0, 0, dp(6), 0)
         val statusTitle = TextView(service)
-        statusTitle.textSize = 15f
+        statusTitle.textSize = 14f
         statusTitle.setTypeface(null, Typeface.BOLD)
         statusTitle.setTextColor(Color.parseColor(C_TITLE))
         val statusCounts = TextView(service)
-        statusCounts.textSize = 12f
-        statusCounts.setTextColor(Color.parseColor(C_MUTED))
+        statusCounts.textSize = 11.5f
+        statusCounts.setTextColor(Color.parseColor(C_LABEL))
         statusRow.addView(dot, lparams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT))
         statusRow.addView(statusTitle, lparams(0, LinearLayout.LayoutParams.WRAP_CONTENT, weight = 1f))
         statusRow.addView(statusCounts, lparams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT))
 
         val statusDetail = TextView(service)
         statusDetail.textSize = 11.5f
-        statusDetail.setTextColor(Color.parseColor(C_MUTED))
-        statusDetail.setPadding(0, dp(2), 0, dp(4))
+        statusDetail.setTextColor(Color.parseColor(C_LABEL))
+        statusDetail.setPadding(0, dp(2), 0, dp(6))
 
         val alert = TextView(service)
-        alert.textSize = 12.5f
+        alert.textSize = 13f
         alert.setTypeface(null, Typeface.BOLD)
-        alert.setTextColor(Color.parseColor(C_GOLD))
-        alert.setPadding(dp(10), dp(8), dp(10), dp(8))
-        val alertBg = GradientDrawable()
-        alertBg.cornerRadius = dp(10).toFloat()
-        alertBg.setColor(Color.parseColor("#3DFFB300"))
-        alertBg.setStroke(dp(1), Color.parseColor("#80FFB300"))
-        alert.background = alertBg
+        alert.setTextColor(Color.parseColor(UiTheme.BAD))
+        alert.setPadding(dp(12), dp(10), dp(12), dp(10))
+        alert.setCompoundDrawables(iconDrawable(service, R.drawable.ic_alert, dp(18), UiTheme.BAD), null, null, null)
+        alert.compoundDrawablePadding = dp(8)
+        alert.background = roundBg(UiTheme.BAD_TINT, 12, UiTheme.BAD_LINE)
         alert.visibility = View.GONE
 
         tvDot = dot
@@ -402,42 +587,43 @@ object FarmOverlay {
         val countdown = WaitCountdownView(service)
         countdown.onTick = { t ->
             if (t == null) {
-                bubble.text = "⭐"
-                bubble.textSize = 20f
+                bubble.visibility = View.GONE
+                starIcon.visibility = View.VISIBLE
             } else {
                 bubble.text = t
-                bubble.textSize = 11f
+                bubble.visibility = View.VISIBLE
+                starIcon.visibility = View.GONE
             }
         }
         waitView = countdown
 
         // -- Nut: hang 1 (bat dau/dung + tat chuong), hang 2 (hunt mode, thu gon, tat hub) --
-        val toggle = pill(service, "► Bắt đầu", C_START, 14f)
-        val muteBtn = pill(service, "🔕 Tắt chuông", C_BTN)
+        val toggle = pill(service, "Bắt đầu", Btn.PRIMARY, 14f, R.drawable.ic_play)
+        val muteBtn = pill(service, "Tắt chuông", Btn.DANGER, 13f, R.drawable.ic_alert)
         muteBtn.visibility = View.GONE
-        val modeBtn = pill(service, "🎯 Mode 3 · không dừng", C_BTN)
-        val hideBtn = pill(service, "➖", C_BTN, 14f)
-        val closeBtn = pill(service, "✖", C_BTN, 14f)
-        val eventBtn = pill(service, "🎉 Event: Tắt", C_BTN)
-        val autoBtn = pill(service, "", C_BTN)
-        val clearStatsBtn = pill(service, STATS_CLEAR_LABEL, C_BTN)
+        val modeBtn = pill(service, "Hunt mode 3 · không dừng", Btn.SECONDARY, 13f, R.drawable.ic_sliders)
+        val hideBtn = iconButton(service, R.drawable.ic_minus)
+        val closeBtn = iconButton(service, R.drawable.ic_close)
+        val eventBtn = pill(service, "Event: Tắt", Btn.SECONDARY, 13f, R.drawable.ic_star)
+        val autoBtn = pill(service, "")
+        val clearStatsBtn = pill(service, STATS_CLEAR_LABEL, Btn.DANGER)
         btnToggle = toggle
         btnMute = muteBtn
         btnMode = modeBtn
         btnEvent = eventBtn
         btnAuto = autoBtn
-        val tagBtn = pill(service, "📚 Học lời khuyên vũ khí", C_BTN, 12f)
+        val tagBtn = pill(service, "Học lời khuyên vũ khí", Btn.SECONDARY, 13f, R.drawable.ic_quest)
         btnTags = tagBtn
 
         // Dung moi tab de bam duoc: hang tren cung (Bat dau/Dung + thu gon + tat Hub) luon hien o moi tab
         val rowMute = LinearLayout(service)
         rowMute.orientation = LinearLayout.HORIZONTAL
-        rowMute.addView(muteBtn, lparams(0, LinearLayout.LayoutParams.WRAP_CONTENT, weight = 1f, margin = dp(2)))
+        rowMute.addView(muteBtn, lparams(0, LinearLayout.LayoutParams.WRAP_CONTENT, weight = 1f).also { it.bottomMargin = dp(6) })
         val row1 = LinearLayout(service)
         row1.orientation = LinearLayout.HORIZONTAL
-        row1.addView(toggle, lparams(0, LinearLayout.LayoutParams.WRAP_CONTENT, weight = 3f, margin = dp(2)))
-        row1.addView(hideBtn, lparams(0, LinearLayout.LayoutParams.WRAP_CONTENT, weight = 0.8f, margin = dp(2)))
-        row1.addView(closeBtn, lparams(0, LinearLayout.LayoutParams.WRAP_CONTENT, weight = 0.8f, margin = dp(2)))
+        row1.addView(toggle, lparams(0, dp(44), weight = 1f))
+        row1.addView(hideBtn, lparams(dp(44), dp(44)).also { it.leftMargin = dp(6) })
+        row1.addView(closeBtn, lparams(dp(44), dp(44)).also { it.leftMargin = dp(6) })
 
         // -- Thanh 4 tab: Farm / Setting / Misc / Event --
         val prefs = service.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -445,15 +631,27 @@ object FarmOverlay {
         currentTab = prefs.getInt(PREF_TAB, TAB_FARM).coerceIn(0, TAB_LABELS.size - 1)
         val tabBar = LinearLayout(service)
         tabBar.orientation = LinearLayout.HORIZONTAL
-        tabBar.setPadding(0, dp(6), 0, dp(6))
+        tabBar.setPadding(dp(4), dp(4), dp(4), dp(4))
+        tabBar.background = roundBg(UiTheme.BG, 12, UiTheme.LINE)
         tabButtons.clear()
         for ((i, label) in TAB_LABELS.withIndex()) {
-            val t = pill(service, label, C_BTN, 11.5f)
-            t.minHeight = dp(34)
+            val t = TextView(service)
+            t.text = label
+            t.textSize = 11.5f
+            t.setTypeface(null, Typeface.BOLD)
+            t.gravity = Gravity.CENTER_HORIZONTAL
+            t.setPadding(dp(2), dp(6), dp(2), dp(4))
+            t.minHeight = dp(46)
+            t.setCompoundDrawables(null, iconDrawable(service, TAB_ICONS[i], dp(18)), null, null)
+            t.compoundDrawablePadding = dp(2)
+            t.isClickable = true
+            styleTab(t, false)
             t.setOnClickListener { showTab(i) }
             tabButtons.add(t)
-            tabBar.addView(t, lparams(0, LinearLayout.LayoutParams.WRAP_CONTENT, weight = 1f, margin = dp(2)))
+            tabBar.addView(t, lparams(0, LinearLayout.LayoutParams.WRAP_CONTENT, weight = 1f, margin = dp(1)))
         }
+        val tabBarLp = LinearLayout.LayoutParams(panelWidth, LinearLayout.LayoutParams.WRAP_CONTENT)
+        tabBarLp.setMargins(0, dp(10), 0, dp(10))
 
         // -- Noi dung 4 tab (cuon duoc): moi tab 1 khung rieng, moi luc chi hien 1 khung --
         val content = LinearLayout(service)
@@ -473,25 +671,32 @@ object FarmOverlay {
                 }
             )
         }
-        fun addGroupTo(tab: Int, key: String, title: String) = addTo(tab, makeGroup(service, key, title))
+        fun addGroupTo(tab: Int, key: String, title: String, icon: Int) = addTo(tab, makeGroup(service, key, title, icon))
 
         // Farm: tinh hinh farm, gem, huntbot
-        addGroupTo(TAB_FARM, "farm", "⚔️ Farm")
-        addGroupTo(TAB_FARM, "gem", "💎 Gem")
-        addGroupTo(TAB_FARM, "hb", "🤖 Huntbot")
+        val bigTiles = tileRow(
+            service,
+            listOf(Triple("Hunt", "0", UiTheme.TEXT_PRIMARY), Triple("Battle", "0", UiTheme.TEXT_PRIMARY))
+        )
+        tvHuntBig = bigTiles.second[0]
+        tvBattleBig = bigTiles.second[1]
+        addTo(TAB_FARM, bigTiles.first)
+        addGroupTo(TAB_FARM, "farm", "Farm", R.drawable.ic_bolt)
+        addGroupTo(TAB_FARM, "gem", "Gem", R.drawable.ic_gem)
+        addGroupTo(TAB_FARM, "hb", "Huntbot", R.drawable.ic_huntbot)
         // Setting: cac cai dat cua Hub noi
         addTo(TAB_SETTING, modeBtn)
         addTo(TAB_SETTING, autoBtn)
         addTo(TAB_SETTING, clearStatsBtn)
         // Misc: hoc loi khuyen vu khi, thong ke, tai nguyen, nhiem vu, zoo
         addTo(TAB_MISC, tagBtn)
-        addGroupTo(TAB_MISC, "stats", "📊 Thống kê")
-        addGroupTo(TAB_MISC, "res", "💰 Tài nguyên")
-        addGroupTo(TAB_MISC, "quest", "📋 Nhiệm vụ")
-        addGroupTo(TAB_MISC, "zoo", "🐾 Zoo & pet mới")
+        addGroupTo(TAB_MISC, "stats", "Thống kê", R.drawable.ic_chart)
+        addGroupTo(TAB_MISC, "res", "Tài nguyên", R.drawable.ic_coin)
+        addGroupTo(TAB_MISC, "quest", "Nhiệm vụ", R.drawable.ic_quest)
+        addGroupTo(TAB_MISC, "zoo", "Zoo & pet mới", R.drawable.ic_pets)
         // Event: bat/tat che do event + dem su kien
         addTo(TAB_EVENT, eventBtn)
-        addGroupTo(TAB_EVENT, "event", "🎉 Sự kiện")
+        addGroupTo(TAB_EVENT, "event", "Sự kiện", R.drawable.ic_star)
 
         val scroll = MaxHeightScrollView(service, (screenH * 0.46f).toInt())
         scroll.isVerticalScrollBarEnabled = false
@@ -504,7 +709,7 @@ object FarmOverlay {
         panelBox.addView(alert, LinearLayout.LayoutParams(panelWidth, wrap).also { it.setMargins(0, 0, 0, dp(6)) })
         panelBox.addView(rowMute, LinearLayout.LayoutParams(panelWidth, wrap))
         panelBox.addView(row1, LinearLayout.LayoutParams(panelWidth, wrap))
-        panelBox.addView(tabBar, LinearLayout.LayoutParams(panelWidth, wrap))
+        panelBox.addView(tabBar, tabBarLp)
         panelBox.addView(scroll, LinearLayout.LayoutParams(panelWidth, wrap))
         container.addView(panelBox, LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT))
@@ -540,7 +745,7 @@ object FarmOverlay {
                 render(FarmController.state.value)
             } else {
                 clearStatsConfirmUntilMs = now + 4_000L
-                clearStatsBtn.text = "⚠️ Bấm lại để xóa hết thống kê"
+                clearStatsBtn.text = "Bấm lại để xóa hết thống kê"
                 scope?.launch {
                     delay(4_000L)
                     clearStatsBtn.text = STATS_CLEAR_LABEL
@@ -564,7 +769,7 @@ object FarmOverlay {
         // Hub BAT = bot ON
         FarmController.reportHubPower(service.applicationContext, true)
 
-        bubble.setOnTouchListener(object : View.OnTouchListener {
+        bubbleBox.setOnTouchListener(object : View.OnTouchListener {
             private var startX = 0
             private var startY = 0
             private var touchX = 0f
@@ -617,12 +822,12 @@ object FarmOverlay {
         s.launch {
             TagCollector.progress.collect { p ->
                 val label = when {
-                    p.running -> "📚 Đang học ${p.done}/${p.total} · bấm để dừng"
-                    p.message.isNotEmpty() -> "📚 ${p.message}"
-                    else -> "📚 Học lời khuyên vũ khí"
+                    p.running -> "Đang học ${p.done}/${p.total} · bấm để dừng"
+                    p.message.isNotEmpty() -> p.message
+                    else -> "Học lời khuyên vũ khí"
                 }
                 btnTags?.text = label
-                setPillColor(btnTags, if (p.running) "#6A4FB3" else C_BTN)
+                styleBtn(btnTags, if (p.running) Btn.ACTIVE else Btn.SECONDARY)
                 render(FarmController.state.value)
             }
         }
@@ -641,7 +846,7 @@ object FarmOverlay {
         if (tabContainers.isEmpty()) return
         currentTab = i.coerceIn(0, tabContainers.size - 1)
         for ((k, c) in tabContainers.withIndex()) c.visibility = if (k == currentTab) View.VISIBLE else View.GONE
-        for ((k, b) in tabButtons.withIndex()) setPillColor(b, if (k == currentTab) C_TAB_ON else C_BTN)
+        for ((k, b) in tabButtons.withIndex()) styleTab(b, k == currentTab)
         viewCtx?.getSharedPreferences(PREFS, Context.MODE_PRIVATE)?.edit()?.putInt(PREF_TAB, currentTab)?.apply()
         relayout()
     }
@@ -659,8 +864,8 @@ object FarmOverlay {
     }
 
     private fun updateAutoBtn() {
-        btnAuto?.text = if (autoCollapse) "⏱ Tự thu gọn menu: BẬT" else "⏱ Tự thu gọn menu: Tắt"
-        setPillColor(btnAuto, if (autoCollapse) C_TAB_ON else C_BTN)
+        btnAuto?.text = if (autoCollapse) "Tự thu gọn menu: BẬT" else "Tự thu gọn menu: Tắt"
+        styleBtn(btnAuto, if (autoCollapse) Btn.ACTIVE else Btn.SECONDARY)
     }
 
     private fun togglePanel() {
@@ -702,17 +907,42 @@ object FarmOverlay {
 
     // ------------------------------------------------------------------ do du lieu vao giao dien
 
-    /** Nhom "📊 Thong ke": hom nay + cac ngay truoc (so lieu luu o may, khong can bot) */
+    /** Nhom "Thong ke": 3 so lon hom nay + bieu do cot 7 ngay + dong chi tiet (so lieu luu o may, khong can bot) */
     private fun renderStats() {
         val days = FarmController.statsSnapshot(7)
-        val todayKey = LocalDate.now().toString()
-        val t = days.firstOrNull { it.date == todayKey }
+        val today = LocalDate.now()
+        val todayKey = today.toString()
+        val byDate = days.associateBy { it.date }
+        val t = byDate[todayKey]
         val rows = mutableListOf<Row>()
         if (t == null) {
             rows.add(Row("Hôm nay", "Chưa có số liệu (bấm Bắt đầu để farm)", Tone.MUTED))
         } else {
-            rows.add(Row("Hôm nay", "${t.hunts} hunt · ${t.battles} battle"))
-            rows.add(Row("Chạy", "${StatsFormat.duration(t.seconds)} · ${t.sessions} phiên"))
+            val runText = StatsFormat.duration(t.seconds).replace(" phút", "p")
+            rows.add(Row("", "", build = { c ->
+                tileRow(
+                    c,
+                    listOf(
+                        Triple("Hunt", t.hunts.toString(), UiTheme.TEXT_PRIMARY),
+                        Triple("Battle", t.battles.toString(), UiTheme.TEXT_PRIMARY),
+                        Triple("Chạy", runText, UiTheme.TEXT_PRIMARY)
+                    )
+                ).first
+            }))
+        }
+        // bieu do 7 ngay (hunt + battle moi ngay), hom nay mau tim
+        val bars = (6 downTo 0).map { back ->
+            val d = today.minusDays(back.toLong())
+            val ds = byDate[d.toString()]
+            DayBar(StatsFormat.shortDate(d.toString()), (ds?.hunts ?: 0) + (ds?.battles ?: 0), back == 0)
+        }
+        rows.add(Row("", "", build = { c ->
+            val chart = DayBarsView(c)
+            chart.bars = bars
+            chart.also { it.setPadding(0, dp(8), 0, 0) }
+        }))
+        if (t != null) {
+            rows.add(Row("Phiên chạy", "${t.sessions} phiên"))
             rows.add(Row("Pet mới", "${t.newPets}"))
             rows.add(Row("Captcha", "${t.captchas} lần", if (t.captchas > 0) Tone.WARN else Tone.NORMAL))
             if (t.maxSlowdown30m > 0) {
@@ -726,19 +956,12 @@ object FarmOverlay {
                 rows.add(Row("Cowoncy", "Chưa đọc owo cash hôm nay", Tone.MUTED))
             }
         }
-        val older = days.filter { it.date != todayKey }
-        if (older.isNotEmpty()) {
-            rows.add(Row("", "Các ngày trước:", Tone.MUTED))
-            for (d in older.take(6)) {
-                val cap = if (d.captchas > 0) " · 🚨${d.captchas}" else ""
-                rows.add(Row(StatsFormat.shortDate(d.date), "${d.hunts} hunt · ${d.battles} battle · ${StatsFormat.duration(d.seconds)}$cap"))
-            }
-        }
         if (days.size > 1) {
             rows.add(
                 Row(
                     "Tổng ${days.size} ngày",
-                    "${days.sumOf { it.hunts }} hunt · ${days.sumOf { it.battles }} battle · ${StatsFormat.duration(days.sumOf { it.seconds })}"
+                    "${days.sumOf { it.hunts }} hunt · ${days.sumOf { it.battles }} battle · ${StatsFormat.duration(days.sumOf { it.seconds })}",
+                    Tone.MUTED
                 )
             )
         }
@@ -753,16 +976,18 @@ object FarmOverlay {
         val dotColor: String
         val title: String
         when {
-            st.running && st.resting -> { dotColor = C_GOLD; title = "Đang nghỉ" }
+            st.running && st.resting -> { dotColor = C_WARN; title = "Đang nghỉ" }
             st.running -> { dotColor = C_GOOD; title = "Đang farm" }
             else -> { dotColor = C_OFF; title = "Đã dừng" }
         }
         tvDot?.setTextColor(Color.parseColor(dotColor))
         tvStatusTitle?.text = title
-        tvStatusCounts?.text = if (st.running) "hunt ${st.hunts} · battle ${st.battles}" else ""
+        tvStatusCounts?.text = ""
+        tvHuntBig?.text = st.hunts.toString()
+        tvBattleBig?.text = st.battles.toString()
         val detail = StringBuilder(st.status)
         if (st.running && st.lastCommand.isNotEmpty()) detail.append("\nLệnh gần nhất: ").append(st.lastCommand)
-        if (!st.huntPaused.isNullOrBlank()) detail.append("\n⏳ Hunt tạm dừng: ").append(st.huntPaused)
+        if (!st.huntPaused.isNullOrBlank()) detail.append("\nHunt tạm dừng: ").append(st.huntPaused)
         // tieu de da ghi "Đã dừng" thi khong lap lai y het o dong chi tiet
         tvStatusDetail?.text = if (detail.toString().trim() == title) "" else detail.toString()
 
@@ -771,13 +996,12 @@ object FarmOverlay {
             2 -> "thiếu gem"
             else -> "không dừng"
         }
-        btnMode?.text = "🎯 Mode ${st.huntMode} · $modeShort"
-        btnToggle?.text = if (st.running) "■ Dừng" else "► Bắt đầu"
-        setPillColor(btnToggle, if (st.running) C_STOP else C_START)
+        btnMode?.text = "Hunt mode ${st.huntMode} · $modeShort"
+        setBtnState(btnToggle, if (st.running) "Dừng" else "Bắt đầu", if (st.running) Btn.DANGER else Btn.PRIMARY, if (st.running) R.drawable.ic_stop else R.drawable.ic_play)
         btnMute?.visibility = if (st.ringing) View.VISIBLE else View.GONE
         val eventOn = hub?.eventMode == true
-        btnEvent?.text = if (eventOn) "🎉 Event: BẬT" else "🎉 Event: Tắt"
-        setPillColor(btnEvent, if (eventOn) "#6A4FB3" else C_BTN)
+        btnEvent?.text = if (eventOn) "Event: BẬT" else "Event: Tắt"
+        styleBtn(btnEvent, if (eventOn) Btn.ACTIVE else Btn.SECONDARY)
 
         // Dem nguoc: thoi gian vang captcha (uu tien, mau do) > app dang cho (nghi / gian nhip / cooldown)
         val nowMs = System.currentTimeMillis()
@@ -785,12 +1009,20 @@ object FarmOverlay {
         if (cd != null) {
             when {
                 st.captchaEndMs > 0L ->
-                    cd.start(st.captchaEndMs, 10 * 60_000L, "🚨 Thời gian vàng giải captcha", true)
+                    cd.start(st.captchaEndMs, 10 * 60_000L, "Thời gian vàng giải captcha", true)
                 st.waitEndMs > nowMs ->
                     cd.start(st.waitEndMs, st.waitTotalMs, st.waitLabel.ifBlank { "Đang chờ" }, false)
                 else -> cd.clear()
             }
         }
+
+        setBubbleState(
+            when {
+                st.captchaEndMs > 0L || !st.alert.isNullOrBlank() -> UiTheme.BAD
+                st.waitEndMs > nowMs -> UiTheme.SELECTED
+                else -> UiTheme.ACCENT
+            }
+        )
 
         val alertText = st.alert
         if (alertText.isNullOrBlank()) {
@@ -814,7 +1046,7 @@ object FarmOverlay {
         // --- chua co du lieu tu bot ---
         if (hub == null) {
             val err = st.hubError
-            val msg = if (err.isNullOrBlank()) "Đang tải dữ liệu từ bot…" else "⚠️ $err"
+            val msg = if (err.isNullOrBlank()) "Đang tải dữ liệu từ bot…" else "Lỗi: $err"
             setGroup("farm", "", listOf(Row("", msg, if (err.isNullOrBlank()) Tone.MUTED else Tone.WARN)))
             for (k in listOf("gem", "res", "hb", "quest", "zoo", "event")) setGroup(k, "", emptyList())
             return
@@ -831,7 +1063,7 @@ object FarmOverlay {
         } else {
             val lost = b.lastLostStreak ?: 0
             val best = b.bestStreak?.let { " · cao nhất $it" } ?: ""
-            farmRows.add(Row("Chuỗi battle", "🔥 $streakNow$best${ageText(b.ageSeconds)}"))
+            farmRows.add(Row("Chuỗi battle", "$streakNow$best${ageText(b.ageSeconds)}"))
             if (b.result == "lost" && lost > 0) farmRows.add(Row("", "Vừa thua, mất chuỗi $lost", Tone.WARN))
         }
         val modeLong = when (st.huntMode) {
@@ -849,7 +1081,7 @@ object FarmOverlay {
             val tagText = if (tagP.running) "${tagP.done}/${tagP.total} · ${tagP.message}" else tagP.message
             farmRows.add(Row("Học tag", tagText, if (tagText.startsWith("✅")) Tone.GOOD else if (tagText.startsWith("⚠️")) Tone.WARN else Tone.NORMAL))
         }
-        setGroup("farm", if (b == null) "" else "🔥 $streakNow", farmRows)
+        setGroup("farm", if (b == null) "" else "chuỗi $streakNow", farmRows)
 
         // ===== Gem =====
         val gemRows = mutableListOf<Row>()
@@ -864,7 +1096,10 @@ object FarmOverlay {
             gemRows.add(Row("", "Đang dùng:", Tone.MUTED))
             for (g in eq) {
                 val low = (g.percent ?: 100) < 20
-                gemRows.add(Row(HubFormat.gemType(g.slot), "${g.tier ?: "?"} [${g.current ?: 0}/${g.max ?: 0}]", if (low) Tone.WARN else Tone.NORMAL))
+                val gemName = HubFormat.gemType(g.slot)
+                val gemText = "${g.tier ?: "?"} [${g.current ?: 0}/${g.max ?: 0}]"
+                val gemPct = g.percent ?: 100
+                gemRows.add(Row(gemName, gemText, if (low) Tone.WARN else Tone.NORMAL, build = { c -> gemBarRow(c, gemName, gemText, gemPct, low) }))
             }
         }
         val spare = hub.gems?.spare.orEmpty()
@@ -885,16 +1120,16 @@ object FarmOverlay {
         if (cashAmount == null) {
             resRows.add(Row("Cowoncy", "Chưa có dữ liệu (gõ owo cash)", Tone.MUTED))
         } else {
-            resRows.add(Row("Cowoncy", "💰 ${HubFormat.num(cashAmount)}${ageText(hub.cowoncy?.ageSeconds)}"))
+            resRows.add(Row("Cowoncy", "${HubFormat.num(cashAmount)}${ageText(hub.cowoncy?.ageSeconds)}"))
         }
         if (wsAmount == null) {
             resRows.add(Row("Weapon shards", "Chưa có dữ liệu (gõ owo ws)", Tone.MUTED))
         } else {
-            resRows.add(Row("Weapon shards", "🗡️ ${HubFormat.num(wsAmount)}${ageText(hub.weaponShards?.ageSeconds)}"))
+            resRows.add(Row("Weapon shards", "${HubFormat.num(wsAmount)}${ageText(hub.weaponShards?.ageSeconds)}"))
         }
         val resSummary = listOfNotNull(
-            cashAmount?.let { "💰 ${HubFormat.num(it)}" },
-            wsAmount?.let { "🗡️ ${HubFormat.num(it)}" }
+            cashAmount?.let { "${HubFormat.num(it)} cash" },
+            wsAmount?.let { "${HubFormat.num(it)} ws" }
         ).joinToString(" · ")
         setGroup("res", resSummary, resRows)
 
@@ -913,8 +1148,13 @@ object FarmOverlay {
                     else -> "đã tới giờ xong"
                 }
                 val pct = h.progressPct?.let { "${HubFormat.trimNum(it)}%" } ?: ""
-                hbRows.add(Row("Trạng thái", "Đang săn${if (pct.isEmpty()) "" else " · $pct"}", Tone.GOOD))
-                hbRows.add(Row("Thời gian", timeText))
+                val pctInt = h.progressPct?.toInt()
+                if (pctInt != null) {
+                    hbRows.add(Row("", "", build = { c -> ringRow(c, pctInt, "Đang săn", timeText) }))
+                } else {
+                    hbRows.add(Row("Trạng thái", "Đang săn", Tone.GOOD))
+                    hbRows.add(Row("Thời gian", timeText))
+                }
                 h.animalsCaptured?.let { hbRows.add(Row("Bắt được", "${HubFormat.num(it)} con")) }
                 hbSummary = listOf(pct, timeText).filter { it.isNotEmpty() }.joinToString(" · ")
             } else {
@@ -946,11 +1186,11 @@ object FarmOverlay {
             val timeText = when {
                 left == null -> "chưa rõ giờ nhận"
                 left > 0L -> "còn ${HubFormat.shortDuration(left)} nữa nhận được"
-                else -> "✅ sẵn sàng nhận"
+                else -> "sẵn sàng nhận"
             }
             val streak = d.streak?.let { " · chuỗi ${HubFormat.num(it)} ngày" } ?: ""
             questRows.add(Row("Daily", "$timeText$streak", if (ready) Tone.GOOD else Tone.NORMAL))
-            questSummary = if (ready) "daily ✅" else ""
+            questSummary = if (ready) "daily sẵn sàng" else ""
         }
         val q = hub.quest
         val dailyProg = hub.checklists?.daily?.progress
@@ -994,7 +1234,7 @@ object FarmOverlay {
         }
         val zooSummary = listOfNotNull(
             if (z != null) "$unlocked loài" else null,
-            if (newPets.isNotEmpty()) "🆕 ${newPets.size}" else null
+            if (newPets.isNotEmpty()) "${newPets.size} mới" else null
         ).joinToString(" · ")
         setGroup("zoo", zooSummary, zooRows)
 
