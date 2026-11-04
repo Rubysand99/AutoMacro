@@ -13,9 +13,9 @@ enum class SpeedMode(
     val restEveryMin: Int, val restEveryMax: Int,    // sau bao nhieu vong thi nghi giai lao
     val restMinMs: Long, val restMaxMs: Long
 ) {
-    FAST("Nhanh", 900L, 1_900L, 15_800L, 18_500L, 60, 110, 60_000L, 150_000L),
-    NORMAL("Thường", 1_200L, 2_800L, 16_500L, 21_000L, 45, 80, 90_000L, 240_000L),
-    SLOW("Chậm", 2_000L, 4_000L, 24_000L, 32_000L, 30, 55, 120_000L, 300_000L);
+    FAST(1, "Nhanh", 900L, 1_900L, 15_800L, 18_500L, 60, 110, 60_000L, 150_000L),
+    NORMAL(2, "Thường", 1_200L, 2_800L, 16_500L, 21_000L, 45, 80, 90_000L, 240_000L),
+    SLOW(3, "Chậm", 2_000L, 4_000L, 24_000L, 32_000L, 30, 55, 120_000L, 300_000L);
 
     companion object {
         /** id luu trong SharedPreferences -> muc; id la/loi -> NORMAL */
