@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- Dong trong danh sach (vd buoc kich ban): nen surface, vien line, bo goc 12 -->
-<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
-    <solid android:color="@color/surface" />
-    <stroke android:width="1dp" android:color="@color/line" />
-    <corners android:radius="12dp" />
-</shape>

@@ -45,17 +45,17 @@ Android 13+ sẽ hỏi quyền thông báo — hãy bấm Cho phép. Giờ huntb
 ## Lưu ý
 - APK được ký bằng `keystore/debug.keystore` nằm trong repo (mật khẩu mặc định `android`) để các bản build cài đè lên nhau
   được. Phù hợp dùng cá nhân; **đừng phát hành công khai** theo cách này.
-- Service Accessibility chỉ đăng ký 2 loại sự kiện (đổi cửa sổ, bấm) dùng cho chế độ ghi kịch bản; việc đọc màn hình khi chạy
-  đều đọc chủ động qua `rootInActiveWindow`.
+- Service Accessibility chỉ nhận sự kiện của Discord (`packageNames="com.discord"`); việc đọc màn hình khi chạy đều đọc chủ động
+  qua `rootInActiveWindow`. Chế độ ghi / chạy kịch bản cũ đã được gỡ bỏ (v24), app chỉ còn Hub nổi + farm + lệnh từ owo-tracker.
 
 ## Bảo mật
 - **Token API** lưu bằng `EncryptedSharedPreferences` (khóa trong Android Keystore); token cũ ở kho thường tự được chuyển sang
   và xóa khỏi kho cũ ngay lần mở app kế tiếp.
 - **Lọc lệnh từ bot:** app chỉ gõ vào Discord những lệnh dạng `owo ...` (1 dòng, tối đa 200 ký tự). Nội dung khác từ server
   bị từ chối và báo `failed`; số lần bấm lặp và khoảng nghỉ cũng bị ép vào mức an toàn (`CommandGuard.kt`).
-- **Quyền Accessibility rất rộng:** dịch vụ đọc được nội dung màn hình của mọi app đang mở (cần để tìm ô nhập/nút Gửi của
-  Discord). Chỉ bật khi bạn tin bản APK này, và tắt khi không dùng.
-- **`QUERY_ALL_PACKAGES`** cần để kịch bản mở được app bất kỳ theo tên gói (Android 11+); nếu chỉ dùng cho Discord thì có thể bỏ.
+- **Quyền Accessibility giới hạn trong Discord:** dịch vụ chỉ nhận sự kiện / đọc nội dung màn hình của `com.discord` (cần để tìm
+  ô nhập/nút Gửi). Chỉ bật khi bạn tin bản APK này, và tắt khi không dùng.
+- **Không xin `QUERY_ALL_PACKAGES`:** app chỉ khai báo `<queries>` cho `com.discord`, không biết máy cài những app nào khác.
 - Chữ ký debug dùng chung (xem mục Lưu ý ở trên) nghĩa là ai có repo cũng ký được APK trùng chữ ký; chỉ cài APK do chính
   bạn build từ GitHub Actions của mình.
 

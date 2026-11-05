@@ -3,37 +3,27 @@ package com.starclan.starhub.service
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.GestureDescription
 import android.content.Context
-import android.content.Intent
 import android.graphics.Path
 import android.graphics.PixelFormat
 import android.media.RingtoneManager
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.util.Log
-import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
 import android.widget.FrameLayout
-import android.widget.ScrollView
 import android.widget.TextView
 import com.starclan.starhub.R
-import com.starclan.starhub.ScriptEditorActivity
 import com.starclan.starhub.data.CommandGuard
 import com.starclan.starhub.data.OwoTrackerApi
 import com.starclan.starhub.data.OwoTrackerPrefs
-import com.starclan.starhub.data.ScriptJson
-import com.starclan.starhub.data.ScriptStep
-import com.starclan.starhub.data.StepType
-import com.starclan.starhub.data.summarizeStep
 import com.starclan.starhub.engine.ButtonClicker
 import com.starclan.starhub.engine.DiscordSender
 import com.starclan.starhub.engine.FarmController
-import com.starclan.starhub.engine.TagCollector
 import com.starclan.starhub.engine.HuntbotNotifier
-import com.starclan.starhub.engine.ScriptEngine
 import com.starclan.starhub.engine.SendResult
 import com.starclan.starhub.view.FarmOverlay
 import kotlinx.coroutines.CoroutineScope
@@ -44,64 +34,26 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
-import kotlin.math.abs
 import kotlin.random.Random
 
 /**
- * Service nen chiu trach nhiem "nhin" man hinh (qua AccessibilityEvent)
- * va "thao tac" thay nguoi dung (bam, vuot, mo app) khi kich ban chay.
+ * Service nen chiu trach nhiem "nhin" man hinh Discord (rootInActiveWindow) va "thao tac" thay nguoi dung
+ * (cham, go lenh) khi Hub noi dang bat. Cu 15 giay hoi owo-tracker co lenh moi thi go vao Discord,
+ * nhac huntbot con 10 phut, va co wizard 1 lan de cai vi tri o nhap + nut Gui du phong.
  *
- * Ngoai runScript(), service nay ho tro CHE DO GHI (recording): bam bong
- * bong noi tren man hinh -> AutoMacro tu quan sat cac lan mo app / bam nut
- * cua Ruby va bien thanh danh sach ScriptStep, HIEN NGAY tren bong bong
- * (co danh so thu tu) de biet dang ghi dung khong -> bam lai vao dau bong
- * bong (khong keo) de dung, mo thang sang man hinh sua kich ban.
- *
- * 2 nut tren bong bong de tu tay danh dau khi tu dong khong bat duoc:
- *   👆 = danh dau 1 diem de Bam (dung khi bam-tu-dong khong ghi nhan duoc,
- *        vi du: nut Gui nam TREN BAN PHIM chu khong phai tren man hinh app)
- *   ➕ = danh dau 2 diem (dau/cuoi) de tao buoc Vuot chinh xac
- * Ca 2 deu hien 1 cham mau tai dung vi tri vua cham de xac nhan bang mat.
- *
- * GIOI HAN cua ban ghi tu dong (khong qua nut thu cong o tren):
- * - Chi bat duoc thao tac bam vao nut/thanh phan co CHU hoac co ID tren
- *   MAN HINH APP. KHONG bat duoc: go chu vao o nhap, bam nut Gui/Enter
- *   tren ban phim (day la gioi han that cua Android, khong sua duoc bang
- *   code app nay) - nhung truong hop nay dung nut 👆 de thay the.
+ * Chi nhan su kien cua Discord (accessibility_service_config.xml: packageNames="com.discord").
+ * (Che do ghi kich ban + chay kich ban da duoc go bo o v24.)
  */
 class AutoAccessibilityService : AccessibilityService() {
 
     private val serviceJob = Job()
     private val serviceScope = CoroutineScope(Dispatchers.Default + serviceJob)
 
-    // Cac goi he thong khong tinh la "mo app" khi ghi (ban phim, thanh trang thai...)
-    private val ignoredPackages = setOf(
-        "com.android.systemui",
-        "com.samsung.android.honeyboard",
-        "com.google.android.inputmethod.latin",
-        "com.android.inputmethod.latin",
-        "com.touchtype.swiftkey",
-        "com.samsung.android.app.smartcapture"
-    )
-
-    // --- Trang thai ghi kich ban ---
-    private var isRecording = false
-    private val recordedSteps = mutableListOf<ScriptStep>()
-    private var lastEventTimeMs = 0L
-    private var lastPackageName: String? = null
-    private var recordCounter = 0
-
-    // --- Bong bong noi de dieu khien ghi ---
-    private var overlayView: View? = null
-    private var overlayParams: WindowManager.LayoutParams? = null
-    private var windowManager: WindowManager? = null
-
-    // --- Man hinh chon diem (dung khi bam nut 👆/➕) ---
+    // --- Man hinh chon diem (dung cho wizard cai vi tri Discord) ---
     private var pickerView: View? = null
 
     // --- Dong bo voi owo-tracker: cu vai giay kiem tra lenh moi 1 lan ---
     private var syncJob: Job? = null
-    private var scriptJob: Job? = null
 
     // Khi OwO doi giai captcha: tam dung gui lenh toi moc nay (de Ruby tu giai), tranh gui don dap
     private var captchaPauseUntilMs = 0L
@@ -112,7 +64,7 @@ class AutoAccessibilityService : AccessibilityService() {
         /** So lenh gan nhat nho lai de khong go lai khi ack that bai (xem handledCommands) */
         private const val MAX_HANDLED = 200
 
-        /** Tham chieu toi service dang chay, de noi khac (VD: MainActivity) goi runScript()/startRecording() */
+        /** Tham chieu toi service dang chay, de noi khac (VD: man hinh Cai dat) goi setupDiscordTargets() / applySyncSettings() */
         var instance: AutoAccessibilityService? = null
             private set
     }
@@ -126,44 +78,7 @@ class AutoAccessibilityService : AccessibilityService() {
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
-        if (!isRecording || event == null) return
-        // Bo qua su kien tu chinh app AutoMacro de khong ghi nham
-        if (event.packageName == packageName) return
-
-        val now = System.currentTimeMillis()
-
-        when (event.eventType) {
-            AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED -> {
-                val pkg = event.packageName?.toString()
-                if (!pkg.isNullOrBlank() && pkg != lastPackageName && pkg !in ignoredPackages) {
-                    maybeInsertWaitStep(now)
-                    addRecordedStep(StepType.OPEN_APP, mapOf("packageName" to pkg))
-                    lastPackageName = pkg
-                    lastEventTimeMs = now
-                }
-            }
-            AccessibilityEvent.TYPE_VIEW_CLICKED -> {
-                val text = event.text?.joinToString(" ")?.trim()?.takeIf { it.isNotBlank() }
-                val source = event.source
-                val viewId = source?.viewIdResourceName
-                val tapParams = when {
-                    !text.isNullOrBlank() -> mapOf("by" to "text", "value" to text)
-                    !viewId.isNullOrBlank() -> mapOf("by" to "viewId", "value" to viewId)
-                    else -> null
-                }
-                source?.recycle()
-                // Chen Doi (neu can) TRUOC khi ghi buoc Bam, khong phai sau -
-                // de thu tu buoc dung nhu thuc te da xay ra.
-                if (tapParams != null) {
-                    maybeInsertWaitStep(now)
-                    addRecordedStep(StepType.TAP, tapParams)
-                    lastEventTimeMs = now
-                }
-            }
-            else -> {
-                // Cac loai su kien khac chua duoc ghi lai trong ban nay
-            }
-        }
+        // Khong phan ung theo su kien: app chu dong doc man hinh Discord (rootInActiveWindow) khi can.
     }
 
     override fun onInterrupt() {
@@ -175,22 +90,9 @@ class AutoAccessibilityService : AccessibilityService() {
         // Service chet (nguoi dung tat quyen Accessibility, he thong don dep...) thi MOI hoat dong tu dong phai dung:
         // hide() dung farm + tu hoc tag + vong refresh va go Hub noi (neu khong, isShown() van true va farm go lenh vao hu khong)
         FarmOverlay.hide()
-        hideOverlay()
         hidePicker()
         instance = null
         serviceJob.cancel()
-    }
-
-    /** Chay 1 kich ban (danh sach cac buoc) trong nen, khong lam dung giao dien */
-    fun runScript(steps: List<ScriptStep>) {
-        // Khong chay chong: dang co kich ban, farm hoac hoc tag thi bo qua lan bam nay
-        if (scriptJob?.isActive == true || FarmController.isRunning() || TagCollector.isRunning()) {
-            Log.w(TAG, "Bo qua runScript: dang co tac vu khac chay")
-            return
-        }
-        scriptJob = serviceScope.launch {
-            ScriptEngine(this@AutoAccessibilityService).run(steps)
-        }
     }
 
     // ----------------- DONG BO VOI OWO-TRACKER -----------------
@@ -375,191 +277,10 @@ class AutoAccessibilityService : AccessibilityService() {
         )
     }
 
-    // ----------------- GHI KICH BAN (RECORD) -----------------
-
-    /** Bat dau ghi: xoa du lieu ghi cu, hien bong bong dieu khien tren man hinh */
-    fun startRecording() {
-        recordedSteps.clear()
-        lastEventTimeMs = System.currentTimeMillis()
-        lastPackageName = null
-        recordCounter = 0
-        isRecording = true
-        showOverlay()
-    }
-
-    private fun stopRecordingAndGetSteps(): List<ScriptStep> {
-        isRecording = false
-        hideOverlay()
-        return recordedSteps.toList()
-    }
-
-    private fun maybeInsertWaitStep(now: Long) {
-        if (recordedSteps.isEmpty()) return
-        val gapMs = now - lastEventTimeMs
-        if (gapMs >= 500) {
-            val seconds = gapMs / 1000.0
-            addRecordedStep(StepType.WAIT, mapOf("seconds" to String.format("%.1f", seconds)))
-        }
-    }
-
-    private fun addRecordedStep(type: StepType, params: Map<String, String>) {
-        recordCounter++
-        recordedSteps.add(ScriptStep(id = "rec$recordCounter", type = type, params = params))
-        updateOverlayText()
-    }
-
-    /** Ve lai danh sach hanh dong (co danh so tu 1) tren bong bong, tu cuon xuong dong moi nhat */
-    private fun updateOverlayText() {
-        val view = overlayView ?: return
-        val tv = view.findViewById<TextView>(R.id.tvOverlaySteps) ?: return
-        val sv = view.findViewById<ScrollView>(R.id.svOverlaySteps)
-
-        tv.text = if (recordedSteps.isEmpty()) {
-            getString(R.string.overlay_no_action_yet)
-        } else {
-            recordedSteps.mapIndexed { index, step -> "${index + 1}. ${summarizeStep(step)}" }
-                .joinToString("\n")
-        }
-
-        overlayParams?.let { windowManager?.updateViewLayout(view, it) }
-        sv?.post { sv.fullScroll(View.FOCUS_DOWN) }
-    }
-
-    private fun showOverlay() {
-        if (overlayView != null) return
-        val wm = getSystemService(WINDOW_SERVICE) as WindowManager
-        windowManager = wm
-
-        val view = LayoutInflater.from(this).inflate(R.layout.overlay_recording, null)
-
-        val params = WindowManager.LayoutParams(
-            WindowManager.LayoutParams.WRAP_CONTENT,
-            WindowManager.LayoutParams.WRAP_CONTENT,
-            WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
-            PixelFormat.TRANSLUCENT
-        )
-        params.gravity = Gravity.TOP or Gravity.START
-        params.x = 40
-        params.y = 250
-        overlayParams = params
-
-        var initialX = 0
-        var initialY = 0
-        var initialTouchX = 0f
-        var initialTouchY = 0f
-        var dragged = false
-
-        // Chi gan cam ung keo/dung vao PHAN DAU (dau tron + nhan chu) - de vung
-        // danh sach ben duoi cuon binh thuong, va 2 nut 👆/➕ tu xu ly rieng cu bam cua chung.
-        val header = view.findViewById<View>(R.id.overlayHeader)
-        header.setOnTouchListener { _, motionEvent ->
-            when (motionEvent.action) {
-                MotionEvent.ACTION_DOWN -> {
-                    initialX = params.x
-                    initialY = params.y
-                    initialTouchX = motionEvent.rawX
-                    initialTouchY = motionEvent.rawY
-                    dragged = false
-                    true
-                }
-                MotionEvent.ACTION_MOVE -> {
-                    val dx = (motionEvent.rawX - initialTouchX).toInt()
-                    val dy = (motionEvent.rawY - initialTouchY).toInt()
-                    if (abs(dx) > 12 || abs(dy) > 12) dragged = true
-                    params.x = initialX + dx
-                    params.y = initialY + dy
-                    windowManager?.updateViewLayout(view, params)
-                    true
-                }
-                MotionEvent.ACTION_UP -> {
-                    if (!dragged) {
-                        val recorded = stopRecordingAndGetSteps()
-                        openEditorWithRecordedSteps(recorded)
-                    }
-                    true
-                }
-                else -> false
-            }
-        }
-
-        view.findViewById<View>(R.id.btnAddTapPoint).setOnClickListener {
-            startTapPointPicking { x, y ->
-                maybeInsertWaitStep(System.currentTimeMillis())
-                addRecordedStep(
-                    StepType.TAP,
-                    mapOf("fallbackX" to x.toInt().toString(), "fallbackY" to y.toInt().toString())
-                )
-                lastEventTimeMs = System.currentTimeMillis()
-            }
-        }
-
-        view.findViewById<View>(R.id.btnAddSwipePoint).setOnClickListener {
-            startTwoPointPicking(getString(R.string.picker_prompt_start), getString(R.string.picker_prompt_end)) { fromX, fromY, toX, toY ->
-                maybeInsertWaitStep(System.currentTimeMillis())
-                addRecordedStep(
-                    StepType.SWIPE,
-                    mapOf(
-                        "fromX" to fromX.toInt().toString(),
-                        "fromY" to fromY.toInt().toString(),
-                        "toX" to toX.toInt().toString(),
-                        "toY" to toY.toInt().toString()
-                    )
-                )
-                lastEventTimeMs = System.currentTimeMillis()
-            }
-        }
-
-        wm.addView(view, params)
-        overlayView = view
-    }
-
-    private fun hideOverlay() {
-        val view = overlayView ?: return
-        windowManager?.removeView(view)
-        overlayView = null
-        overlayParams = null
-    }
-
-    private fun openEditorWithRecordedSteps(steps: List<ScriptStep>) {
-        val json = ScriptJson.stepsToJson(steps)
-        val intent = Intent(this, ScriptEditorActivity::class.java).apply {
-            putExtra(ScriptEditorActivity.EXTRA_RECORDED_STEPS_JSON, json)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
-        startActivity(intent)
-    }
-
     // ----------------- CHON DIEM TREN MAN HINH (co dau cham xac nhan) -----------------
 
-    /** Danh dau 1 diem - dung cho nut 👆 (Bam) */
-    private fun startTapPointPicking(onComplete: (x: Float, y: Float) -> Unit) {
-        val wm = getSystemService(WINDOW_SERVICE) as WindowManager
-        val view = LayoutInflater.from(this).inflate(R.layout.overlay_point_picker, null)
-        view.findViewById<TextView>(R.id.tvPickerPrompt).text = getString(R.string.picker_prompt_tap)
-        val marker = view.findViewById<View>(R.id.pickerMarkerStart)
-
-        val params = pickerWindowParams()
-
-        view.setOnTouchListener { _, motionEvent ->
-            if (motionEvent.action == MotionEvent.ACTION_DOWN) {
-                val x = motionEvent.rawX
-                val y = motionEvent.rawY
-                placeMarker(marker, x, y)
-                view.postDelayed({
-                    removePickerView(wm, view)
-                    onComplete(x, y)
-                }, 350)
-            }
-            true
-        }
-
-        wm.addView(view, params)
-        pickerView = view
-    }
-
-    /** Danh dau 2 diem lien tiep (dau roi cuoi), ca 2 cham cung hien tren 1 man hinh - dung chung cho
-     * nut ➕ (Vuot) va wizard cai vi tri Discord (setupDiscordTargets). */
+    /** Danh dau 2 diem lien tiep (dau roi cuoi), ca 2 cham cung hien tren 1 man hinh - dung cho wizard
+     * cai vi tri Discord (setupDiscordTargets). */
     private fun startTwoPointPicking(
         prompt1: String,
         prompt2: String,
@@ -634,19 +355,10 @@ class AutoAccessibilityService : AccessibilityService() {
         removePickerView(getSystemService(WINDOW_SERVICE) as WindowManager, view)
     }
 
-    // ----------------- CAC HAM MO PHONG THAO TAC (dung boi ScriptEngine) -----------------
-
-    /** Gia lap mot cu cham tai toa do (x, y) tren man hinh */
-    fun performClick(x: Float, y: Float, durationMs: Long = 50) {
-        val path = Path().apply { moveTo(x, y) }
-        val gesture = GestureDescription.Builder()
-            .addStroke(GestureDescription.StrokeDescription(path, 0, durationMs))
-            .build()
-        dispatchGesture(gesture, null, null)
-    }
+    // ----------------- CAC HAM MO PHONG THAO TAC (dung boi DiscordSender / NodeTools) -----------------
 
     /**
-     * Nhu performClick nhung CHO den khi cu cham thuc su xong (hoac bi huy) roi moi tra ve.
+     * Cham 1 cu tai (x, y) va CHO den khi cu cham thuc su xong (hoac bi huy) roi moi tra ve.
      * Tra ve true neu he thong bao da cham xong. Dung cho cac buoc phai doi o nhap duoc chon
      * truoc khi go chu.
      */
@@ -668,20 +380,4 @@ class AutoAccessibilityService : AccessibilityService() {
             val dispatched = dispatchGesture(gesture, callback, null)
             if (!dispatched && cont.isActive) cont.resume(false)
         }
-
-    /** Gia lap mot cu vuot tu (startX, startY) den (endX, endY) */
-    fun performSwipe(
-        startX: Float, startY: Float,
-        endX: Float, endY: Float,
-        durationMs: Long = 300
-    ) {
-        val path = Path().apply {
-            moveTo(startX, startY)
-            lineTo(endX, endY)
-        }
-        val gesture = GestureDescription.Builder()
-            .addStroke(GestureDescription.StrokeDescription(path, 0, durationMs))
-            .build()
-        dispatchGesture(gesture, null, null)
-    }
 }

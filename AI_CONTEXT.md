@@ -11,6 +11,19 @@ repo Python/discord.py rieng) de tao 1 he thong tap trung: owo-tracker la
 "bo nao" (biet luc nao can lam gi), AutoMacro la "tay chan" (thuc thi tren
 dien thoai). Xem muc "Ket noi voi owo-tracker" ben duoi.
 
+## v24 — GO BO han che do kich ban cu (5/11/2026)
+- Ruby xac nhan khong dung kich ban nua -> da xoa: `ScriptEditorActivity`, `engine/ScriptEngine`, Room (`AppDatabase`, `ScriptDao`, `ScriptEntity`,
+  `ScriptRepository`, `ScriptWithSteps`), `ScriptStep`/`StepType`, `ScriptJson`, `SampleScripts`, `StepSummary`; 13 layout (`activity_script_editor`,
+  `dialog_step_*`, `dialog_on_fail_section`, `item_step_row`, `overlay_recording`), 5 drawable chi dung cho chung, 45 chuoi.
+- `AutoAccessibilityService` chi con: dong bo owo-tracker (poll 15 giay), go lenh vao Discord, nhac huntbot, wizard cai vi tri o nhap + nut Gui
+  (`setupDiscordTargets`, giu `overlay_point_picker` + 2 cham `bg_marker_*`) va `performClickAwait`. Da bo che do ghi, `runScript`, bong bong ghi,
+  `performClick`/`performSwipe`. `onAccessibilityEvent` de trong (app doc man hinh chu dong, khong theo su kien).
+- `app/build.gradle`: bo plugin `kotlin-kapt`, Room, `recyclerview` (Gson, coroutines giu nguyen). Manifest bo `ScriptEditorActivity`.
+- 3 chuoi nguoi dung doi noi dung cho khop (khong con nhac "kich ban"): `accessibility_service_description` (hien trong Cai dat Android),
+  `note_owo_sync`, `status_service_disabled`.
+- Muon khoi phuc: `git log --diff-filter=D --name-only` roi `git checkout <commit>^ -- <file>` (lich su git con day du).
+- Ghi chu cu ben duoi (v16..v22, "Chua co", "Cong nghe", "Cau truc") nhac kich ban/Room la LICH SU, khong con dung voi code hien tai.
+
 ## v23 — Don ton dong: giam quyen + test HubDexQuery (5/11/2026)
 - `accessibility_service_config.xml`: them `android:packageNames="com.discord"` -> dich vu chi nhan su kien / doc noi dung man hinh cua Discord
   (truoc day nhan tu MOI app). Cac cho doc man hinh van tu kiem tra goi `com.discord` (ButtonClicker, TagCollector, NodeDump) nhu cu.
@@ -24,9 +37,7 @@ dien thoai). Xem muc "Ket noi voi owo-tracker" ben duoi.
 - DA XONG tu truoc (ghi chu cu o duoi con ghi "chua lam" la loi thoi): token dung EncryptedSharedPreferences (`OwoTrackerPrefs`);
   `FarmController` cap nhat state bang `_state.update` (nguyen tu); TagCollector va Dump man hinh chi doc Discord;
   TagCollector va Farm khong chay chong nhau (`start()` tu choi neu ben kia dang chay).
-- VAN CON (chua lam, can Ruby quyet): keystore debug `keystore/debug.keystore` van cong khai (mat khau `android`) — doi sang keystore rieng
-  can tao khoa + them GitHub Secrets; chuoi tieng Viet viet thang trong Kotlin; don code kich ban cu (ScriptEditorActivity, Room, ghi, runScript)
-  — chi xoa khi Ruby chac chan khong dung nua.
+- (Da xu ly o v24/v25: don code kich ban cu; keystore rieng.) VAN CON: chuoi tieng Viet viet thang trong Kotlin.
 
 ## v22 — Duyet vu khi Giu / Bo bang 2 nut tren Hub noi
 - Tracker: `,weaponreview` (start|stop|undo|export|reset) -> embed danh sach (dang kiem tra / con lai / ID Giu / ID Bo), queue `owo w <id>` dau tien;
@@ -258,12 +269,9 @@ TextInputLayout bo goc, trang thai quyen doi mau theo bat/tat (SettingsFragment.
   KHONG co profile: `owo profile` cua OwO la 1 tam ANH (khong co chu) nen bot khong doc duoc.
 
 ## Chua co (con thieu)
-- Sua lai 1 kich ban DA LUU tu Room (hien chi xoa lam lai duoc, chua mo lai de sua).
-- Doi thu tu buoc bang keo-tha.
-- Ghi tu dong thao tac go chu (phai lam thu cong).
-- (Ghi chu cu) Luc dau chi lam case swap_gem voi owo-tracker; hunt/battle tu dong DA co o `FarmController` (xem v21 - 3 che do toc do).
-  Nhung ve mat AutoMacro thi KHONG can lam gi them de ho tro action moi - chi can
-  owo-tracker gui "command_text" dung, AutoMacro tu chay duoc ngay.
+- (Muc kich ban cu: sua kich ban da luu, keo-tha doi thu tu buoc, tu ghi go chu — KHONG con y nghia, da go bo o v24.)
+- Hunt/battle tu dong DA co o `FarmController` (xem v21 - 3 che do toc do). Ve mat AutoMacro khong can lam gi them de ho tro action moi:
+  owo-tracker gui "command_text" dung thi AutoMacro tu chay (sau khi them 1 dong o `CommandGuard` + 1 test).
 
 ## Ket noi voi owo-tracker (repo rieng)
 - owo-tracker (Python, chay Railway) co API rieng: GET /commands/pending,
@@ -283,9 +291,9 @@ TextInputLayout bo goc, trang thai quyen doi mau theo bat/tat (SettingsFragment.
 - AccessibilityService: dispatchGesture (bam/vuot theo toa do), performAction ACTION_CLICK
   va ACTION_SET_TEXT (bam/go truc tiep vao node), findAccessibilityNodeInfosByText/ByViewId,
   findFocus(FOCUS_INPUT) cho buoc go chu
-- TYPE_ACCESSIBILITY_OVERLAY (WindowManager) cho bong bong ghi kich ban + man hinh chon diem
-- Room (SQLite) luu kich ban, Gson chuyen doi List<ScriptStep> <-> JSON
-- Kotlin Coroutines cho buoc WAIT, chay kich ban, va vong lap dong bo owo-tracker
+- TYPE_ACCESSIBILITY_OVERLAY (WindowManager) cho man hinh chon diem (wizard cai vi tri Discord) + Hub noi
+- Gson doc JSON tu owo-tracker; EncryptedSharedPreferences luu token
+- Kotlin Coroutines cho farm, gui lenh va vong lap dong bo owo-tracker
 - HttpURLConnection (co san trong Android, khong them thu vien) de goi API owo-tracker
 - Build qua GitHub Actions (.github/workflows/build.yml) — chay `gradle assembleDebug`
 
@@ -296,15 +304,10 @@ app/src/main/java/com/starclan/starhub/
   HubFragment.kt                          - tab "OwO Hub" (truoc la HubActivity, gio la Fragment)
   SettingsFragment.kt                     - tab "Cai dat": quyen Accessibility + ket noi owo-tracker
                                               (truoc la dialog_owo_tracker_settings, gio nam thang trong tab)
-  AutomaticFragment.kt                    - tab "Tu dong": danh sach kich ban AutoMacro (chuc nang goc,
-                                              truoc nam thang trong MainActivity.kt)
-  ScriptEditorActivity.kt                  - tao/sua kich ban, nap buoc tu ban ghi
-  ScriptListAdapter.kt                     - hien danh sach kich ban da luu
-  service/AutoAccessibilityService.kt      - chay kich ban + che do ghi + bong bong + dong bo
-  engine/ScriptEngine.kt                   - bo may thuc thi tung buoc
-  data/                                    - ScriptStep, ScriptEntity/Dao/Database, ScriptJson,
-                                              ScriptRepository, SampleScripts, StepSummary,
-                                              OwoTrackerApi, OwoTrackerPrefs, HubModels, HubFormat
+  service/AutoAccessibilityService.kt      - dong bo owo-tracker, go lenh vao Discord, nhac huntbot, wizard cai vi tri
+  engine/                                  - FarmController, DiscordSender, NodeTools, ButtonClicker, TagCollector, QuestClaimer, HuntbotNotifier...
+  data/                                    - OwoTrackerApi, OwoTrackerPrefs, CommandGuard, Hub* (model/parser/format/query), SpeedMode, FarmStats...
+  view/                                    - FarmOverlay (Hub noi), UiTheme, RingView, DayBarsView, IconView...
 
 ## Ghi chu quan trong
 - Nguoi dung phai tu vao Cai dat may bat quyen Accessibility (khong the tu bat bang code)
@@ -312,7 +315,7 @@ app/src/main/java/com/starclan/starhub/
   Thong tin ung dung -> menu 3 cham (hoac tim "cai dat han che" trong Cai dat) -> Cho phep
   cai dat han che -> roi moi bat lai duoc quyen Accessibility
 - Neu dinh dang Google Play sau nay: can khai bao ro muc dich dung quyen Accessibility
-  va QUERY_ALL_PACKAGES, Google xet kha ky cac quyen nay — dung rieng/cai APK thu cong
+  (app da bo QUERY_ALL_PACKAGES o v23), Google xet kha ky quyen Accessibility — dung rieng/cai APK thu cong
   thi khong van de gi
 - RUI RO CAN NHO: OwO Bot co he thong chong macro (bat sus/captcha), tu dong choi ho
   co the vi pham dieu khoan Discord - can than khi mo rong sang hunt/battle tu dong,

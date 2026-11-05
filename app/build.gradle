@@ -1,6 +1,5 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
-apply plugin: 'kotlin-kapt'
 
 // Phien ban lay tu file VERSION o goc repo (workflow Build APK tu tang sau moi lan cap nhat). Hong/thieu file -> 1.0.
 def starVersion = "1.0"
@@ -58,12 +57,6 @@ dependencies {
     implementation "androidx.core:core-ktx:1.13.1"
     implementation "androidx.appcompat:appcompat:1.7.0"
     implementation "com.google.android.material:material:1.12.0"
-    implementation "androidx.recyclerview:recyclerview:1.3.2"
-
-    // Room - luu kich ban tren may
-    implementation "androidx.room:room-runtime:2.6.1"
-    implementation "androidx.room:room-ktx:2.6.1"
-    kapt "androidx.room:room-compiler:2.6.1"
 
     // Ma hoa token API (EncryptedSharedPreferences, khoa trong Android Keystore)
     implementation "androidx.security:security-crypto:1.1.0-alpha06"
@@ -71,10 +64,10 @@ dependencies {
     // Lifecycle
     implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.8.4"
 
-    // Coroutine - de bo may chay kich ban co the "doi" (WAIT) ma khong lam dung luong
+    // Coroutine - de farm / gui lenh co the "doi" ma khong lam dung giao dien
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1"
 
-    // Gson - chuyen doi kich ban (List<ScriptStep>) sang JSON de luu vao Room
+    // Gson - doc JSON ma owo-tracker tra ve (GET /hub, /gemtier, ...)
     implementation "com.google.code.gson:gson:2.11.0"
 
     // Test chay tren JVM (khong can may that): gradle testDebugUnitTest

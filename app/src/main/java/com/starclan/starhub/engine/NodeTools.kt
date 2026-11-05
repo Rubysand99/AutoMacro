@@ -12,7 +12,7 @@ import kotlinx.coroutines.delay
 
 /**
  * Bo cong cu chung de "nhin" va thao tac tren cay giao dien (node) cua app khac.
- * Dung boi ScriptEngine (buoc Go chu) va DiscordSender (gui lenh tu owo-tracker).
+ * Dung boi DiscordSender (gui lenh tu owo-tracker), ButtonClicker va QuestClaimer.
  *
  * Y chinh: khong tin vao 1 cach duy nhat. Go chu thi thu SET_TEXT truoc, doc lai
  * xem chu da vao chua; chua vao thi dan (paste) tu clipboard roi doc lai lan nua.
