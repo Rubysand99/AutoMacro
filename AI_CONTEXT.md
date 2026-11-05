@@ -11,6 +11,17 @@ repo Python/discord.py rieng) de tao 1 he thong tap trung: owo-tracker la
 "bo nao" (biet luc nao can lam gi), AutoMacro la "tay chan" (thuc thi tren
 dien thoai). Xem muc "Ket noi voi owo-tracker" ben duoi.
 
+## v25 — Keystore RIENG de ky APK (5/11/2026)
+- `app/build.gradle`: signingConfig `starhub` (dung cho buildType debug). Co env `STARHUB_KEYSTORE_FILE` + `STARHUB_KEYSTORE_PASSWORD` thi ky bang khoa rieng
+  (alias mac dinh `starhub`, `STARHUB_KEY_ALIAS` / `STARHUB_KEY_PASSWORD` tuy chon); khong co thi DU PHONG `keystore/debug.keystore` cong khai + canh bao.
+- `.github/workflows/build.yml`: buoc "Chuan bi keystore rieng" giai ma secret `STARHUB_KEYSTORE_BASE64` ra `$RUNNER_TEMP/starhub.jks`; mat khau lay tu secret `STARHUB_KEYSTORE_PASSWORD`.
+  Thieu secret -> chi `::warning`, build van chay (khong gay CI).
+- Khoa duoc sinh 1 lan tren phien lam viec (RSA 2048, hieu luc ~27 nam, PKCS12, CN=Star Hub). Claude KHONG dat duoc GitHub Secrets (proxy chan) nen Ruby tu dan 2 secret
+  (xem README muc "Ky APK"). File .jks + mat khau da gui rieng cho Ruby; KHONG nam trong repo (`.gitignore` chan `*.jks`).
+- Chu ky SHA-256 cua khoa moi: `FF:E1:69:27:81:B4:B9:0B:3E:C1:A5:A8:77:1A:FB:B8:15:DC:F4:D9:9B:72:EC:89:2D:DC:2F:21:6F:B2:A6:4A` (de doi chieu APK dung khoa nao).
+- DOI KHOA = Android coi la app khac: lan dau phai GO ban cu roi cai lai (mat cai dat trong app).
+- Viec con lai SAU KHI Ruby da dat secret va thay Actions khong con canh bao: xoa `keystore/debug.keystore` + bo nhanh du phong trong build.gradle (de thieu secret thi build BAO LOI thay vi ky bang khoa cong khai).
+
 ## v24 — GO BO han che do kich ban cu (5/11/2026)
 - Ruby xac nhan khong dung kich ban nua -> da xoa: `ScriptEditorActivity`, `engine/ScriptEngine`, Room (`AppDatabase`, `ScriptDao`, `ScriptEntity`,
   `ScriptRepository`, `ScriptWithSteps`), `ScriptStep`/`StepType`, `ScriptJson`, `SampleScripts`, `StepSummary`; 13 layout (`activity_script_editor`,
@@ -37,7 +48,7 @@ dien thoai). Xem muc "Ket noi voi owo-tracker" ben duoi.
 - DA XONG tu truoc (ghi chu cu o duoi con ghi "chua lam" la loi thoi): token dung EncryptedSharedPreferences (`OwoTrackerPrefs`);
   `FarmController` cap nhat state bang `_state.update` (nguyen tu); TagCollector va Dump man hinh chi doc Discord;
   TagCollector va Farm khong chay chong nhau (`start()` tu choi neu ben kia dang chay).
-- (Da xu ly o v24/v25: don code kich ban cu; keystore rieng.) VAN CON: chuoi tieng Viet viet thang trong Kotlin.
+- (Da xu ly o v24/v25: don code kich ban cu; keystore rieng — xem muc v25 ve viec con lai.) VAN CON: chuoi tieng Viet viet thang trong Kotlin.
 
 ## v22 — Duyet vu khi Giu / Bo bang 2 nut tren Hub noi
 - Tracker: `,weaponreview` (start|stop|undo|export|reset) -> embed danh sach (dang kiem tra / con lai / ID Giu / ID Bo), queue `owo w <id>` dau tien;

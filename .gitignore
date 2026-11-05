@@ -11,3 +11,6 @@
 *.apk
 *.ap_
 *.dex
+# Khoa ky APK RIENG: KHONG BAO GIO commit (dua vao GitHub Secrets)
+*.jks
+starhub-signing*

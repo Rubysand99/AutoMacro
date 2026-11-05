@@ -9,6 +9,18 @@ try {
 } catch (Exception ignored) { }
 def starParts = starVersion.tokenize(".")
 
+// Ky APK: uu tien keystore RIENG (CI giai ma tu GitHub Secrets thanh file roi dat STARHUB_KEYSTORE_FILE + STARHUB_KEYSTORE_PASSWORD;
+// xem README muc "Ky APK"). Khong co thi dung tam keystore/debug.keystore cong khai de van build duoc.
+def starKeystorePath = System.getenv("STARHUB_KEYSTORE_FILE")
+def starKeystorePassword = System.getenv("STARHUB_KEYSTORE_PASSWORD")
+def useOwnKeystore = starKeystorePath != null && !starKeystorePath.isEmpty() && file(starKeystorePath).exists()
+if (useOwnKeystore && (starKeystorePassword == null || starKeystorePassword.isEmpty())) {
+    throw new GradleException("Co keystore rieng (STARHUB_KEYSTORE_FILE) nhung thieu STARHUB_KEYSTORE_PASSWORD")
+}
+if (!useOwnKeystore) {
+    logger.warn("CANH BAO: chua co keystore rieng - APK dang ky bang keystore/debug.keystore CONG KHAI trong repo.")
+}
+
 android {
     namespace 'com.starclan.starhub'
     compileSdk 34
@@ -22,17 +34,25 @@ android {
     }
 
     signingConfigs {
-        debug {
-            storeFile file("../keystore/debug.keystore")
-            storePassword "android"
-            keyAlias "androiddebugkey"
-            keyPassword "android"
+        starhub {
+            if (useOwnKeystore) {
+                storeFile file(starKeystorePath)
+                storePassword starKeystorePassword
+                keyAlias System.getenv("STARHUB_KEY_ALIAS") ?: "starhub"
+                keyPassword System.getenv("STARHUB_KEY_PASSWORD") ?: starKeystorePassword
+            } else {
+                // DU PHONG khi chua cai keystore rieng: keystore debug CONG KHAI trong repo (xem README muc "Ky APK")
+                storeFile file("../keystore/debug.keystore")
+                storePassword "android"
+                keyAlias "androiddebugkey"
+                keyPassword "android"
+            }
         }
     }
 
     buildTypes {
         debug {
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.starhub
         }
         release {
             minifyEnabled false
