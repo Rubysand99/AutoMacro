@@ -44,21 +44,19 @@ jobs:
         env:
           KS_B64: ${{ secrets.STARHUB_KEYSTORE_BASE64 }}
         run: |
-          set -euo pipefail
-          if [ -n "${KS_B64:-}" ] && [ -n "${STARHUB_KEYSTORE_PASSWORD:-}" ]; then
-            # Bo khoang trang / xuong dong / dau nhay thua (hay dinh khi dan secret) truoc khi giai ma
-          if ! printf '%s' "$KS_B64" | tr -d ' \r\n\t"' | base64 -d > "$RUNNER_TEMP/starhub.jks"; then
-            echo "::error title=Secret STARHUB_KEYSTORE_BASE64 sai::Noi dung khong phai base64 hop le (dan thieu / thua ky tu?). Dan lai TOAN BO noi dung file starhub.b64."
-            exit 1
+          set -uo pipefail
+          if [ -z "${KS_B64:-}" ] || [ -z "${STARHUB_KEYSTORE_PASSWORD:-}" ]; then
+            echo "::warning title=Chua co keystore rieng::Thieu secret STARHUB_KEYSTORE_BASE64 / STARHUB_KEYSTORE_PASSWORD - APK dang ky bang keystore debug CONG KHAI. Xem README muc Ky APK."
+            exit 0
           fi
-          if ! keytool -list -keystore "$RUNNER_TEMP/starhub.jks" -storepass "$STARHUB_KEYSTORE_PASSWORD" >/dev/null 2>&1; then
-            echo "::error title=Keystore khong mo duoc::Giai ma xong nhung mo khong ra: sai STARHUB_KEYSTORE_PASSWORD hoac secret BASE64 bi cat / sai."
-            exit 1
-          fi
-            echo "STARHUB_KEYSTORE_FILE=$RUNNER_TEMP/starhub.jks" >> "$GITHUB_ENV"
+          # Bo khoang trang / xuong dong / dau nhay thua (hay dinh khi dan secret) truoc khi giai ma
+          ks="$RUNNER_TEMP/starhub.jks"
+          if printf '%s' "$KS_B64" | tr -d ' \r\n\t"' | base64 -d > "$ks" 2>/dev/null \
+             && keytool -list -keystore "$ks" -storepass "$STARHUB_KEYSTORE_PASSWORD" >/dev/null 2>&1; then
+            echo "STARHUB_KEYSTORE_FILE=$ks" >> "$GITHUB_ENV"
             echo "Dung keystore RIENG de ky APK"
           else
-            echo "::warning title=Chua co keystore rieng::Thieu secret STARHUB_KEYSTORE_BASE64 / STARHUB_KEYSTORE_PASSWORD - APK dang ky bang keystore debug CONG KHAI. Xem README muc Ky APK."
+            echo "::warning title=Secret keystore SAI::STARHUB_KEYSTORE_BASE64 khong giai ma/mo duoc (hoac sai mat khau) - APK dang ky bang keystore debug CONG KHAI. Dan lai TOAN BO noi dung file starhub.b64 va kiem tra STARHUB_KEYSTORE_PASSWORD."
           fi
 
       - name: Set up JDK 17
