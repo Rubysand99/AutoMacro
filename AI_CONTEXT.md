@@ -11,6 +11,23 @@ repo Python/discord.py rieng) de tao 1 he thong tap trung: owo-tracker la
 "bo nao" (biet luc nao can lam gi), AutoMacro la "tay chan" (thuc thi tren
 dien thoai). Xem muc "Ket noi voi owo-tracker" ben duoi.
 
+## v23 — Don ton dong: giam quyen + test HubDexQuery (5/11/2026)
+- `accessibility_service_config.xml`: them `android:packageNames="com.discord"` -> dich vu chi nhan su kien / doc noi dung man hinh cua Discord
+  (truoc day nhan tu MOI app). Cac cho doc man hinh van tu kiem tra goi `com.discord` (ButtonClicker, TagCollector, NodeDump) nhu cu.
+- `AndroidManifest.xml`: bo quyen `QUERY_ALL_PACKAGES` (nhay cam, khong can), thay bang `<queries><package com.discord/>` de
+  `DiscordSender` van goi duoc `getPackageInfo` / `getLaunchIntentForPackage` cho Discord tren Android 11+.
+  **CAN THU TREN MAY:** mo Hub noi -> "Thu mo Discord" -> bat farm. Neu bao "Khong tim thay Discord" hoac khong doc duoc man hinh,
+  hoan lai 2 thay doi tren (1 dong moi cho).
+- He qua: che do ghi (record) + `ScriptEngine.openApp` cho app KHAC khong con dung duoc nua (da khong co loi vao tu giao dien tu v16).
+- Bo 2 truong khong dung `hubVersion` / `serverTime` khoi `HubResponse` (Gson bo qua truong la nen khong anh huong bot cu/moi).
+- Them `HubDexQueryTest` (loc / sap xep / dong chi so cua Pet Dex).
+- DA XONG tu truoc (ghi chu cu o duoi con ghi "chua lam" la loi thoi): token dung EncryptedSharedPreferences (`OwoTrackerPrefs`);
+  `FarmController` cap nhat state bang `_state.update` (nguyen tu); TagCollector va Dump man hinh chi doc Discord;
+  TagCollector va Farm khong chay chong nhau (`start()` tu choi neu ben kia dang chay).
+- VAN CON (chua lam, can Ruby quyet): keystore debug `keystore/debug.keystore` van cong khai (mat khau `android`) — doi sang keystore rieng
+  can tao khoa + them GitHub Secrets; chuoi tieng Viet viet thang trong Kotlin; don code kich ban cu (ScriptEditorActivity, Room, ghi, runScript)
+  — chi xoa khi Ruby chac chan khong dung nua.
+
 ## v22 — Duyet vu khi Giu / Bo bang 2 nut tren Hub noi
 - Tracker: `,weaponreview` (start|stop|undo|export|reset) -> embed danh sach (dang kiem tra / con lai / ID Giu / ID Bo), queue `owo w <id>` dau tien;
   `POST /weapon-review {decision}` ghi quyet dinh, XOA tin lenh + tin tra loi OwO cua cay do (chua embed danh sach), tra `next_id`; `/hub` co `weapon_review`.
@@ -68,8 +85,7 @@ dien thoai). Xem muc "Ket noi voi owo-tracker" ben duoi.
   cao nhat, cowoncy lan doc dau/cuoi ngay (tinh theo NGAY DOC = bay gio - `age_seconds`, nen so lieu cu hom truoc khong bi tinh nham).
   Hub noi hien hom nay + 6 ngay truoc + tong; nut "🗑 Xoa thong ke" o tab Setting (bam 2 lan). Phien chay qua nua dem: gio chay tinh sang ngay moi.
   CHUA BIEN DICH tren may.
-- Con ton dong tu ra soat (chua lam): TagCollector doc chu ngoai Discord, "Dump man hinh" ghi clipboard, accessibility config
-  khong gioi han package, StateFlow `update` khong atomic, TagCollector/Farm/runScript co the chay chong nhau, keystore debug cong khai.
+- (Ghi chu cu, da cap nhat o v23) Ton dong tu ra soat: phan lon da xong; xem muc v23 de biet cai nao con lai.
 
 ## v18 — Chon tier gem duoc phep trong app (2/11/2026)
 - Tab Cai dat co khoi "Tier gem khi thay" + nut "Chinh tier gem" -> `GemTierDialog` (dung code, khong layout XML): moi loai gem (Hunting /
@@ -216,7 +232,7 @@ TextInputLayout bo goc, trang thai quyen doi mau theo bat/tat (SettingsFragment.
 - Mau: res/color-night/bottom_nav_item_color.xml (tab chua chon trang mo o che do toi); vien/duong ke dung
   @color/border_subtle (co ban sang + toi) thay vi hardcode #22000000/#1E000000.
 - AndroidManifest: allowBackup=false (token nam trong SharedPreferences, khong de Google sao luu). Danh
-  doi: kich ban AutoMacro (Room) cung khong con tu sao luu. Chua lam: EncryptedSharedPreferences (can them thu vien).
+  doi: kich ban AutoMacro (Room) cung khong con tu sao luu. (Da lam sau do: token luu bang EncryptedSharedPreferences.)
 - v12 DA SUA them 4 muc xanh: OwoTrackerApi dong ket noi (finally conn?.disconnect()); HubFragment.loadHub
   co co loadingHub nen bam Lam moi nhieu lan khong sinh request chong; zooTileIcon chon theo HANG hiem nhat
   (ZOO_RARITY_ORDER trong HubIcons.kt), cung hang thi lay loai it con nhat; HubFormat.pct() ep % vao 0..100,
@@ -226,8 +242,8 @@ TextInputLayout bo goc, trang thai quyen doi mau theo bat/tat (SettingsFragment.
   kho chia 2 tin, loc tin OwO cua nguoi khac.
 - v14 Pet Dex: the Pet Dex co 3 hang nut loc/sap xep (Sap xep: Mac dinh/Tong/HP/ATT/MAG/PR/MR/WP/Ten; Loc: Tat ca/Dang co/Chua co;
   Hang). Logic thuan Kotlin o data/HubDexQuery.kt; trang thai dexSort/dexFilter/dexRank nam trong HubFragment. Chua co JUnit.
-- CON TON DONG (muc xanh, chua sua): hubVersion/serverTime khong dung; neu bat R8 phai giu lop data.Hub*;
-  chuoi tieng Viet viet thang trong Kotlin.
+- CON TON DONG (muc xanh): neu bat R8 phai giu lop data.Hub* (hien `minifyEnabled false`); chuoi tieng Viet viet thang trong Kotlin.
+  (hubVersion/serverTime khong dung: da bo o v23.)
 
   GIAO DIEN v2 (icon that + bieu do): moi pet/gem/tier/thanh vien doi hinh/phan thuong quest
   co the mang emoji_id/emoji_animated (ID that cua Discord, xem view/EmojiImageLoader.kt tai
@@ -245,8 +261,7 @@ TextInputLayout bo goc, trang thai quyen doi mau theo bat/tat (SettingsFragment.
 - Sua lai 1 kich ban DA LUU tu Room (hien chi xoa lam lai duoc, chua mo lai de sua).
 - Doi thu tu buoc bang keo-tha.
 - Ghi tu dong thao tac go chu (phai lam thu cong).
-- Moi chi lam xong case dau tien voi owo-tracker (swap_gem) - hunt/battle tu dong
-  CHUA lam (rui ro OwO phat hien cao hon, can ban owo-tracker biet cooldown ngan truoc).
+- (Ghi chu cu) Luc dau chi lam case swap_gem voi owo-tracker; hunt/battle tu dong DA co o `FarmController` (xem v21 - 3 che do toc do).
   Nhung ve mat AutoMacro thi KHONG can lam gi them de ho tro action moi - chi can
   owo-tracker gui "command_text" dung, AutoMacro tu chay duoc ngay.
 
