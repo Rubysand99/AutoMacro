@@ -46,7 +46,15 @@ jobs:
         run: |
           set -euo pipefail
           if [ -n "${KS_B64:-}" ] && [ -n "${STARHUB_KEYSTORE_PASSWORD:-}" ]; then
-            echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/starhub.jks"
+            # Bo khoang trang / xuong dong / dau nhay thua (hay dinh khi dan secret) truoc khi giai ma
+          if ! printf '%s' "$KS_B64" | tr -d ' \r\n\t"' | base64 -d > "$RUNNER_TEMP/starhub.jks"; then
+            echo "::error title=Secret STARHUB_KEYSTORE_BASE64 sai::Noi dung khong phai base64 hop le (dan thieu / thua ky tu?). Dan lai TOAN BO noi dung file starhub.b64."
+            exit 1
+          fi
+          if ! keytool -list -keystore "$RUNNER_TEMP/starhub.jks" -storepass "$STARHUB_KEYSTORE_PASSWORD" >/dev/null 2>&1; then
+            echo "::error title=Keystore khong mo duoc::Giai ma xong nhung mo khong ra: sai STARHUB_KEYSTORE_PASSWORD hoac secret BASE64 bi cat / sai."
+            exit 1
+          fi
             echo "STARHUB_KEYSTORE_FILE=$RUNNER_TEMP/starhub.jks" >> "$GITHUB_ENV"
             echo "Dung keystore RIENG de ky APK"
           else
