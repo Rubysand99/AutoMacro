@@ -18,16 +18,20 @@ dien thoai). Xem muc "Ket noi voi owo-tracker" ben duoi.
 - Khong co lenh nao bat -> farm tu choi chay (bao ro ly do).
 - ZOO tat = bo ca buoc check zoo luc bat dau lan zoo filler. UPGRADE van gui them `owo hb`. Lenh bot tu go (swap_gem, auto_check) KHONG nam trong cau hinh nay.
 
+## v27 — Bo keystore debug cong khai (6/11/2026)
+- Run Actions sau khi Ruby dat 2 secret log "Dung keystore RIENG de ky APK", khong canh bao -> xoa `keystore/debug.keystore`, bo nhanh du phong trong `app/build.gradle`.
+- Thieu / sai secret: workflow `exit 1` voi `::error`; `build.gradle` nem GradleException neu khong co STARHUB_KEYSTORE_FILE/PASSWORD (CI luon co du, build local can tu dat env).
+
 ## v25 — Keystore RIENG de ky APK (5/11/2026)
 - `app/build.gradle`: signingConfig `starhub` (dung cho buildType debug). Co env `STARHUB_KEYSTORE_FILE` + `STARHUB_KEYSTORE_PASSWORD` thi ky bang khoa rieng
-  (alias mac dinh `starhub`, `STARHUB_KEY_ALIAS` / `STARHUB_KEY_PASSWORD` tuy chon); khong co thi DU PHONG `keystore/debug.keystore` cong khai + canh bao.
+  (alias mac dinh `starhub`, `STARHUB_KEY_ALIAS` / `STARHUB_KEY_PASSWORD` tuy chon); khong co thi build BAO LOI (da bo keystore debug du phong o v27).
 - `.github/workflows/build.yml`: buoc "Chuan bi keystore rieng" giai ma secret `STARHUB_KEYSTORE_BASE64` ra `$RUNNER_TEMP/starhub.jks`; mat khau lay tu secret `STARHUB_KEYSTORE_PASSWORD`.
-  Thieu secret -> chi `::warning`, build van chay (khong gay CI).
+  Thieu secret -> `::error`, build dung (v27).
 - Khoa duoc sinh 1 lan tren phien lam viec (RSA 2048, hieu luc ~27 nam, PKCS12, CN=Star Hub). Claude KHONG dat duoc GitHub Secrets (proxy chan) nen Ruby tu dan 2 secret
   (xem README muc "Ky APK"). File .jks + mat khau da gui rieng cho Ruby; KHONG nam trong repo (`.gitignore` chan `*.jks`).
 - Chu ky SHA-256 cua khoa moi: `FF:E1:69:27:81:B4:B9:0B:3E:C1:A5:A8:77:1A:FB:B8:15:DC:F4:D9:9B:72:EC:89:2D:DC:2F:21:6F:B2:A6:4A` (de doi chieu APK dung khoa nao).
 - DOI KHOA = Android coi la app khac: lan dau phai GO ban cu roi cai lai (mat cai dat trong app).
-- Viec con lai SAU KHI Ruby da dat secret va thay Actions khong con canh bao: xoa `keystore/debug.keystore` + bo nhanh du phong trong build.gradle (de thieu secret thi build BAO LOI thay vi ky bang khoa cong khai).
+- Da xong o v27: Actions xac nhan dung keystore rieng -> da xoa `keystore/debug.keystore` + nhanh du phong.
 
 ## v24 — GO BO han che do kich ban cu (5/11/2026)
 - Ruby xac nhan khong dung kich ban nua -> da xoa: `ScriptEditorActivity`, `engine/ScriptEngine`, Room (`AppDatabase`, `ScriptDao`, `ScriptEntity`,

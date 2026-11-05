@@ -9,16 +9,15 @@ try {
 } catch (Exception ignored) { }
 def starParts = starVersion.tokenize(".")
 
-// Ky APK: uu tien keystore RIENG (CI giai ma tu GitHub Secrets thanh file roi dat STARHUB_KEYSTORE_FILE + STARHUB_KEYSTORE_PASSWORD;
-// xem README muc "Ky APK"). Khong co thi dung tam keystore/debug.keystore cong khai de van build duoc.
+// Ky APK: CHI dung keystore RIENG (CI giai ma tu GitHub Secrets thanh file roi dat STARHUB_KEYSTORE_FILE + STARHUB_KEYSTORE_PASSWORD;
+// xem README muc "Ky APK"). Thieu thi build BAO LOI, khong ky bang khoa cong khai.
 def starKeystorePath = System.getenv("STARHUB_KEYSTORE_FILE")
 def starKeystorePassword = System.getenv("STARHUB_KEYSTORE_PASSWORD")
-def useOwnKeystore = starKeystorePath != null && !starKeystorePath.isEmpty() && file(starKeystorePath).exists()
-if (useOwnKeystore && (starKeystorePassword == null || starKeystorePassword.isEmpty())) {
-    throw new GradleException("Co keystore rieng (STARHUB_KEYSTORE_FILE) nhung thieu STARHUB_KEYSTORE_PASSWORD")
+if (starKeystorePath == null || starKeystorePath.isEmpty() || !file(starKeystorePath).exists()) {
+    throw new GradleException("Thieu keystore rieng: dat STARHUB_KEYSTORE_FILE (duong dan file .jks) va STARHUB_KEYSTORE_PASSWORD. Xem README muc 'Ky APK'.")
 }
-if (!useOwnKeystore) {
-    logger.warn("CANH BAO: chua co keystore rieng - APK dang ky bang keystore/debug.keystore CONG KHAI trong repo.")
+if (starKeystorePassword == null || starKeystorePassword.isEmpty()) {
+    throw new GradleException("Co STARHUB_KEYSTORE_FILE nhung thieu STARHUB_KEYSTORE_PASSWORD")
 }
 
 android {
@@ -35,18 +34,10 @@ android {
 
     signingConfigs {
         starhub {
-            if (useOwnKeystore) {
-                storeFile file(starKeystorePath)
-                storePassword starKeystorePassword
-                keyAlias System.getenv("STARHUB_KEY_ALIAS") ?: "starhub"
-                keyPassword System.getenv("STARHUB_KEY_PASSWORD") ?: starKeystorePassword
-            } else {
-                // DU PHONG khi chua cai keystore rieng: keystore debug CONG KHAI trong repo (xem README muc "Ky APK")
-                storeFile file("../keystore/debug.keystore")
-                storePassword "android"
-                keyAlias "androiddebugkey"
-                keyPassword "android"
-            }
+            storeFile file(starKeystorePath)
+            storePassword starKeystorePassword
+            keyAlias System.getenv("STARHUB_KEY_ALIAS") ?: "starhub"
+            keyPassword System.getenv("STARHUB_KEY_PASSWORD") ?: starKeystorePassword
         }
     }
 

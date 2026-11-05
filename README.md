@@ -44,7 +44,7 @@ Android 13+ sẽ hỏi quyền thông báo — hãy bấm Cho phép. Giờ huntb
 
 ## Lưu ý
 - APK được ký bằng **keystore riêng** (xem mục "Ký APK" bên dưới) để các bản build cài đè lên nhau được. Chưa cài keystore riêng
-  thì CI tạm ký bằng `keystore/debug.keystore` công khai trong repo và hiện cảnh báo vàng trong trang Actions.
+  thì build báo lỗi (không còn ký bằng khóa công khai).
 - Service Accessibility chỉ nhận sự kiện của Discord (`packageNames="com.discord"`); việc đọc màn hình khi chạy đều đọc chủ động
   qua `rootInActiveWindow`. Chế độ ghi / chạy kịch bản cũ đã được gỡ bỏ (v24), app chỉ còn Hub nổi + farm + lệnh từ owo-tracker.
 
@@ -56,8 +56,8 @@ Android 13+ sẽ hỏi quyền thông báo — hãy bấm Cho phép. Giờ huntb
 - **Quyền Accessibility giới hạn trong Discord:** dịch vụ chỉ nhận sự kiện / đọc nội dung màn hình của `com.discord` (cần để tìm
   ô nhập/nút Gửi). Chỉ bật khi bạn tin bản APK này, và tắt khi không dùng.
 - **Không xin `QUERY_ALL_PACKAGES`:** app chỉ khai báo `<queries>` cho `com.discord`, không biết máy cài những app nào khác.
-- Khi đã dùng keystore riêng thì người khác không thể ký APK trùng chữ ký của bạn. Còn khi chạy bằng `keystore/debug.keystore`
-  công khai thì ai có repo cũng ký được APK trùng chữ ký; chỉ cài APK do chính bạn build từ GitHub Actions của mình.
+- Vì APK chỉ ký bằng keystore riêng (không còn keystore công khai trong repo), người khác không thể ký APK trùng chữ ký của bạn;
+  chỉ cài APK do chính bạn build từ GitHub Actions của mình.
 
 ## Ký APK (keystore riêng)
 APK được ký bằng khóa **chỉ bạn giữ**, đưa vào CI qua GitHub Secrets (repo → Settings → Secrets and variables → Actions → New repository secret):
@@ -70,7 +70,7 @@ APK được ký bằng khóa **chỉ bạn giữ**, đưa vào CI qua GitHub Se
 | `STARHUB_KEY_PASSWORD` *(không bắt buộc)* | mặc định bằng mật khẩu kho khóa |
 
 - Workflow `Build APK` giải mã secret thành file tạm rồi đặt `STARHUB_KEYSTORE_FILE`; `app/build.gradle` đọc biến đó. Thiếu secret thì
-  tự dùng `keystore/debug.keystore` (công khai) và chỉ cảnh báo, không làm hỏng build.
+  build **báo lỗi** (cố ý, để không ký nhầm bằng khóa công khai).
 - **Sao lưu file `.jks` + mật khẩu ở chỗ an toàn.** Mất khóa thì mọi bản sau không cài đè được lên bản cũ (phải gỡ app rồi cài lại).
 - **Đổi khóa ký = Android coi là app khác:** lần đầu cài APK ký bằng khóa mới phải **gỡ bản cũ trước** (mất cài đặt trong app: địa chỉ API,
   token, vị trí Discord, thống kê farm). Nhớ ghi lại các thông tin đó trước khi gỡ.
