@@ -18,6 +18,7 @@ import android.widget.FrameLayout
 import android.widget.TextView
 import com.starclan.starhub.R
 import com.starclan.starhub.data.CommandGuard
+import com.starclan.starhub.data.FarmCmd
 import com.starclan.starhub.data.OwoTrackerApi
 import com.starclan.starhub.data.OwoTrackerPrefs
 import com.starclan.starhub.engine.ButtonClicker
@@ -198,6 +199,16 @@ class AutoAccessibilityService : AccessibilityService() {
                 Log.w(TAG, "Lenh '${cmd.action}' co command_text khong hop le - tu choi")
                 ackAndRemember(apiUrl, token, cmd.id, signature, "failed")
                 continue
+            }
+
+            // Lenh check bot nho go xen (auto_check): Ruby da TAT lenh do o Setting -> khong go, bao "failed" de bot biet
+            if (cmd.action == "auto_check") {
+                val gate = FarmCmd.forCheckCommand(commandText)
+                if (gate != null && !FarmController.state.value.commands.isEnabled(gate)) {
+                    Log.i(TAG, "Lenh check '${commandText.trim()}' dang TAT o Setting (Lenh trong farm) - khong go")
+                    ackAndRemember(apiUrl, token, cmd.id, signature, "failed")
+                    continue
+                }
             }
 
             // Hub noi bi tat giua chung -> dung ngay, cac lenh con lai de nguyen (chua ack)

@@ -537,7 +537,7 @@ object FarmOverlay {
             rows.add(Row("", "", build = { c -> caption(c, g.label).also { it.setPadding(0, dp(6), 0, dp(2)) } }))
             for (cmd in FarmCmd.values()) if (cmd.group == g) rows.add(Row("", "", build = { c -> commandRow(c, cmd) }))
         }
-        rows.add(Row("", "", build = { c -> caption(c, "Tắt lệnh nào thì farm bỏ qua lệnh đó. Đổi giữa chừng có hiệu lực từ vòng kế tiếp; lệnh bot tự gõ (đổi gem...) không nằm ở đây.", C_MUTED) }))
+        rows.add(Row("", "", build = { c -> caption(c, "Tắt lệnh nào thì farm bỏ qua lệnh đó. Đổi giữa chừng có hiệu lực từ vòng kế tiếp; lệnh bot nhờ app gõ xen (check cash/inv/zoo…) cũng bị chặn nếu bạn tắt lệnh đó; đổi gem thì không bị chặn.", C_MUTED) }))
         setGroup("cmds", cmdSummary(FarmController.state.value.commands), rows)
     }
 

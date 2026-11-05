@@ -2,7 +2,6 @@
     <string name="app_name">Star Hub</string>
     <string name="accessibility_service_description">Cho phép Star Hub đọc màn hình Discord và tự bấm, gõ lệnh OwO thay bạn khi Hub nổi đang bật. Chỉ hoạt động trong Discord.</string>
     <string name="btn_open_accessibility_settings">Bật quyền Accessibility</string>
-    <string name="btn_owo_tracker_settings">Kết nối owo-tracker</string>
     <string name="title_owo_tracker_settings">Kết nối owo-tracker</string>
     <string name="title_hub_farm">Hub nổi &amp; farm</string>
     <string name="section_accessibility">Quyền truy cập</string>
@@ -76,9 +75,6 @@
     <string name="hub_tile_quest">Quest</string>
     <string name="hub_tile_gems">Gem</string>
     <string name="hub_tile_zoo">Pet</string>
-    <string name="hub_section_daily">⏰ Daily</string>
-    <string name="hub_section_cowoncy">Cowoncy</string>
-    <string name="hub_section_huntbot">HuntBot</string>
     <string name="hub_section_gems">Gem</string>
     <string name="hub_section_quest">Quest</string>
     <string name="hub_section_team">Đội hình</string>

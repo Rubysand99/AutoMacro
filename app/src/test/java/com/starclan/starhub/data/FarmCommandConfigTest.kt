@@ -102,4 +102,21 @@ class FarmCommandConfigTest {
         assertTrue(c.isEnabled(FarmCmd.BATTLE))
         for (cmd in FarmCmd.values()) if (cmd != FarmCmd.HUNT && cmd != FarmCmd.BATTLE) assertFalse(cmd.label, c.isEnabled(cmd))
     }
+
+    @Test fun bot_check_commands_map_to_their_toggle() {
+        assertEquals(FarmCmd.CASH, FarmCmd.forCheckCommand("owo cash"))
+        assertEquals(FarmCmd.INV, FarmCmd.forCheckCommand(" OWO  inv "))
+        assertEquals(FarmCmd.QUEST, FarmCmd.forCheckCommand("owo quest"))
+        assertEquals(FarmCmd.WS, FarmCmd.forCheckCommand("owo ws"))
+        assertEquals(FarmCmd.ZOO, FarmCmd.forCheckCommand("owo zoo"))
+        assertEquals(FarmCmd.HUNTBOT, FarmCmd.forCheckCommand("owo hb"))
+    }
+
+    @Test fun other_commands_are_never_gated() {
+        // hbstart nho app go "owo hb 24h", thay gem go "owo use ..." : khong bi cong tac chan
+        assertEquals(null, FarmCmd.forCheckCommand("owo hb 24h"))
+        assertEquals(null, FarmCmd.forCheckCommand("owo use 051"))
+        assertEquals(null, FarmCmd.forCheckCommand(null))
+        assertEquals(null, FarmCmd.forCheckCommand(""))
+    }
 }

@@ -33,6 +33,21 @@ enum class FarmCmd(val id: String, val label: String, val shown: String, val gro
 
     companion object {
         fun fromId(id: String): FarmCmd? = values().firstOrNull { it.id == id }
+
+        /**
+         * Lenh "check" ma BOT nho app go xen (action auto_check: owo cash / inv / quest / ws / zoo / hb) thuoc cong tac nao.
+         * Tra ve null neu khong phai 1 trong cac lenh do -> khong bi cong tac chan.
+         */
+        fun forCheckCommand(commandText: String?): FarmCmd? =
+            when (commandText?.trim()?.lowercase()?.replace(Regex("\\s+"), " ")) {
+                "owo cash" -> CASH
+                "owo inv" -> INV
+                "owo quest" -> QUEST
+                "owo ws" -> WS
+                "owo zoo" -> ZOO
+                "owo hb" -> HUNTBOT
+                else -> null
+            }
     }
 }
 

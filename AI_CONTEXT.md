@@ -11,6 +11,10 @@ repo Python/discord.py rieng) de tao 1 he thong tap trung: owo-tracker la
 "bo nao" (biet luc nao can lam gi), AutoMacro la "tay chan" (thuc thi tren
 dien thoai). Xem muc "Ket noi voi owo-tracker" ben duoi.
 
+## v29 — Ra soat (6/11/2026)
+- Sua: lenh check ma BOT nho app go xen (action `auto_check`: owo cash/inv/quest/ws/zoo/hb) nay cung bi cong tac "Lenh trong farm" chan (truoc do tat Zoo van bi bot nho go owo zoo). App ack `failed`, khong go gi (`FarmCmd.forCheckCommand`). Lenh khac (hbstart, thay gem, quet vu khi...) KHONG bi chan.
+- Don: bo 4 string + 2 drawable khong con ai dung (btn_owo_tracker_settings, hub_section_daily/cowoncy/huntbot, bg_hub_root, ic_daily).
+
 ## v28 — Tab "Cong cu" dua lenh owo-tracker len app (6/11/2026)
 - Bottom nav co 3 tab: Hub / Cong cu / Cai dat. `ToolsFragment.kt` dung UI hoan toan bang code (khong XML), moi lan mo tab la Fragment moi nen tu tai lai.
 - Cong tac bot -> `GET/POST /settings` (khoa auto_check, hb_auto, hb_alert; event_mode dung `/event-mode`, app_on dung `/power` nhu truoc), ghi chu -> `/notes`, bao giai captcha -> `POST /captcha/clear`. Ben bot them o owo-tracker (handler `handle_*_settings/notes/captcha_clear`, test `test_v30.py`).
@@ -22,7 +26,7 @@ dien thoai). Xem muc "Ket noi voi owo-tracker" ben duoi.
 - Du lieu: `data/FarmCommandConfig.kt` (thuan Kotlin, co test). Chi luu tap lenh DANG TAT (prefs `star_farm`, key `cmd_disabled`) nen lenh moi them sau mac dinh BAT. KHONG doi `id` cua FarmCmd da dung.
 - `FarmController`: `FarmState.commands`, `changeCommands` / `setCommandEnabled`; `runLoop` doc cau hinh MOI VONG (doi giua chung co hieu luc tu vong ke tiep); `runOneChore` bo viec bi tat khoi danh sach random.
 - Khong co lenh nao bat -> farm tu choi chay (bao ro ly do).
-- ZOO tat = bo ca buoc check zoo luc bat dau lan zoo filler. UPGRADE van gui them `owo hb`. Lenh bot tu go (swap_gem, auto_check) KHONG nam trong cau hinh nay.
+- ZOO tat = bo ca buoc check zoo luc bat dau lan zoo filler. UPGRADE van gui them `owo hb`. Lenh bot tu go: swap_gem KHONG nam trong cau hinh nay; auto_check (cash/inv/quest/ws/zoo/hb) thi CO bi chan (v29).
 
 ## v27 — Bo keystore debug cong khai (6/11/2026)
 - Run Actions sau khi Ruby dat 2 secret log "Dung keystore RIENG de ky APK", khong canh bao -> xoa `keystore/debug.keystore`, bo nhanh du phong trong `app/build.gradle`.
