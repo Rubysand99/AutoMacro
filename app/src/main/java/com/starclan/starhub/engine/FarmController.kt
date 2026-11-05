@@ -4,6 +4,8 @@ import android.content.Context
 import android.util.Log
 import com.starclan.starhub.data.CommandGuard
 import com.starclan.starhub.data.DayStats
+import com.starclan.starhub.data.FarmCmd
+import com.starclan.starhub.data.FarmCommandConfig
 import com.starclan.starhub.data.FarmStatsStore
 import com.starclan.starhub.data.HubFormat
 import com.starclan.starhub.data.HubResponse
@@ -52,6 +54,8 @@ data class FarmState(
     val huntMode: Int = 3,
     /** Toc do farm: Nhanh / Thuong / Cham (doi nhip go lenh, xem SpeedMode) */
     val speed: SpeedMode = SpeedMode.NORMAL,
+    /** Bat / tat tung lenh farm (tab Setting cua Hub noi). Doc moi vong nen doi giua chung co hieu luc o vong ke tiep. */
+    val commands: FarmCommandConfig = FarmCommandConfig.ALL_ON,
     /** Ly do hunt dang tam dung (null = dang hunt binh thuong) */
     val huntPaused: String? = null,
     /** Dang CHO (nghi, gian nhip, doi cooldown...): gio het cho (epoch ms, 0 = khong cho), tong thoi gian cho, ly do.
@@ -120,6 +124,7 @@ object FarmController {
     private const val PREFS_NAME = "star_farm"
     private const val KEY_HUNT_MODE = "hunt_mode"
     private const val KEY_SPEED_MODE = "speed_mode"
+    private const val KEY_CMD_DISABLED = "cmd_disabled"   // id cac lenh DANG TAT, cach nhau dau phay
     private val REQUIRED_GEM_SLOTS = setOf("1", "3", "4")   // 3 slot gem thuong ngay
 
     // Huntbot: app chi NHAN thanh qua (owo hb) khi da xong. App KHONG tu chay lai huntbot vi
@@ -174,16 +179,16 @@ object FarmController {
     @Volatile private var sendCounter = 0
 
     /** Lenh kiem tra nhe, chen ngau nhien vao luc cho cooldown hunt va battle (cung cap nhat du lieu cho bot) */
-    private data class Filler(val key: String, val command: String)
+    private data class Filler(val key: String, val command: String, val cmd: FarmCmd)
 
     /** 1 viec trong danh sach random: key de tinh hang cho 2 phut, run = cach go */
     private class Chore(val key: String, val run: suspend () -> SendResult)
 
     private val FILLERS = listOf(
-        Filler("inv", "owo inv"),       // kho: de bot biet con gem nao de thay
-        Filler("cash", "owo cash"),     // cowoncy
-        Filler("ws", "owo ws"),         // weapon shards
-        Filler("zoo", "owo zoo")        // zoo: bao pet moi chinh xac
+        Filler("inv", "owo inv", FarmCmd.INV),      // kho: de bot biet con gem nao de thay
+        Filler("cash", "owo cash", FarmCmd.CASH),   // cowoncy
+        Filler("ws", "owo ws", FarmCmd.WS),         // weapon shards
+        Filler("zoo", "owo zoo", FarmCmd.ZOO)       // zoo: bao pet moi chinh xac
     )
     private var questUiWarned = false
 
@@ -598,8 +603,25 @@ object FarmController {
     fun loadHuntMode(context: Context) {
         val mode = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getInt(KEY_HUNT_MODE, 3)
         val speed = SpeedMode.fromId(context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getInt(KEY_SPEED_MODE, SpeedMode.NORMAL.id))
-        update { it.copy(huntMode = if (mode in 1..3) mode else 3, speed = speed) }
+        val commands = FarmCommandConfig.decode(context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getString(KEY_CMD_DISABLED, null))
+        update { it.copy(huntMode = if (mode in 1..3) mode else 3, speed = speed, commands = commands) }
     }
+
+    /**
+     * Doi cau hinh bat / tat lenh (nut tren Hub noi) va nho cho lan sau. Co hieu luc o vong farm ke tiep, ke ca khi dang chay.
+     * `change` nhan cau hinh hien tai, tra ve cau hinh moi.
+     */
+    fun changeCommands(context: Context, change: (FarmCommandConfig) -> FarmCommandConfig) {
+        var saved = FarmCommandConfig.ALL_ON
+        update { st ->
+            saved = change(st.commands)
+            st.copy(commands = saved)
+        }
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit().putString(KEY_CMD_DISABLED, saved.encode()).apply()
+    }
+
+    fun setCommandEnabled(context: Context, cmd: FarmCmd, enabled: Boolean) =
+        changeCommands(context) { it.with(cmd, enabled) }
 
     /** Doi toc do farm (co hieu luc ngay o vong ke tiep, ke ca khi dang chay) va nho cho lan sau */
     fun setSpeed(context: Context, speed: SpeedMode) {
@@ -732,6 +754,7 @@ object FarmController {
         settings: OwoTrackerPrefs.Settings
     ): SendResult {
         val hub = _state.value.hub
+        val cmds = _state.value.commands   // viec nao bi tat o Setting thi khong dua vao danh sach random
         fun ready(key: String) = choreDue("wait_$key", CHORE_REQUEUE_MS)
         val pool = mutableListOf<Chore>()
 
@@ -743,7 +766,7 @@ object FarmController {
             val left = daily.secondsLeft
             left != null && left <= 0L && choreDue("daily", DAILY_GAP_MS)
         }
-        if (dailyDue && ready("daily")) {
+        if (cmds.isEnabled(FarmCmd.DAILY) && dailyDue && ready("daily")) {
             pool += Chore("daily") {
                 if (daily == null) choreAt["daily_unknown"] = System.currentTimeMillis()
                 runChoreCommands(sender, settings, "daily", listOf(DAILY_COMMAND))
@@ -772,7 +795,7 @@ object FarmController {
             }
             r
         }
-        if (ready("hb")) {
+        if (cmds.isEnabled(FarmCmd.HUNTBOT) && ready("hb")) {
             // Huntbot da toi gio xong -> nhan thanh qua NGAY, khong cho boc ngau nhien
             if (hb?.hunting == true && (hb.secondsLeft ?: 1L) <= 0L) {
                 val r = hbChore.run()
@@ -783,28 +806,28 @@ object FarmController {
         }
 
         // Doi hinh + chi tiet vu khi cua pet trong doi (de ,teamcheck cua bot cham diem duoc). Thua hon cac viec khac.
-        if (choreDue("team_refresh", TEAM_REFRESH_GAP_MS)) {
+        if (cmds.isEnabled(FarmCmd.TEAM) && choreDue("team_refresh", TEAM_REFRESH_GAP_MS)) {
             pool += Chore("team") { runChoreCommands(sender, settings, "team_refresh", listOf("owo team")) }
         }
         for (m in hub?.team?.members.orEmpty()) {
             val wid = m.weaponId?.takeIf { WEAPON_ID_RE.matches(it) } ?: continue
-            if (choreDue("weapon_$wid", WEAPON_DETAIL_GAP_MS)) {
+            if (cmds.isEnabled(FarmCmd.WEAPON) && choreDue("weapon_$wid", WEAPON_DETAIL_GAP_MS)) {
                 pool += Chore("wpn_$wid") { runChoreCommands(sender, settings, "weapon_$wid", listOf("owo weapon $wid")) }
             }
         }
 
         // Mo lootbox / crate / bcrate
-        if (OPEN_BOXES_COMMANDS.isNotEmpty() && ready("open_boxes")) {
+        if (cmds.isEnabled(FarmCmd.OPEN_BOXES) && OPEN_BOXES_COMMANDS.isNotEmpty() && ready("open_boxes")) {
             pool += Chore("open_boxes") { runChoreCommands(sender, settings, "open_boxes", OPEN_BOXES_COMMANDS) }
         }
 
         // Hien te lay essence
-        if (SACRIFICE_COMMANDS.isNotEmpty() && ready("sacrifice")) {
+        if (cmds.isEnabled(FarmCmd.SACRIFICE) && SACRIFICE_COMMANDS.isNotEmpty() && ready("sacrifice")) {
             pool += Chore("sacrifice") { runChoreCommands(sender, settings, "sacrifice", SACRIFICE_COMMANDS) }
         }
 
         // Nang cap huntbot (chon chi so theo cap do bot doc duoc; bo qua khi bot biet essence = 0)
-        if (UPGRADE_ENABLED && ready("upgrade")) {
+        if (cmds.isEnabled(FarmCmd.UPGRADE) && UPGRADE_ENABLED && ready("upgrade")) {
             val trait = hb?.traits?.let { pickUpgradeTrait(it) }
             val essence = hb?.essence
             if (trait != null && (essence == null || essence > 0L)) {
@@ -816,13 +839,13 @@ object FarmController {
         }
 
         // Quest: mo Quest Log va bam nhan thuong
-        if (ready("quest")) {
+        if (cmds.isEnabled(FarmCmd.QUEST) && ready("quest")) {
             pool += Chore("quest") { claimQuests(service, sender, settings) }
         }
 
         // Lenh kiem tra nhe
         for (f in FILLERS) {
-            if (ready(f.key)) {
+            if (cmds.isEnabled(f.cmd) && ready(f.key)) {
                 pool += Chore(f.key) { runChoreCommands(sender, settings, "filler_" + f.key, listOf(f.command)) }
             }
         }
@@ -904,6 +927,10 @@ object FarmController {
             plannedStop("Chưa nhập địa chỉ API / token ở Cài đặt")
             return
         }
+        if (!_state.value.commands.anyEnabled()) {
+            plannedStop("Chưa bật lệnh nào — vào tab Setting, mục \"Lệnh trong farm\" bật ít nhất 1 lệnh rồi bấm Bắt đầu lại")
+            return
+        }
 
         val startIso = Instant.now().toString()
         choreAt.clear()
@@ -965,29 +992,32 @@ object FarmController {
         }
 
         // --- 3. Check zoo luc bat dau ---
-        update { it.copy(status = "Kiểm tra zoo…") }
-        val zooSentAt = System.currentTimeMillis()
-        val zooResult = sendCommand(sender, settings, ZOO_COMMAND)
-        if (zooResult == SendResult.CAPTCHA) {
-            handleCaptcha(ctx)
-            return
-        }
-        if (zooResult == SendResult.OK) {
-            val waitStart = System.currentTimeMillis()
-            var zooRead = false
-            while (isActive && System.currentTimeMillis() - waitStart < ZOO_WAIT_MS) {
-                delay(3_000)
-                refreshHub(ctx)
-                val age = _state.value.hub?.zoo?.ageSeconds
-                if (age != null && age < (System.currentTimeMillis() - zooSentAt) / 1000 + 4) {
-                    zooRead = true
-                    break
-                }
+        // Lenh Zoo tat o Setting -> bo qua buoc nay (bot se khong biet chinh xac pet nao da co cho toi khi Ruby tu go owo zoo)
+        if (_state.value.commands.isEnabled(FarmCmd.ZOO)) {
+            update { it.copy(status = "Kiểm tra zoo…") }
+            val zooSentAt = System.currentTimeMillis()
+            val zooResult = sendCommand(sender, settings, ZOO_COMMAND)
+            if (zooResult == SendResult.CAPTCHA) {
+                handleCaptcha(ctx)
+                return
             }
-            if (!zooRead) Log.w(TAG, "Chua xac nhan bot da doc zoo - van farm")
-        } else {
-            hardStop(ctx, "Không gõ được lệnh zoo: " + describeSend(zooResult))
-            return
+            if (zooResult == SendResult.OK) {
+                val waitStart = System.currentTimeMillis()
+                var zooRead = false
+                while (isActive && System.currentTimeMillis() - waitStart < ZOO_WAIT_MS) {
+                    delay(3_000)
+                    refreshHub(ctx)
+                    val age = _state.value.hub?.zoo?.ageSeconds
+                    if (age != null && age < (System.currentTimeMillis() - zooSentAt) / 1000 + 4) {
+                        zooRead = true
+                        break
+                    }
+                }
+                if (!zooRead) Log.w(TAG, "Chua xac nhan bot da doc zoo - van farm")
+            } else {
+                hardStop(ctx, "Không gõ được lệnh zoo: " + describeSend(zooResult))
+                return
+            }
         }
 
         // --- 4. Vong farm ---
@@ -1040,9 +1070,13 @@ object FarmController {
             update { it.copy(status = "Đang farm…") }
 
             // 4.5 hunt (tuy che do hunt co the tam dung, battle van chay)
-            val pauseReason = huntPauseReason(_state.value.hub, _state.value.huntMode)
+            val cmds = _state.value.commands   // doc moi vong: bat/tat lenh giua chung co hieu luc o vong ke tiep
+            val huntOn = cmds.isEnabled(FarmCmd.HUNT)
+            val pauseReason = if (huntOn) huntPauseReason(_state.value.hub, _state.value.huntMode) else null
             update { it.copy(huntPaused = pauseReason) }
-            if (pauseReason == null) {
+            if (!huntOn) {
+                // Hunt tat o Setting: khong go hunt (battle va viec vat van chay neu dang bat)
+            } else if (pauseReason == null) {
                 val huntResult = sendCommand(sender, settings, HUNT_COMMAND)
                 if (huntResult == SendResult.CAPTCHA) {
                     handleCaptcha(ctx)
@@ -1068,27 +1102,30 @@ object FarmController {
                 update { it.copy(status = "Hunt tạm dừng — $pauseReason") }
             }
 
-            // 4.6 battle
-            val battleResult = sendCommand(sender, settings, BATTLE_COMMAND)
-            if (battleResult == SendResult.CAPTCHA) {
-                handleCaptcha(ctx)
-                return
-            }
-            if (battleResult == SendResult.OK) {
-                failsInRow = 0
-                update { it.copy(battles = it.battles + 1) }
-                recordStats { b, now -> b.addBattle(now) }
-            } else {
-                failsInRow++
-                if (failsInRow >= MAX_FAILS_IN_ROW) {
-                    hardStop(ctx, "Gõ lệnh lỗi $failsInRow lần liên tiếp (${describeSend(battleResult)}) — đã dừng")
+            // 4.6 battle (tat o Setting thi bo qua; battleResult = OK de lenh "owo" ben duoi van chay neu dang bat)
+            var battleResult = SendResult.OK
+            if (cmds.isEnabled(FarmCmd.BATTLE)) {
+                battleResult = sendCommand(sender, settings, BATTLE_COMMAND)
+                if (battleResult == SendResult.CAPTCHA) {
+                    handleCaptcha(ctx)
                     return
                 }
-                if (failsInRow >= 2) reopenChannel(sender, link)
+                if (battleResult == SendResult.OK) {
+                    failsInRow = 0
+                    update { it.copy(battles = it.battles + 1) }
+                    recordStats { b, now -> b.addBattle(now) }
+                } else {
+                    failsInRow++
+                    if (failsInRow >= MAX_FAILS_IN_ROW) {
+                        hardStop(ctx, "Gõ lệnh lỗi $failsInRow lần liên tiếp (${describeSend(battleResult)}) — đã dừng")
+                        return
+                    }
+                    if (failsInRow >= 2) reopenChannel(sender, link)
+                }
             }
 
             // 4.6b Moi vong go them 1 lan "owo" (ngay sau battle, khong nghi). Loi go chi bo qua: khong tinh vao failsInRow.
-            if (battleResult == SendResult.OK) {
+            if (battleResult == SendResult.OK && cmds.isEnabled(FarmCmd.OWO)) {
                 val owoResult = sendCommand(sender, settings, OWO_COMMAND)
                 if (owoResult == SendResult.CAPTCHA) {
                     handleCaptcha(ctx)

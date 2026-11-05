@@ -11,6 +11,13 @@ repo Python/discord.py rieng) de tao 1 he thong tap trung: owo-tracker la
 "bo nao" (biet luc nao can lam gi), AutoMacro la "tay chan" (thuc thi tren
 dien thoai). Xem muc "Ket noi voi owo-tracker" ben duoi.
 
+## v26 — Bat / tat tung lenh farm + cau hinh (6/11/2026)
+- Tab Setting cua Hub noi co khung "Lenh trong farm": moi lenh 1 nut BAT/TAT (15 lenh, 3 nhom: chinh / viec vat / kiem tra) + 2 cau hinh nhanh "Bat tat ca" va "Chi hunt + battle".
+- Du lieu: `data/FarmCommandConfig.kt` (thuan Kotlin, co test). Chi luu tap lenh DANG TAT (prefs `star_farm`, key `cmd_disabled`) nen lenh moi them sau mac dinh BAT. KHONG doi `id` cua FarmCmd da dung.
+- `FarmController`: `FarmState.commands`, `changeCommands` / `setCommandEnabled`; `runLoop` doc cau hinh MOI VONG (doi giua chung co hieu luc tu vong ke tiep); `runOneChore` bo viec bi tat khoi danh sach random.
+- Khong co lenh nao bat -> farm tu choi chay (bao ro ly do).
+- ZOO tat = bo ca buoc check zoo luc bat dau lan zoo filler. UPGRADE van gui them `owo hb`. Lenh bot tu go (swap_gem, auto_check) KHONG nam trong cau hinh nay.
+
 ## v25 — Keystore RIENG de ky APK (5/11/2026)
 - `app/build.gradle`: signingConfig `starhub` (dung cho buildType debug). Co env `STARHUB_KEYSTORE_FILE` + `STARHUB_KEYSTORE_PASSWORD` thi ky bang khoa rieng
   (alias mac dinh `starhub`, `STARHUB_KEY_ALIAS` / `STARHUB_KEY_PASSWORD` tuy chon); khong co thi DU PHONG `keystore/debug.keystore` cong khai + canh bao.

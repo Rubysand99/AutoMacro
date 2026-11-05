@@ -17,6 +17,9 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import com.starclan.starhub.R
+import com.starclan.starhub.data.FarmCmd
+import com.starclan.starhub.data.FarmCmdGroup
+import com.starclan.starhub.data.FarmCommandConfig
 import com.starclan.starhub.data.HubFormat
 import com.starclan.starhub.data.SpeedMode
 import com.starclan.starhub.data.StatsFormat
@@ -136,6 +139,8 @@ object FarmOverlay {
     private val tabButtons = mutableListOf<TextView>()
     private val tabContainers = mutableListOf<LinearLayout>()
     private val speedButtons = mutableListOf<TextView>()
+    private val cmdButtons = mutableMapOf<FarmCmd, TextView>()
+    private val presetButtons = mutableListOf<Pair<TextView, FarmCommandConfig>>()
     private var currentTab = TAB_FARM
     private var autoCollapse = true
 
@@ -480,6 +485,64 @@ object FarmOverlay {
         return line
     }
 
+    /** 1 dong lenh: ten + lenh that bo go (trai), nut BAT / TAT (phai) */
+    private fun commandRow(ctx: Context, cmd: FarmCmd): View {
+        val line = LinearLayout(ctx)
+        line.orientation = LinearLayout.HORIZONTAL
+        line.gravity = Gravity.CENTER_VERTICAL
+        line.setPadding(0, dp(3), 0, dp(3))
+        val left = LinearLayout(ctx)
+        left.orientation = LinearLayout.VERTICAL
+        val name = TextView(ctx)
+        name.text = cmd.label
+        name.textSize = 13f
+        name.setTypeface(null, Typeface.BOLD)
+        name.setTextColor(Color.parseColor(UiTheme.TEXT_PRIMARY))
+        left.addView(name)
+        left.addView(caption(ctx, cmd.shown, C_MUTED))
+        line.addView(left, lparams(0, LinearLayout.LayoutParams.WRAP_CONTENT, weight = 1f))
+        val on = FarmController.state.value.commands.isEnabled(cmd)
+        val b = pill(ctx, if (on) "BẬT" else "TẮT", if (on) Btn.ACTIVE else Btn.SECONDARY, 12f)
+        b.setOnClickListener {
+            val now = FarmController.state.value.commands.isEnabled(cmd)
+            FarmController.setCommandEnabled(ctx.applicationContext, cmd, !now)
+        }
+        cmdButtons[cmd] = b
+        line.addView(b, lparams(dp(64), LinearLayout.LayoutParams.WRAP_CONTENT))
+        return line
+    }
+
+    /** Hai nut cau hinh nhanh: bat tat ca / chi hunt + battle */
+    private fun presetRow(ctx: Context): View {
+        val line = LinearLayout(ctx)
+        line.orientation = LinearLayout.HORIZONTAL
+        line.setPadding(0, dp(2), 0, dp(4))
+        val presets = listOf("Bật tất cả" to FarmCommandConfig.ALL_ON, "Chỉ hunt + battle" to FarmCommandConfig.HUNT_BATTLE_ONLY)
+        for ((i, pr) in presets.withIndex()) {
+            val b = pill(ctx, pr.first, Btn.SECONDARY, 12f)
+            b.setOnClickListener { FarmController.changeCommands(ctx.applicationContext) { pr.second } }
+            presetButtons.add(b to pr.second)
+            line.addView(b, lparams(0, LinearLayout.LayoutParams.WRAP_CONTENT, weight = 1f).also {
+                it.setMargins(if (i == 0) 0 else dp(3), 0, if (i == presets.size - 1) 0 else dp(3), 0)
+            })
+        }
+        return line
+    }
+
+    /** Dung lai noi dung khung "Lenh trong farm" (chay 1 lan khi mo Hub; nut BAT/TAT tu cap nhat o render) */
+    private fun buildCommandGroup() {
+        val rows = mutableListOf<Row>()
+        rows.add(Row("", "", build = { presetRow(it) }))
+        for (g in FarmCmdGroup.values()) {
+            rows.add(Row("", "", build = { c -> caption(c, g.label).also { it.setPadding(0, dp(6), 0, dp(2)) } }))
+            for (cmd in FarmCmd.values()) if (cmd.group == g) rows.add(Row("", "", build = { c -> commandRow(c, cmd) }))
+        }
+        rows.add(Row("", "", build = { c -> caption(c, "Tắt lệnh nào thì farm bỏ qua lệnh đó. Đổi giữa chừng có hiệu lực từ vòng kế tiếp; lệnh bot tự gõ (đổi gem...) không nằm ở đây.", C_MUTED) }))
+        setGroup("cmds", cmdSummary(FarmController.state.value.commands), rows)
+    }
+
+    private fun cmdSummary(c: FarmCommandConfig) = "${c.enabledCount()}/${c.total()} bật"
+
     /** Dien noi dung 1 nhom: dong tom tat tren tieu de + cac dong ben duoi. visible=false -> an ca the */
     private fun setGroup(key: String, summary: String, rows: List<Row>, visible: Boolean = true) {
         val g = groups[key] ?: return
@@ -721,6 +784,8 @@ object FarmOverlay {
         val speedRow = LinearLayout(service)
         speedRow.orientation = LinearLayout.HORIZONTAL
         speedButtons.clear()
+        cmdButtons.clear()
+        presetButtons.clear()
         for ((i, m) in SpeedMode.values().withIndex()) {
             val b = pill(service, m.label, Btn.SECONDARY, 13f)
             b.setOnClickListener { FarmController.setSpeed(service.applicationContext, m) }
@@ -732,6 +797,8 @@ object FarmOverlay {
         addTo(TAB_SETTING, caption(service, "Tốc độ farm"))
         addTo(TAB_SETTING, speedRow)
         addTo(TAB_SETTING, caption(service, "Nhanh: nhiều lệnh hơn nhưng dễ bị OwO nghi ngờ hơn. Chậm: an toàn hơn. Có hiệu lực từ vòng kế tiếp.", C_MUTED))
+        addGroupTo(TAB_SETTING, "cmds", "Lệnh trong farm", R.drawable.ic_sliders)
+        buildCommandGroup()
         addTo(TAB_SETTING, modeBtn)
         addTo(TAB_SETTING, autoBtn)
         addTo(TAB_SETTING, clearStatsBtn)
@@ -1047,6 +1114,13 @@ object FarmOverlay {
         for ((i, m) in SpeedMode.values().withIndex()) {
             styleBtn(speedButtons.getOrNull(i), if (st.speed == m) Btn.ACTIVE else Btn.SECONDARY)
         }
+        for ((cmd, b) in cmdButtons) {
+            val on = st.commands.isEnabled(cmd)
+            b.text = if (on) "BẬT" else "TẮT"
+            styleBtn(b, if (on) Btn.ACTIVE else Btn.SECONDARY)
+        }
+        for ((b, cfg) in presetButtons) styleBtn(b, if (st.commands == cfg) Btn.ACTIVE else Btn.SECONDARY)
+        groups["cmds"]?.summary?.text = cmdSummary(st.commands)
         setBtnState(btnToggle, if (st.running) "Dừng" else "Bắt đầu", if (st.running) Btn.DANGER else Btn.PRIMARY, if (st.running) R.drawable.ic_stop else R.drawable.ic_play)
         btnMute?.visibility = if (st.ringing) View.VISIBLE else View.GONE
         val eventOn = hub?.eventMode == true
