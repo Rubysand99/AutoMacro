@@ -42,6 +42,13 @@ Android 13+ sẽ hỏi quyền thông báo — hãy bấm Cho phép. Giờ huntb
   trên Hub. Giải xong gõ `,captcha clear` thì đồng hồ tự biến mất.
 - **Bật Hub = bot ON, tắt Hub = bot OFF** (app tự báo cho bot; bot ngừng giao việc khi Hub tắt).
 
+## Tab "Công cụ"
+Đưa các lệnh của owo-tracker lên app, khỏi phải gõ trong Discord (cần bot bản mới có `/settings`, `/notes`, `/captcha/clear`):
+- **Công tắc bot:** tự chen lệnh check (`,autocheck`), tự chạy lại huntbot (`,hbauto`), nhắc huntbot qua DM (`,hbalert`), chế độ Event (`,eventmode`),
+  cho bot giao việc cho app (`,off`). Khi OwO đang đòi captcha hiện khung đỏ + nút **Đã giải captcha xong** (`,captcha clear`).
+- **Tra cứu:** gõ tên (không cần dấu) để tìm trong zoo, dex loài, kho đồ, vũ khí + passive — như `,zoo` `,pets` `,inv` `,myweapons` nhưng ngay trên dữ liệu Hub đã tải.
+- **Ghi chú:** thêm / đánh dấu xong, đồng bộ với `,note` của bot.
+
 ## Lưu ý
 - APK được ký bằng **keystore riêng** (xem mục "Ký APK" bên dưới) để các bản build cài đè lên nhau được. Chưa cài keystore riêng
   thì build báo lỗi (không còn ký bằng khóa công khai).

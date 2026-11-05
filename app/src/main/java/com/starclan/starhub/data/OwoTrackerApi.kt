@@ -199,6 +199,53 @@ object OwoTrackerApi {
         }
     }
 
+    // ---- Man "Cong cu": cong tac / ghi chu / captcha (xem BotTools.kt) ----
+
+    /** Goi 1 duong cua bot, tra ve noi dung JSON khi HTTP 200, null khi loi (mang / sai token / bot chua cap nhat). */
+    private suspend fun callBot(apiUrl: String, token: String, method: String, path: String, body: String? = null): String? =
+        withContext(Dispatchers.IO) {
+            try {
+                val conn = URL(joinUrl(apiUrl, path)).openConnection() as HttpURLConnection
+                try {
+                    conn.requestMethod = method
+                    conn.setRequestProperty("Authorization", "Bearer $token")
+                    conn.connectTimeout = 8_000
+                    conn.readTimeout = 10_000
+                    if (body != null) {
+                        conn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+                        conn.doOutput = true
+                        conn.outputStream.use { it.write(body.toByteArray(Charsets.UTF_8)) }
+                    }
+                    if (conn.responseCode != 200) null else conn.inputStream.bufferedReader().use { it.readText() }
+                } finally {
+                    conn.disconnect()
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "callBot $method $path loi: ${e.message}")
+                null
+            }
+        }
+
+    suspend fun fetchBotSettings(apiUrl: String, token: String): BotSettings? =
+        callBot(apiUrl, token, "GET", "/settings")?.let { BotToolsJson.parseSettings(it) }
+
+    /** Bat/tat 1 cong tac; tra ve cai dat moi nhat bot da luu, null neu loi */
+    suspend fun setBotToggle(apiUrl: String, token: String, toggle: BotToggle, enabled: Boolean): BotSettings? =
+        callBot(apiUrl, token, "POST", "/settings", BotToolsJson.toggleBody(toggle, enabled))?.let { BotToolsJson.parseSettings(it) }
+
+    suspend fun fetchNotes(apiUrl: String, token: String): List<BotNote>? =
+        callBot(apiUrl, token, "GET", "/notes")?.let { BotToolsJson.parseNotes(it) }
+
+    suspend fun addNote(apiUrl: String, token: String, text: String): List<BotNote>? =
+        callBot(apiUrl, token, "POST", "/notes", BotToolsJson.addNoteBody(text))?.let { BotToolsJson.parseNotes(it) }
+
+    suspend fun markNoteDone(apiUrl: String, token: String, id: Int): List<BotNote>? =
+        callBot(apiUrl, token, "POST", "/notes", BotToolsJson.doneNoteBody(id))?.let { BotToolsJson.parseNotes(it) }
+
+    /** Bao bot da giai captcha xong (nhu `,captcha clear`). true = bot da nhan */
+    suspend fun clearCaptcha(apiUrl: String, token: String): Boolean =
+        callBot(apiUrl, token, "POST", "/captcha/clear", "{}") != null
+
     /** Bat/tat che do Event cua bot. Tra ve gia tri bot da luu, hoac null neu loi (mang / sai token). */
     suspend fun setEventMode(apiUrl: String, token: String, enabled: Boolean): Boolean? =
         withContext<Boolean?>(Dispatchers.IO) {

@@ -11,6 +11,12 @@ repo Python/discord.py rieng) de tao 1 he thong tap trung: owo-tracker la
 "bo nao" (biet luc nao can lam gi), AutoMacro la "tay chan" (thuc thi tren
 dien thoai). Xem muc "Ket noi voi owo-tracker" ben duoi.
 
+## v28 — Tab "Cong cu" dua lenh owo-tracker len app (6/11/2026)
+- Bottom nav co 3 tab: Hub / Cong cu / Cai dat. `ToolsFragment.kt` dung UI hoan toan bang code (khong XML), moi lan mo tab la Fragment moi nen tu tai lai.
+- Cong tac bot -> `GET/POST /settings` (khoa auto_check, hb_auto, hb_alert; event_mode dung `/event-mode`, app_on dung `/power` nhu truoc), ghi chu -> `/notes`, bao giai captcha -> `POST /captcha/clear`. Ben bot them o owo-tracker (handler `handle_*_settings/notes/captcha_clear`, test `test_v30.py`).
+- Tra cuu: `data/HubSearch.kt` (thuan Kotlin, bo dau tieng Viet, toi da 15 ket qua/nhom) tim tren du lieu `/hub` da tai: zoo, dex, kho, vu khi. Parse JSON cong cu o `data/BotTools.kt`. Test: `HubSearchTest`, `BotToolsJsonTest`.
+- Chua lam (co the them sau): `,setalt`/`,testalt`, `,petset`, `,weapontypeset`/`,passiveset` (nhap tay), `,teamcheck`, `,zoodiff`, `,unlocked` — can them endpoint rieng ben bot.
+
 ## v26 — Bat / tat tung lenh farm + cau hinh (6/11/2026)
 - Tab Setting cua Hub noi co khung "Lenh trong farm": moi lenh 1 nut BAT/TAT (15 lenh, 3 nhom: chinh / viec vat / kiem tra) + 2 cau hinh nhanh "Bat tat ca" va "Chi hunt + battle".
 - Du lieu: `data/FarmCommandConfig.kt` (thuan Kotlin, co test). Chi luu tap lenh DANG TAT (prefs `star_farm`, key `cmd_disabled`) nen lenh moi them sau mac dinh BAT. KHONG doi `id` cua FarmCmd da dung.

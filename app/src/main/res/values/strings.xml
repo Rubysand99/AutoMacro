@@ -97,4 +97,5 @@
     <!-- 3 tab duoi cung -->
     <string name="tab_hub">Hub</string>
     <string name="tab_settings">Cài đặt</string>
+    <string name="tab_tools">Công cụ</string>
 </resources>

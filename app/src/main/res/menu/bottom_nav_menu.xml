@@ -5,6 +5,10 @@
         android:icon="@drawable/ic_tab_hub"
         android:title="@string/tab_hub" />
     <item
+        android:id="@+id/navTools"
+        android:icon="@drawable/ic_grid"
+        android:title="@string/tab_tools" />
+    <item
         android:id="@+id/navSettings"
         android:icon="@drawable/ic_tab_settings"
         android:title="@string/tab_settings" />
