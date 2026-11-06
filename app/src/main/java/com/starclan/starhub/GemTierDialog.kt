@@ -7,7 +7,13 @@ import android.widget.Spinner
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
+import com.starclan.starhub.data.OwoTrackerApi
+import com.starclan.starhub.data.OwoTrackerPrefs
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
 import com.starclan.starhub.data.GemPref
@@ -20,6 +26,42 @@ import com.starclan.starhub.data.GemTierConfig
  * Dung hoan toan bang code (khong layout XML) de de chinh.
  */
 object GemTierDialog {
+
+    /**
+     * Lay tier gem tu bot -> hop thoai bat/tat tung tier -> luu len bot. Dung dia chi + token DA LUU.
+     * `scope` la scope cua man hinh goi (lifecycleScope); `isAlive` tra false khi man hinh da dong trong luc cho mang.
+     */
+    fun openFromSaved(context: Context, scope: CoroutineScope, isAlive: () -> Boolean) {
+        val appContext = context.applicationContext
+        val saved = OwoTrackerPrefs.load(context)
+        if (saved.apiUrl.isBlank() || saved.token.isBlank()) {
+            Toast.makeText(appContext, R.string.gem_tier_need_settings, Toast.LENGTH_LONG).show()
+            return
+        }
+        Toast.makeText(appContext, R.string.gem_tier_loading, Toast.LENGTH_SHORT).show()
+        scope.launch {
+            val config = OwoTrackerApi.fetchGemTier(saved.apiUrl, saved.token)
+            if (!isAlive()) return@launch
+            if (config == null) {
+                Toast.makeText(appContext, R.string.gem_tier_load_failed, Toast.LENGTH_LONG).show()
+                return@launch
+            }
+            show(context, config) { changes ->
+                if (changes.isEmpty()) {
+                    Toast.makeText(appContext, R.string.gem_tier_unchanged, Toast.LENGTH_SHORT).show()
+                    return@show
+                }
+                CoroutineScope(Dispatchers.Main).launch {
+                    val result = OwoTrackerApi.saveGemTier(saved.apiUrl, saved.token, changes)
+                    Toast.makeText(
+                        appContext,
+                        if (result != null) R.string.gem_tier_saved else R.string.gem_tier_save_failed,
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
+        }
+    }
 
     fun show(context: Context, config: GemTierConfig, onSave: (GemTierChanges) -> Unit) {
         val dp = context.resources.displayMetrics.density

@@ -13,7 +13,7 @@ Push lên nhánh `main` trên GitHub, tab **Actions** tự build và cho tải A
 Sau bước build, workflow chạy thêm unit test JVM (`gradle testDebugUnitTest`); bước này chưa chặn build.
 
 ## Chọn tier gem được phép dùng
-Tab **Cài đặt** → khối "Tier gem khi thay" → **Chỉnh tier gem**: mỗi loại gem (Hunting / Empowering / Lucky / Special) có các chip
+Tab **Config** → khối "Gem" → **Chỉnh tier gem**: mỗi loại gem (Hunting / Empowering / Lucky / Special) có các chip
 bật/tắt từng tier; chip tắt thì bot không bao giờ nhờ app dùng tier đó (kèm số gem còn trong kho). Dưới chip có ô **Ưu tiên khi thay**
 (tier cao nhất / thấp nhất còn viên, hoặc 1 tier cụ thể; hết tier đó thì lấy tier thấp hơn gần nhất đang bật). Bấm **Lưu** để gửi lên bot (cùng
 nguồn với lệnh Discord `,gemtier tat|bat`). Cần bot bản mới có đường `/gemtier`.
@@ -42,7 +42,14 @@ Android 13+ sẽ hỏi quyền thông báo — hãy bấm Cho phép. Giờ huntb
   trên Hub. Giải xong gõ `,captcha clear` thì đồng hồ tự biến mất.
 - **Bật Hub = bot ON, tắt Hub = bot OFF** (app tự báo cho bot; bot ngừng giao việc khi Hub tắt).
 
+## Tab "Config" (nhạc nền + gem)
+- **Nhạc nền**: bật công tắc, bấm **Chọn file nhạc** (mp3/…), chỉnh âm lượng, bấm **Nghe thử** để kiểm tra. Bắt đầu farm thì nhạc tự phát lặp lại, dừng farm (kể cả khi gặp captcha) thì nhạc tự tắt; chuông báo captcha vẫn kêu riêng.
+- **Gem**: nút chỉnh tier gem (xem mục trên).
+- Mọi lựa chọn ở tab này lưu ngay trên máy, không cần bấm Lưu.
+
 ## Tab "Công cụ"
+(Các công tắc bot và chữ tìm kiếm được nhớ trên máy: mở tab là thấy lại ngay lựa chọn lần trước, rồi app hỏi bot cập nhật.)
+
 Đưa các lệnh của owo-tracker lên app, khỏi phải gõ trong Discord (cần bot bản mới có `/settings`, `/notes`, `/captcha/clear`):
 - **Công tắc bot:** tự chen lệnh check (`,autocheck`), tự chạy lại huntbot (`,hbauto`), nhắc huntbot qua DM (`,hbalert`), chế độ Event (`,eventmode`),
   cho bot giao việc cho app (`,off`). Khi OwO đang đòi captcha hiện khung đỏ + nút **Đã giải captcha xong** (`,captcha clear`).

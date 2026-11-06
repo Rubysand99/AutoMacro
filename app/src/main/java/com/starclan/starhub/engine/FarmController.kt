@@ -354,6 +354,7 @@ object FarmController {
         initStats(service.applicationContext)
         loadHuntMode(service.applicationContext)
         stopAlarm()
+        MusicPlayer.startIfEnabled(service.applicationContext)
         update { it.copy(captchaEndMs = 0L) }
         job = scope.launch {
             try {
@@ -366,6 +367,7 @@ object FarmController {
             } finally {
                 // Moi cach ket thuc (dung tay, captcha, loi, het gio) deu chot gio chay vao thong ke
                 recordStats { b, now -> b.endSession(now) }
+                MusicPlayer.stop()   // nhac nen dung cung luc voi farm (captcha thi de chuong bao thuc keu ro)
             }
         }
     }

@@ -9,6 +9,10 @@
         android:icon="@drawable/ic_grid"
         android:title="@string/tab_tools" />
     <item
+        android:id="@+id/navConfig"
+        android:icon="@drawable/ic_sliders"
+        android:title="@string/tab_config" />
+    <item
         android:id="@+id/navSettings"
         android:icon="@drawable/ic_tab_settings"
         android:title="@string/tab_settings" />

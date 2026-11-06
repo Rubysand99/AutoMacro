@@ -24,6 +24,7 @@ import androidx.lifecycle.lifecycleScope
 import com.starclan.starhub.data.BotNote
 import com.starclan.starhub.data.BotSettings
 import com.starclan.starhub.data.BotToggle
+import com.starclan.starhub.data.ConfigPrefs
 import com.starclan.starhub.data.HubResponse
 import com.starclan.starhub.data.HubResult
 import com.starclan.starhub.data.HubSearch
@@ -47,6 +48,7 @@ class ToolsFragment : Fragment() {
     private lateinit var tvStatus: TextView
     private lateinit var captchaBox: LinearLayout
     private lateinit var resultsBox: LinearLayout
+    private lateinit var etSearch: EditText
     private lateinit var notesBox: LinearLayout
     private val switches = LinkedHashMap<String, SwitchCompat>()
     private var updatingSwitches = false
@@ -89,8 +91,14 @@ class ToolsFragment : Fragment() {
             inputType = InputType.TYPE_CLASS_TEXT; maxLines = 1; imeOptions = EditorInfo.IME_ACTION_SEARCH
             background = round(UiTheme.RAISED, UiTheme.LINE); setPadding(dp(12), dp(10), dp(12), dp(10))
         }
+        etSearch = search
+        search.setText(ConfigPrefs.loadToolsSearch(ctx))   // nhớ chữ đã tìm lần trước
         search.addTextChangedListener(object : TextWatcher {
-            override fun afterTextChanged(s: Editable?) = renderSearch(s?.toString().orEmpty())
+            override fun afterTextChanged(s: Editable?) {
+                val q = s?.toString().orEmpty()
+                ConfigPrefs.saveToolsSearch(requireContext(), q)
+                renderSearch(q)
+            }
             override fun beforeTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
             override fun onTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
         })
@@ -137,17 +145,24 @@ class ToolsFragment : Fragment() {
             setSwitchesEnabled(false)
             return
         }
+        // Hiện ngay các công tắc đã lưu lần trước, rồi mới hỏi bot xem có đổi không
+        ConfigPrefs.loadToolsSettings(requireContext())?.let { cached ->
+            settings = cached
+            applySettings(cached)
+        }
         tvStatus.text = "Đang tải…"
         viewLifecycleOwner.lifecycleScope.launch {
             val st = OwoTrackerApi.fetchBotSettings(s.apiUrl, s.token)
             val notes = OwoTrackerApi.fetchNotes(s.apiUrl, s.token)
             val hubRes = OwoTrackerApi.fetchHub(s.apiUrl, s.token)
             if (view == null) return@launch
-            settings = st
+            if (st != null) settings = st            // không lấy được từ bot thì giữ bản đã lưu
             if (hubRes is HubResult.Success) hub = hubRes.hub
-            applySettings(st)
+            applySettings(settings)
+            renderSearch(etSearch.text.toString())
             if (notes != null) renderNotes(notes) else notesBox.removeAllViews()
             tvStatus.text = when {
+                st == null && settings != null -> "Không hỏi được bot — đang hiện lựa chọn đã lưu lần trước. Kiểm tra mạng, token, hoặc cập nhật bot (cần đường /settings)."
                 st == null -> "Không lấy được cài đặt từ bot — kiểm tra mạng, token, hoặc cập nhật bot lên bản mới (cần đường /settings)."
                 hub == null -> "Đã tải công tắc. Chưa tải được dữ liệu Hub nên chưa tra cứu được."
                 else -> "Đã tải xong."
@@ -158,6 +173,7 @@ class ToolsFragment : Fragment() {
     // ------------------------------------------------------------------ công tắc
 
     private fun applySettings(st: BotSettings?) {
+        if (st != null) ConfigPrefs.saveToolsSettings(requireContext(), st)   // nhớ để lần sau mở tab thấy ngay
         setSwitchesEnabled(st != null)
         updatingSwitches = true
         try {

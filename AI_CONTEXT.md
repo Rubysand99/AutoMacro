@@ -11,6 +11,14 @@ repo Python/discord.py rieng) de tao 1 he thong tap trung: owo-tracker la
 "bo nao" (biet luc nao can lam gi), AutoMacro la "tay chan" (thuc thi tren
 dien thoai). Xem muc "Ket noi voi owo-tracker" ben duoi.
 
+## v32 — Tab Config, nhac nen, luu lua chon tab Cong cu (7/11/2026)
+- Bottom nav co 4 tab: Hub / Cong cu / Config / Cai dat. `ConfigFragment.kt` (dung bang code, luu ngay khong can nut Luu):
+  - **Nhac nen**: cong tac + chon file nhac (`OpenDocument`, giu quyen doc lau dai) + am luong + Nghe thu. `engine/MusicPlayer.kt` (MediaPlayer lap lai, kenh MEDIA, tu tam dung khi mat audio focus). `FarmController.start` goi `MusicPlayer.startIfEnabled`, khoi `finally` cua job farm goi `MusicPlayer.stop()` (moi cach ket thuc deu tat nhac; captcha thi chuong bao thuc AlarmPlayer van keu rieng). Bat/tat cong tac luc dang farm co hieu luc ngay.
+  - **Gem**: nut "Chinh tier gem" da CHUYEN tu tab Cai dat sang Config (`GemTierDialog.openFromSaved`); tab Cai dat go khoi gem.
+- **Tab Cong cu nho lua chon**: 5 cong tac bot + chu da tim duoc luu o prefs `star_config` (`data/ConfigPrefs.kt`). Mo tab la hien ngay ban da luu, roi hoi bot cap nhat; khong hoi duoc bot thi giu ban da luu. Cong tac van la cua BOT (nguon su that), ban luu chi de hien nhanh. Khong luu `captchaActive`.
+- Thuan Kotlin + test: `data/AppConfig.kt` (`MusicConfig`, `ToolsCache`), `MusicConfigTest`.
+- CHUA BIEN DICH tren may: Kotlin chi kiem tra qua GitHub Actions. Chua thu tren may that (chon file, nhac, quyen audio focus).
+
 ## v31 — ,weaponreview quet lai kho truoc khi duyet (6/11/2026)
 - Loi goc: bot lay ID tu danh sach cu trong DB nen go `owo w <ID>` cho cay da ban/ra ("could not find a weapon...").
 - Nay `,weaponreview` (bot) xoa danh sach kho cu, nho app go **`owo w`** (khong ID) + bam "forward" toi da 100 lan (15 cay/trang ~ 1500 cay), action `weapon_review_scan`. `CommandGuard` da cho phep `owo w` tran (them test). Phai DUNG farm (app tu choi click_label khi dang farm -> ack failed -> bot bao).

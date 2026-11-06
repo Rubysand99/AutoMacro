@@ -248,40 +248,7 @@
                     android:text="@string/btn_setup_discord_targets" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
-        <com.google.android.material.card.MaterialCardView
-            style="@style/Widget.AutoMacro.Card"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="14dp">
-
-                <TextView
-                    style="@style/TextAppearance.StarHub.CardTitle"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/section_gem_tier" />
-
-                <TextView
-                    style="@style/TextAppearance.StarHub.Caption"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:text="@string/note_gem_tier" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnGemTier"
-                    style="@style/Widget.AutoMacro.Button.Outlined"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:text="@string/btn_gem_tier" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
+        
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnSaveOwoSettings"
