@@ -52,4 +52,9 @@ class BotToolsJsonTest {
     @Test fun toggle_keys_are_unique() {
         assertEquals(BotToggle.values().size, BotToggle.values().map { it.key }.toSet().size)
     }
+
+    @Test fun app_config_body_lists_disabled_ids() {
+        assertEquals("""{"disabled":["inv","zoo"]}""", BotToolsJson.appConfigBody(listOf("inv", "zoo")))
+        assertEquals("""{"disabled":[]}""", BotToolsJson.appConfigBody(emptyList()))
+    }
 }

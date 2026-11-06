@@ -226,6 +226,10 @@ object OwoTrackerApi {
             }
         }
 
+    /** Bao bot cac lenh farm dang TAT (id nhu FarmCmd.id) de bot khoi xin app go xen nhung lenh check do. true = bot da nhan */
+    suspend fun pushDisabledCommands(apiUrl: String, token: String, disabledIds: List<String>): Boolean =
+        callBot(apiUrl, token, "POST", "/app-config", BotToolsJson.appConfigBody(disabledIds)) != null
+
     suspend fun fetchBotSettings(apiUrl: String, token: String): BotSettings? =
         callBot(apiUrl, token, "GET", "/settings")?.let { BotToolsJson.parseSettings(it) }
 

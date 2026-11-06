@@ -161,10 +161,25 @@ class AutoAccessibilityService : AccessibilityService() {
         }
     }
 
+    /** Cau hinh bat/tat lenh da bao cho bot lan cuoi (chuoi dang luu) + luc nao; bao lai khi doi, hoac moi 15 phut cho chac */
+    private var syncedDisabled: String? = null
+    private var syncedAtMs = 0L
+
+    /** Bao bot cac lenh dang TAT de bot khong xin app go xen chung. Loi mang -> lan poll sau thu lai. */
+    private suspend fun syncDisabledCommands(apiUrl: String, token: String) {
+        val cfg = FarmController.state.value.commands
+        val encoded = cfg.encode()
+        val now = System.currentTimeMillis()
+        if (encoded == syncedDisabled && now - syncedAtMs < 15 * 60 * 1000L) return
+        val ok = OwoTrackerApi.pushDisabledCommands(apiUrl, token, cfg.disabled.map { it.id }.sorted())
+        if (ok) { syncedDisabled = encoded; syncedAtMs = now }
+    }
+
     private suspend fun pollOwoTrackerOnce(apiUrl: String, token: String) {
         // App chi tu hanh dong khi Hub noi dang BAT. Hub tat -> khong dong vao lenh nao (lenh cua bot cu nam cho,
         // het han sau 10 phut)
         if (!FarmOverlay.isShown()) return
+        syncDisabledCommands(apiUrl, token)
         // Dang tam dung vi captcha -> khong dong vao lenh nao, de chung nam cho
         if (System.currentTimeMillis() < captchaPauseUntilMs) return
 

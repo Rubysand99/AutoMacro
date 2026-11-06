@@ -60,5 +60,9 @@ object BotToolsJson {
         addProperty("action", "add"); addProperty("text", text)
     }.toString()
 
+    fun appConfigBody(disabledIds: List<String>) = com.google.gson.JsonObject().apply {
+        add("disabled", com.google.gson.JsonArray().also { a -> disabledIds.forEach { a.add(it) } })
+    }.toString()
+
     fun doneNoteBody(id: Int) = """{"action":"done","id":$id}"""
 }

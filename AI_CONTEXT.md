@@ -11,6 +11,10 @@ repo Python/discord.py rieng) de tao 1 he thong tap trung: owo-tracker la
 "bo nao" (biet luc nao can lam gi), AutoMacro la "tay chan" (thuc thi tren
 dien thoai). Xem muc "Ket noi voi owo-tracker" ben duoi.
 
+## v30 — Bot khong xin lenh check da tat (6/11/2026)
+- App bao danh sach lenh dang TAT len bot: `POST /app-config {"disabled":[id...]}` (`OwoTrackerApi.pushDisabledCommands`, goi tu `AutoAccessibilityService.syncDisabledCommands` moi lan poll khi doi cau hinh, va moi 15 phut cho chac; chi khi Hub noi dang bat). Bot luu config `app_disabled_cmds`, `auto_check_tick` truyen `skip` vao `auto_refresh.pick_check` nen khong xep lenh do nua (ban v29 chan phia app van la lop du phong).
+- id bot hieu: hb, cash, inv, quest, ws, zoo (`auto_refresh.APP_CMD_TO_CHECK_KEY`); id la bi bo. Test: `test_auto_refresh.py` (skip), `test_v30.py` (app-config).
+
 ## v29 — Ra soat (6/11/2026)
 - Sua: lenh check ma BOT nho app go xen (action `auto_check`: owo cash/inv/quest/ws/zoo/hb) nay cung bi cong tac "Lenh trong farm" chan (truoc do tat Zoo van bi bot nho go owo zoo). App ack `failed`, khong go gi (`FarmCmd.forCheckCommand`). Lenh khac (hbstart, thay gem, quet vu khi...) KHONG bi chan.
 - Don: bo 4 string + 2 drawable khong con ai dung (btn_owo_tracker_settings, hub_section_daily/cowoncy/huntbot, bg_hub_root, ic_daily).
