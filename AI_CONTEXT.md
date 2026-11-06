@@ -11,6 +11,11 @@ repo Python/discord.py rieng) de tao 1 he thong tap trung: owo-tracker la
 "bo nao" (biet luc nao can lam gi), AutoMacro la "tay chan" (thuc thi tren
 dien thoai). Xem muc "Ket noi voi owo-tracker" ben duoi.
 
+## v31 — ,weaponreview quet lai kho truoc khi duyet (6/11/2026)
+- Loi goc: bot lay ID tu danh sach cu trong DB nen go `owo w <ID>` cho cay da ban/ra ("could not find a weapon...").
+- Nay `,weaponreview` (bot) xoa danh sach kho cu, nho app go **`owo w`** (khong ID) + bam "forward" toi da 100 lan (15 cay/trang ~ 1500 cay), action `weapon_review_scan`. `CommandGuard` da cho phep `owo w` tran (them test). Phai DUNG farm (app tu choi click_label khi dang farm -> ack failed -> bot bao).
+- Bot chi nhan trang co tieu de `<@ID cua ban>'s Weapons` luc quet (`weapon_list_accepted`); xong thi loc quyet dinh Giu/Bo cu khong con trong kho roi go `owo w <ID dau>` (`_after_review_scan`). ID bao "could not find a weapon" -> `review_skip_missing`: bo qua, ghi `missing` (hien o embed), go cay ke. Test `test_v31.py`. App khong doi ngoai CommandGuard.
+
 ## v30 — Bot khong xin lenh check da tat (6/11/2026)
 - App bao danh sach lenh dang TAT len bot: `POST /app-config {"disabled":[id...]}` (`OwoTrackerApi.pushDisabledCommands`, goi tu `AutoAccessibilityService.syncDisabledCommands` moi lan poll khi doi cau hinh, va moi 15 phut cho chac; chi khi Hub noi dang bat). Bot luu config `app_disabled_cmds`, `auto_check_tick` truyen `skip` vao `auto_refresh.pick_check` nen khong xep lenh do nua (ban v29 chan phia app van la lop du phong).
 - id bot hieu: hb, cash, inv, quest, ws, zoo (`auto_refresh.APP_CMD_TO_CHECK_KEY`); id la bi bo. Test: `test_auto_refresh.py` (skip), `test_v30.py` (app-config).

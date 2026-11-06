@@ -7,7 +7,7 @@ package com.starclan.starhub.data
  * Vi sao can: app go NGUYEN VAN `command_text` vao Discord cua nguoi dung. Neu token API bi lo (hoac bot bi chiem),
  * ke xau co the bat app go bat ky noi dung nao. Chi dang `owo ...` la chua du (van lot `owo give`, `owo sell`...),
  * nen day la DANH SACH CHO PHEP theo tung dong tu + dang tham so ma owo-tracker that su gui:
- *   owo hb [<so>[h|m|d] [<ma>]] · owo use <ma> [<ma>...] · owo dex <ten pet> · owo w <ID vu khi>
+ *   owo hb [<so>[h|m|d] [<ma>]] · owo use <ma> [<ma>...] · owo dex <ten pet> · owo w [<ID vu khi>]
  *   owo weapon · owo cash · owo inv · owo quest · owo ws · owo zoo
  * Them lenh moi o bot thi PHAI them dung 1 dong o day (va 1 test), neu khong app se tu choi lenh do.
  */
@@ -26,7 +26,7 @@ object CommandGuard {
             "|hb(?: \\d{1,7}[hHmMdD]?(?: [A-Za-z0-9]{3,12})?)?" +             // owo hb [24h [ma]]
             "|use(?: \\d{1,4}){1,12}" +                                        // owo use 051 052
             "|dex [A-Za-z0-9_]{1,32}" +                                        // owo dex <ten pet>
-            "|w [A-Za-z0-9]{4,8}" +                                            // owo w <ID vu khi>
+            "|w(?: [A-Za-z0-9]{4,8})?" +                                     // owo w (danh sach kho) hoac owo w <ID vu khi>
             ")$",
         RegexOption.IGNORE_CASE
     )

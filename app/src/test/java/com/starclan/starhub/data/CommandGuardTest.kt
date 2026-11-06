@@ -15,7 +15,7 @@ class CommandGuardTest {
         for (c in listOf(
             "owo hb", "owo hb 24h", "owo hb 100", "owo hb 24h abc12", "owo hb 7d XyZ9",
             "owo use 051", "owo use 051 052 053", "owo dex gowl", "owo dex big_cat2", "owo w A1B2C3",
-            "owo weapon", "owo cash", "owo inv", "owo quest", "owo ws", "owo zoo"
+            "owo weapon", "owo w", "owo cash", "owo inv", "owo quest", "owo ws", "owo zoo"
         )) assertTrue(c, CommandGuard.isSafeCommand(c))
     }
     @Test fun dangerous_owo_commands_blocked() {
@@ -30,7 +30,7 @@ class CommandGuardTest {
             "owo hb 24h abc def", "owo hb abc", "owo hb 99999999", "owo hb 24h ab",
             "owo use", "owo use abc", "owo use 051; owo give", "owo use " + "1 ".repeat(13).trim(),
             "owo dex", "owo dex gowl owl", "owo dex <@123>", "owo dex " + "a".repeat(33),
-            "owo w", "owo w AB", "owo w ABCDEFGHI", "owo w AB-12"
+            "owo w AB", "owo w ABCDEFGHI", "owo w AB-12"
         )) assertFalse(c, CommandGuard.isSafeCommand(c))
     }
     @Test fun click_label_allowlist() {
