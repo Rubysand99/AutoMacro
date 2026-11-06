@@ -17,8 +17,8 @@ object CommandGuard {
     const val MIN_CLICK_GAP_MS = 800L
     const val MAX_CLICK_GAP_MS = 10_000L
 
-    /** Nhan nut ma server duoc phep bat app bam (chi nut lat trang cua `owo weapon`). */
-    private val ALLOWED_CLICK_LABELS = setOf("forward")
+    /** Nhan nut ma server duoc phep bat app bam: lat trang cua `owo weapon` ("forward") va nut chi tiet cua bot NeonUtil ("details"). */
+    private val ALLOWED_CLICK_LABELS = setOf("forward", "details")
 
     private val SAFE_COMMAND = Regex(
         "^owo (?:" +
@@ -45,6 +45,9 @@ object CommandGuard {
     }
 
     fun clampClickTimes(raw: Int?): Int = (raw ?: 50).coerceIn(1, MAX_CLICK_TIMES)
+
+    /** Thoi gian cho truoc khi bam nut dau tien (de bot khac kip tra loi): 3s..15s. */
+    fun clampClickWait(raw: Long?): Long = (raw ?: 3_000L).coerceIn(3_000L, 15_000L)
 
     /** Tra ve cap (min, max) da ep vao khoang an toan, min <= max. */
     fun clampClickGap(rawMin: Long?, rawMax: Long?): Pair<Long, Long> {

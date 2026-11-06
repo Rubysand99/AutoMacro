@@ -259,7 +259,8 @@ class AutoAccessibilityService : AccessibilityService() {
                     cmd.params["click_min_ms"]?.toLongOrNull(), cmd.params["click_max_ms"]?.toLongOrNull()
                 )
                 val n = try {
-                    ButtonClicker.clickRepeatedly(this, clickLabel, times, minMs, maxMs)
+                    ButtonClicker.clickRepeatedly(this, clickLabel, times, minMs, maxMs,
+                        CommandGuard.clampClickWait(cmd.params["click_wait_ms"]?.toLongOrNull()))
                 } catch (e: Exception) {
                     Log.e(TAG, "Loi khi bam nut '$clickLabel': ${e.message}")
                     -1

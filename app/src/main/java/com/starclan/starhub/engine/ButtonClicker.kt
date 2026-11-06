@@ -62,11 +62,12 @@ object ButtonClicker {
         label: String,
         times: Int,
         minDelayMs: Long,
-        maxDelayMs: Long
+        maxDelayMs: Long,
+        initialWaitMs: Long = 3_000L
     ): Int {
         val target = normalize(label)
         var clicked = 0
-        delay(3_000L) // doi OwO ve danh sach trang 1
+        delay(initialWaitMs) // doi OwO (hoac bot khac) tra loi truoc khi bam
         for (i in 1..times) {
             if (!FarmOverlay.isShown()) {
                 Log.i(TAG, "Hub noi da tat - dung bam sau $clicked lan")

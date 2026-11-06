@@ -36,8 +36,16 @@ class CommandGuardTest {
     @Test fun click_label_allowlist() {
         assertTrue(CommandGuard.isAllowedClickLabel("forward"))
         assertTrue(CommandGuard.isAllowedClickLabel("  Forward "))
-        for (c in listOf(null, "", " ", "fast_forward", "fast forward", "Accept", "Confirm", "Delete", "Join", "forward forward"))
+        assertTrue(CommandGuard.isAllowedClickLabel("details"))
+        assertTrue(CommandGuard.isAllowedClickLabel(" Details "))
+        for (c in listOf(null, "", " ", "fast_forward", "fast forward", "Accept", "Confirm", "Delete", "Join", "forward forward", "detail", "details details", "dismantle", "cancel"))
             assertFalse(c.toString(), CommandGuard.isAllowedClickLabel(c))
+    }
+    @Test fun click_wait_clamped() {
+        assertEquals(3_000L, CommandGuard.clampClickWait(null))
+        assertEquals(3_000L, CommandGuard.clampClickWait(0L))
+        assertEquals(8_000L, CommandGuard.clampClickWait(8_000L))
+        assertEquals(15_000L, CommandGuard.clampClickWait(999_999L))
     }
     @Test fun other_text_blocked() {
         for (c in listOf("", "   ", "hello", "owo", "owohb", "@everyone owo hb", "rm -rf", "https://evil.example/x", "?tag orb"))
