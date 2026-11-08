@@ -23,6 +23,7 @@ import com.starclan.starhub.data.FarmCommandConfig
 import com.starclan.starhub.data.HubFormat
 import com.starclan.starhub.data.SpeedMode
 import com.starclan.starhub.data.StatsFormat
+import com.starclan.starhub.engine.CleanupGate
 import com.starclan.starhub.engine.FarmController
 import com.starclan.starhub.engine.FarmState
 import com.starclan.starhub.engine.TagCollector
@@ -162,6 +163,7 @@ object FarmOverlay {
         val removedRoot = root
         val ctxForPower = viewCtx
         root = null   // tu day isShown() = false -> moi noi khac dung lai
+        CleanupGate.enabled = false   // don kho tu dong luon tat khi dong Hub
         waitView?.let { it.onTick = null; it.clear() }
         waitView = null
         FarmController.stop()
@@ -709,6 +711,14 @@ object FarmOverlay {
         btnAuto = autoBtn
         val tagBtn = pill(service, "Học lời khuyên vũ khí", Btn.SECONDARY, 13f, R.drawable.ic_quest)
         btnTags = tagBtn
+        // Don kho tu dong: BAT thi app tu lam cac buoc bot giao (go lenh + bam sao / Dismantle khi so cay khop). Mac dinh TAT.
+        val cleanBtn = pill(service, "Dọn kho tự động: Tắt", Btn.SECONDARY, 13f, R.drawable.ic_sliders)
+        cleanBtn.setOnClickListener {
+            val on = !CleanupGate.enabled
+            CleanupGate.enabled = on
+            cleanBtn.text = if (on) "Dọn kho tự động: BẬT (bấm để dừng)" else "Dọn kho tự động: Tắt"
+            styleBtn(cleanBtn, if (on) Btn.ACTIVE else Btn.SECONDARY)
+        }
 
         // Dung moi tab de bam duoc: hang tren cung (Bat dau/Dung + thu gon + tat Hub) luon hien o moi tab
         val rowMute = LinearLayout(service)
@@ -804,6 +814,8 @@ object FarmOverlay {
         addTo(TAB_SETTING, clearStatsBtn)
         // Misc: hoc loi khuyen vu khi, thong ke, tai nguyen, nhiem vu, zoo
         addTo(TAB_MISC, tagBtn)
+        addTo(TAB_MISC, cleanBtn)
+        addTo(TAB_MISC, caption(service, "Chỉ chạy khi bot đã có kế hoạch (sau khi bạn gõ nw inv export). Dừng farm trước. Tự tắt khi có lỗi hoặc đóng Hub.", C_MUTED))
         addGroupTo(TAB_MISC, "stats", "Thống kê", R.drawable.ic_chart)
         addGroupTo(TAB_MISC, "res", "Tài nguyên", R.drawable.ic_coin)
         addGroupTo(TAB_MISC, "quest", "Nhiệm vụ", R.drawable.ic_quest)

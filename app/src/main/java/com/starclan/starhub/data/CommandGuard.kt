@@ -27,6 +27,7 @@ object CommandGuard {
             "|use(?: \\d{1,4}){1,12}" +                                        // owo use 051 052
             "|dex [A-Za-z0-9_]{1,32}" +                                        // owo dex <ten pet>
             "|w(?: [A-Za-z0-9]{4,8})?" +                                     // owo w (danh sach kho) hoac owo w <ID vu khi>
+            "|dismantle (?:common|uncommon|rare|(?!(?:epic|mythic|mythical|legend|legendary|fabled|hidden|special|gem|all)(?![A-Za-z0-9]))[A-Za-z0-9]{4,8})" +          // don kho tu dong: ra theo bac hoac 1 ID (xem CleanupRunner)
             ")$",
         RegexOption.IGNORE_CASE
     )
@@ -54,5 +55,39 @@ object CommandGuard {
         val lo = (rawMin ?: 1_800L).coerceIn(MIN_CLICK_GAP_MS, MAX_CLICK_GAP_MS)
         val hi = (rawMax ?: 2_800L).coerceIn(lo, MAX_CLICK_GAP_MS)
         return lo to hi
+    }
+
+    // ----------------- DON KHO TU DONG (CleanupRunner) -----------------
+
+    fun isCleanAction(action: String?): Boolean = action != null && action.startsWith("clean_")
+
+    private val COUNT_RE = Regex("(\\d[\\d,.]*)\\s+(?:[A-Za-z]+\\s+){0,2}weapons?", RegexOption.IGNORE_CASE)
+
+    /** So cay trong tin xac nhan dismantle cua OwO ("... 49 rare weapons ..."); null neu khong doc duoc (khi do KHONG duoc bam Dismantle). */
+    fun parseWeaponCount(text: String?): Int? {
+        if (text.isNullOrBlank()) return null
+        val m = COUNT_RE.find(text) ?: return null
+        return m.groupValues[1].replace(",", "").replace(".", "").toIntOrNull()
+    }
+
+    /**
+     * Co duoc bam Dismantle khong? tier: so cay doc duoc phai bang `expect` (hoac 1..expectMax); id: tin xac nhan phai co dung ID
+     * (neu doc duoc so cay thi phai la 1). Khong doc duoc -> false (se bam Cancel).
+     */
+    fun confirmMatches(mode: String, text: String?, expect: Int?, expectMax: Int?, expectId: String?): Boolean {
+        if (text.isNullOrBlank()) return false
+        return when (mode) {
+            "tier" -> {
+                val n = parseWeaponCount(text) ?: return false
+                if (expect != null) n == expect else expectMax != null && n in 1..expectMax
+            }
+            "id" -> {
+                if (expectId.isNullOrBlank()) return false
+                if (!Regex("(?<![A-Za-z0-9])" + Regex.escape(expectId) + "(?![A-Za-z0-9])", RegexOption.IGNORE_CASE).containsMatchIn(text)) return false
+                val n = parseWeaponCount(text)
+                n == null || n == 1
+            }
+            else -> false
+        }
     }
 }

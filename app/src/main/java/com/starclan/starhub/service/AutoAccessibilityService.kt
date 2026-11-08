@@ -22,6 +22,8 @@ import com.starclan.starhub.data.FarmCmd
 import com.starclan.starhub.data.OwoTrackerApi
 import com.starclan.starhub.data.OwoTrackerPrefs
 import com.starclan.starhub.engine.ButtonClicker
+import com.starclan.starhub.engine.CleanupGate
+import com.starclan.starhub.engine.CleanupRunner
 import com.starclan.starhub.engine.DiscordSender
 import com.starclan.starhub.engine.FarmController
 import com.starclan.starhub.engine.HuntbotNotifier
@@ -204,6 +206,9 @@ class AutoAccessibilityService : AccessibilityService() {
                 OwoTrackerApi.ack(apiUrl, token, cmd.id, handled.status)
                 continue
             }
+            val isClean = CommandGuard.isCleanAction(cmd.action)
+            // Buoc don kho: chi lam khi Ruby BAT cong tac "Don kho tu dong" va khong dang farm; con lai de nguyen (khong ack)
+            if (isClean && (!CleanupGate.enabled || FarmController.isRunning())) continue
             if (commandText.isNullOrBlank()) {
                 Log.w(TAG, "Lenh '${cmd.action}' khong co command_text - bo qua")
                 ackAndRemember(apiUrl, token, cmd.id, signature, "failed")
@@ -253,6 +258,23 @@ class AutoAccessibilityService : AccessibilityService() {
                 SendResult.SEND_FAILED
             }
             first = false
+            if (isClean) {
+                val cleaned = result == SendResult.OK && try {
+                    CleanupRunner.run(this, cmd.params["clean_mode"].orEmpty(), cmd.params)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Loi buoc don kho: ${e.message}")
+                    false
+                }
+                if (!cleaned) {
+                    CleanupGate.enabled = false   // co loi -> tu tat, bot cung dung phien
+                    if (result == SendResult.CAPTCHA) {
+                        alertCaptcha()
+                        captchaPauseUntilMs = System.currentTimeMillis() + 10 * 60 * 1000L
+                    }
+                    ackAndRemember(apiUrl, token, cmd.id, signature, "failed")
+                    break
+                }
+            }
             if (result == SendResult.OK && !clickLabel.isNullOrBlank()) {
                 val times = CommandGuard.clampClickTimes(cmd.params["click_times"]?.toIntOrNull())
                 val (minMs, maxMs) = CommandGuard.clampClickGap(

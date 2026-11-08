@@ -69,4 +69,31 @@ class CommandGuardTest {
         val (lo, hi) = CommandGuard.clampClickGap(9_000L, 100L)
         assertTrue(lo <= hi)
     }
+
+    @Test fun cleanup_commands() {
+        for (c in listOf("owo dismantle common", "owo dismantle uncommon", "owo dismantle rare", "owo dismantle AYJILS", "owo dismantle G4K3P9"))
+            assertTrue(c, CommandGuard.isSafeCommand(c))
+        for (c in listOf("owo dismantle epic", "owo dismantle mythic", "owo dismantle legendary", "owo dismantle all", "owo dismantle AB",
+            "owo dismantle rare common", "owo dismantle A1B2C3 D4E5F6", "owo dismantle"))
+            assertFalse(c, CommandGuard.isSafeCommand(c))
+    }
+    @Test fun parse_weapon_count() {
+        assertEquals(49, CommandGuard.parseWeaponCount("Are you sure you want to dismantle 49 rare weapons?"))
+        assertEquals(1, CommandGuard.parseWeaponCount("dismantle 1 weapon"))
+        assertEquals(1234, CommandGuard.parseWeaponCount("dismantle 1,234 weapons"))
+        assertEquals(null, CommandGuard.parseWeaponCount("nothing here"))
+    }
+    @Test fun confirm_matches_is_strict() {
+        val t = "Dismantle 49 rare weapons for weaponshards?"
+        assertTrue(CommandGuard.confirmMatches("tier", t, 49, null, null))
+        assertFalse(CommandGuard.confirmMatches("tier", t, 50, null, null))
+        assertTrue(CommandGuard.confirmMatches("tier", "dismantle 20 common weapons", null, 22, null))
+        assertFalse(CommandGuard.confirmMatches("tier", "dismantle 30 common weapons", null, 22, null))
+        assertFalse(CommandGuard.confirmMatches("tier", "unreadable prompt", 49, null, null))
+        assertFalse(CommandGuard.confirmMatches("tier", t, null, null, null))
+        assertTrue(CommandGuard.confirmMatches("id", "Dismantle weapon AYJILS?", null, null, "ayjils"))
+        assertFalse(CommandGuard.confirmMatches("id", "Dismantle weapon AYJILSX?", null, null, "AYJILS"))
+        assertFalse(CommandGuard.confirmMatches("id", "Dismantle 3 weapons AYJILS", null, null, "AYJILS"))
+        assertFalse(CommandGuard.confirmMatches("id", null, null, null, "AYJILS"))
+    }
 }

@@ -11,6 +11,15 @@ repo Python/discord.py rieng) de tao 1 he thong tap trung: owo-tracker la
 "bo nao" (biet luc nao can lam gi), AutoMacro la "tay chan" (thuc thi tren
 dien thoai). Xem muc "Ket noi voi owo-tracker" ben duoi.
 
+## v33 — Don kho tu dong (8/11/2026)
+- Bot (owo-tracker): Neon tra loi dung lenh `nw inv export` cua OWNER (reply truc tiep + file .json) -> `import_weapon_export(auto_session=True)`
+  ghi Giu/Bo + lap phien `clean_session` (COL_CONFIG) gom cac buoc `clean_star` / `clean_tier` / `clean_id` (weapon_import.cleanup_steps).
+  Tat bang `,neonauto off`; dung bang `,cleanstop`. Xep toi da 8 buoc, xong het moi xep tiep; buoc that bai -> huy phan con lai + bao Ruby.
+- App: cong tac "Don kho tu dong" (Hub, tab Misc; CleanupGate, mac dinh TAT, tu tat khi dong Hub / loi). Service chi lam lenh clean_* khi bat va khong farm.
+  CleanupRunner: star = bam `star_outline_dim`; tier/id = doi tin xac nhan, CHI bam Dismantle khi CommandGuard.confirmMatches (dung so cay / ID), lech -> Cancel + failed.
+  CommandGuard cho phep `owo dismantle common|uncommon|rare|<ID>` (chan epic/mythic/legendary/all).
+- Chua kiem tra tren may that: dinh dang chu tin xac nhan dismantle cua OwO (parseWeaponCount tim "<so> ... weapon(s)"); khong doc duoc -> luon Cancel (an toan).
+
 ## v32 — Tab Config, nhac nen, luu lua chon tab Cong cu (7/11/2026)
 - Bottom nav co 4 tab: Hub / Cong cu / Config / Cai dat. `ConfigFragment.kt` (dung bang code, luu ngay khong can nut Luu):
   - **Nhac nen**: cong tac + chon file nhac (`OpenDocument`, giu quyen doc lau dai) + am luong + Nghe thu. `engine/MusicPlayer.kt` (MediaPlayer lap lai, kenh MEDIA, tu tam dung khi mat audio focus). `FarmController.start` goi `MusicPlayer.startIfEnabled`, khoi `finally` cua job farm goi `MusicPlayer.stop()` (moi cach ket thuc deu tat nhac; captcha thi chuong bao thuc AlarmPlayer van keu rieng). Bat/tat cong tac luc dang farm co hieu luc ngay.

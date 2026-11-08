@@ -91,4 +91,35 @@ object ButtonClicker {
         }
         return clicked
     }
+
+    // ----------------- Cho CleanupRunner: bam 1 lan, doc chu tren man hinh -----------------
+
+    private fun enabledBottomMost(service: AutoAccessibilityService, label: String): AccessibilityNodeInfo? {
+        val n = findBottomMost(service, normalize(label)) ?: return null
+        return if (effectivelyEnabled(n)) n else null
+    }
+
+    /** Co nut (dang sang) co nhan `label` o Discord khong. */
+    fun has(service: AutoAccessibilityService, label: String): Boolean = enabledBottomMost(service, label) != null
+
+    /** Bam 1 lan nut thap nhat co nhan `label`. false neu khong thay / het sang / bam loi. */
+    suspend fun clickOnce(service: AutoAccessibilityService, label: String): Boolean {
+        val n = enabledBottomMost(service, label) ?: return false
+        return NodeTools.clickNode(service, n)
+    }
+
+    /** Chu cua cac o nam ngay TREN nut `label` (toi da ~900px) = noi dung tin xac nhan cua OwO. null neu khong thay nut. */
+    fun textAbove(service: AutoAccessibilityService, label: String): String? {
+        val btn = enabledBottomMost(service, label) ?: return null
+        val br = Rect(); btn.getBoundsInScreen(br)
+        val root = service.rootInActiveWindow ?: return null
+        val nodes = NodeTools.collect(root, maxNodes = 1500) {
+            val t = it.text?.toString()
+            if (t.isNullOrBlank() || !it.isVisibleToUser) false else {
+                val r = Rect(); it.getBoundsInScreen(r)
+                r.bottom <= br.top + 8 && r.top >= br.top - 900
+            }
+        }
+        return nodes.joinToString("\n") { it.text.toString() }
+    }
 }
