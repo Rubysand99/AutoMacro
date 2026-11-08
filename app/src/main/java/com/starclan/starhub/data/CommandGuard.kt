@@ -20,6 +20,9 @@ object CommandGuard {
     /** Nhan nut ma server duoc phep bat app bam: lat trang cua `owo weapon` ("forward") va nut chi tiet cua bot NeonUtil ("details"). */
     private val ALLOWED_CLICK_LABELS = setOf("forward", "details")
 
+    /** Lenh duy nhat khong phai `owo ...`: xuat kho cua NeonUtil, chi bot gui o cuoi phien don kho (clean_export). */
+    const val EXPORT_COMMAND = "nw inv export"
+
     private val SAFE_COMMAND = Regex(
         "^owo (?:" +
             "(?:cash|inv|quest|ws|zoo|weapon)" +                              // khong tham so
@@ -36,7 +39,7 @@ object CommandGuard {
     fun isSafeCommand(text: String?): Boolean {
         if (text == null) return false
         val t = text.trim()
-        return t.length <= MAX_COMMAND_LENGTH && SAFE_COMMAND.matches(t)
+        return t.length <= MAX_COMMAND_LENGTH && (SAFE_COMMAND.matches(t) || t.equals(EXPORT_COMMAND, ignoreCase = true))
     }
 
     /** true neu nhan nut nam trong danh sach cho phep (so khop sau khi cat khoang trang + chu thuong). */

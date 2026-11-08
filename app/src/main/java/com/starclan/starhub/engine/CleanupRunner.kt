@@ -28,6 +28,7 @@ object CleanupRunner {
         return when (mode) {
             "star" -> star(service)
             "tier", "id" -> dismantle(service, mode, params)
+            "export" -> true   // chi go `nw inv export`; Neon tra file thi Tom tu nhan
             else -> false
         }
     }

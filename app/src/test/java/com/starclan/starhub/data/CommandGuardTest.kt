@@ -96,4 +96,9 @@ class CommandGuardTest {
         assertFalse(CommandGuard.confirmMatches("id", "Dismantle 3 weapons AYJILS", null, null, "AYJILS"))
         assertFalse(CommandGuard.confirmMatches("id", null, null, null, "AYJILS"))
     }
+    @Test fun export_command_exact_only() {
+        assertTrue(CommandGuard.isSafeCommand("nw inv export"))
+        for (c in listOf("nw inv", "nw inv export all", "nw give 1", "nw inv export; owo sell all"))
+            assertFalse(c, CommandGuard.isSafeCommand(c))
+    }
 }
