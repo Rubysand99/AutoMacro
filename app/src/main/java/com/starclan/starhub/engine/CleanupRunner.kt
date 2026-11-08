@@ -12,6 +12,19 @@ import kotlinx.coroutines.delay
 object CleanupGate {
     @Volatile
     var enabled: Boolean = false
+
+    /** Vua bat cong tac: viec DAU TIEN la go `nw inv export` (Tom nhan file roi giao cac buoc don kho). */
+    @Volatile
+    var exportPending: Boolean = false
+
+    /** Sau khi go export, doi toi luc nay (ms) de Tom kip nhan file va doi ke hoach: truoc do khong lam buoc don kho cu nao. */
+    @Volatile
+    var holdUntilMs: Long = 0L
+
+    const val HOLD_AFTER_EXPORT_MS = 45_000L
+
+    fun turnOn() { enabled = true; exportPending = true; holdUntilMs = 0L }
+    fun turnOff() { enabled = false; exportPending = false }
 }
 
 /**

@@ -18,7 +18,7 @@ dien thoai). Xem muc "Ket noi voi owo-tracker" ben duoi.
 - App: cong tac "Don kho tu dong" (Hub, tab Misc; CleanupGate, mac dinh TAT, tu tat khi dong Hub / loi). Service chi lam lenh clean_* khi bat va khong farm.
   CleanupRunner: star = bam `star_outline_dim`; tier/id = doi tin xac nhan, CHI bam Dismantle khi CommandGuard.confirmMatches (dung so cay / ID), lech -> Cancel + failed.
   CommandGuard cho phep `owo dismantle common|uncommon|rare|<ID>` (chan epic/mythic/legendary/all).
-- Cuoi phien: buoc `clean_export` (app go `nw inv export`, Ruby chap nhan rui ro vi Neon cam tu dong hoa) -> Tom nhan file moi -> phien moi, toi da CLEAN_MAX_ROUNDS=2 vong.
+- Bat cong tac = app go `nw inv export` TRUOC (CleanupGate.exportPending, giu 45s cho Tom nhan file + doi ke hoach), sau do moi lam cac buoc clean_*. Ruby chap nhan rui ro vi Neon cam tu dong hoa. Phien moi huy cac buoc clean_ cu dang cho.
 - Chua kiem tra tren may that: dinh dang chu tin xac nhan dismantle cua OwO (parseWeaponCount tim "<so> ... weapon(s)"); khong doc duoc -> luon Cancel (an toan).
 
 ## v32 — Tab Config, nhac nen, luu lua chon tab Cong cu (7/11/2026)

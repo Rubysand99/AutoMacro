@@ -185,6 +185,30 @@ class AutoAccessibilityService : AccessibilityService() {
         // Dang tam dung vi captcha -> khong dong vao lenh nao, de chung nam cho
         if (System.currentTimeMillis() < captchaPauseUntilMs) return
 
+        // Vua bat "Don kho tu dong": viec DAU TIEN la go `nw inv export` (dung 1 lan), roi doi Tom nhan file + lap ke hoach
+        if (CleanupGate.enabled && CleanupGate.exportPending && !FarmController.isRunning()) {
+            CleanupGate.exportPending = false
+            val st = OwoTrackerPrefs.load(this)
+            if (CommandGuard.isSafeCommand(CommandGuard.EXPORT_COMMAND)) {
+                val r = try {
+                    DiscordSender(this).send(CommandGuard.EXPORT_COMMAND, st, reopenChannel = true)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Loi go nw inv export: ${e.message}")
+                    SendResult.SEND_FAILED
+                }
+                if (r == SendResult.OK) {
+                    CleanupGate.holdUntilMs = System.currentTimeMillis() + CleanupGate.HOLD_AFTER_EXPORT_MS
+                } else {
+                    CleanupGate.turnOff()
+                    if (r == SendResult.CAPTCHA) {
+                        alertCaptcha()
+                        captchaPauseUntilMs = System.currentTimeMillis() + 10 * 60 * 1000L
+                    }
+                }
+            }
+            return
+        }
+
         val commands = OwoTrackerApi.fetchPending(apiUrl, token)
         if (commands.isEmpty()) return
 
@@ -208,7 +232,7 @@ class AutoAccessibilityService : AccessibilityService() {
             }
             val isClean = CommandGuard.isCleanAction(cmd.action)
             // Buoc don kho: chi lam khi Ruby BAT cong tac "Don kho tu dong" va khong dang farm; con lai de nguyen (khong ack)
-            if (isClean && (!CleanupGate.enabled || FarmController.isRunning())) continue
+            if (isClean && (!CleanupGate.enabled || FarmController.isRunning() || System.currentTimeMillis() < CleanupGate.holdUntilMs)) continue
             if (commandText.isNullOrBlank()) {
                 Log.w(TAG, "Lenh '${cmd.action}' khong co command_text - bo qua")
                 ackAndRemember(apiUrl, token, cmd.id, signature, "failed")
@@ -266,7 +290,7 @@ class AutoAccessibilityService : AccessibilityService() {
                     false
                 }
                 if (!cleaned) {
-                    CleanupGate.enabled = false   // co loi -> tu tat, bot cung dung phien
+                    CleanupGate.turnOff()   // co loi -> tu tat, bot cung dung phien
                     if (result == SendResult.CAPTCHA) {
                         alertCaptcha()
                         captchaPauseUntilMs = System.currentTimeMillis() + 10 * 60 * 1000L
