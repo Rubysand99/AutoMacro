@@ -11,6 +11,13 @@ repo Python/discord.py rieng) de tao 1 he thong tap trung: owo-tracker la
 "bo nao" (biet luc nao can lam gi), AutoMacro la "tay chan" (thuc thi tren
 dien thoai). Xem muc "Ket noi voi owo-tracker" ben duoi.
 
+## v34 — Tab Cong cu: acc phu + doi hinh & zoo (8/11/2026)
+- Bot (owo-tracker) them 6 duong API (README cua bot co mo ta chi tiet): `GET /teamcheck`, `GET /zoodiff?kind=d|now`, `GET /unlocked`, `GET|POST /alt`, `POST /alt/test`. Logic thuan o `tools_api.py`; `,zoodiff` tach ra `zoodiff_report()` de lenh Discord va API dung chung. Chu bot tra ve da bo ky hieu Discord (`**`, backtick, `<:emoji:id>`).
+- App: `ToolsFragment` them 2 muc. "Acc phu nhan DM nhac huntbot" = xem trang thai / o nhap ID (chi nhan 15-25 chu so) / Luu / Tat DM / Thu gui DM. "Doi hinh & zoo" = 4 nut (Cham doi hinh, Pet da mo khoa, So zoo dang giu, So zoo so da bat), ket qua hien trong khung chu co the boi den chep. Co co `busy` chan bam lien tiep (tranh DM thu nhieu lan).
+- Thuan Kotlin + test: `BotTools.kt` them 5 data class + parser (`parseTeamCheck/ZooDiff/Unlocked/Alt/AltTest`, `altBody`) va `BotToolsText` (chu hien thi, `isValidAltId`). Test: `BotToolsJsonTest` (them), `BotToolsTextTest` (moi). Da bien dich + chay JUnit offline bang compiler Kotlin nhung cua Gradle: 18 test pass. `ToolsFragment` / `OwoTrackerApi` can Android SDK nen CHUA bien dich o may nay — kiem tra qua GitHub Actions.
+- Neu bot cu chua cap nhat (khong co duong moi) thi app hien thong bao "cap nhat bot" thay vi bao loi kho hieu.
+- Chua lam: `,petset`, `,weapontypeset` / `,passiveset` (nhap tay, can UI nhap lieu rieng).
+
 ## v33 — Don kho tu dong (8/11/2026)
 - Bot (owo-tracker): Neon tra loi dung lenh `nw inv export` cua OWNER (reply truc tiep + file .json) -> `import_weapon_export(auto_session=True)`
   ghi Giu/Bo + lap phien `clean_session` (COL_CONFIG) gom cac buoc `clean_star` / `clean_tier` / `clean_id` (weapon_import.cleanup_steps).
@@ -46,7 +53,7 @@ dien thoai). Xem muc "Ket noi voi owo-tracker" ben duoi.
 - Bottom nav co 3 tab: Hub / Cong cu / Cai dat. `ToolsFragment.kt` dung UI hoan toan bang code (khong XML), moi lan mo tab la Fragment moi nen tu tai lai.
 - Cong tac bot -> `GET/POST /settings` (khoa auto_check, hb_auto, hb_alert; event_mode dung `/event-mode`, app_on dung `/power` nhu truoc), ghi chu -> `/notes`, bao giai captcha -> `POST /captcha/clear`. Ben bot them o owo-tracker (handler `handle_*_settings/notes/captcha_clear`, test `test_v30.py`).
 - Tra cuu: `data/HubSearch.kt` (thuan Kotlin, bo dau tieng Viet, toi da 15 ket qua/nhom) tim tren du lieu `/hub` da tai: zoo, dex, kho, vu khi. Parse JSON cong cu o `data/BotTools.kt`. Test: `HubSearchTest`, `BotToolsJsonTest`.
-- Chua lam (co the them sau): `,setalt`/`,testalt`, `,petset`, `,weapontypeset`/`,passiveset` (nhap tay), `,teamcheck`, `,zoodiff`, `,unlocked` — can them endpoint rieng ben bot.
+- Chua lam (co the them sau): `,petset`, `,weapontypeset`/`,passiveset` (nhap tay). (`,setalt`/`,testalt`/`,teamcheck`/`,zoodiff`/`,unlocked` da lam o v34.)
 
 ## v26 — Bat / tat tung lenh farm + cau hinh (6/11/2026)
 - Tab Setting cua Hub noi co khung "Lenh trong farm": moi lenh 1 nut BAT/TAT (15 lenh, 3 nhom: chinh / viec vat / kiem tra) + 2 cau hinh nhanh "Bat tat ca" va "Chi hunt + battle".

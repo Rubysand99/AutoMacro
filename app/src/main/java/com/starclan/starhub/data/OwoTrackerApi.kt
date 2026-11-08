@@ -250,6 +250,31 @@ object OwoTrackerApi {
     suspend fun clearCaptcha(apiUrl: String, token: String): Boolean =
         callBot(apiUrl, token, "POST", "/captcha/clear", "{}") != null
 
+    /** Nhu `,teamcheck`: cham doi hinh dang dung. null = loi mang / sai token / bot chua co duong /teamcheck */
+    suspend fun fetchTeamCheck(apiUrl: String, token: String): BotTeamCheck? =
+        callBot(apiUrl, token, "GET", "/teamcheck")?.let { BotToolsJson.parseTeamCheck(it) }
+
+    /** Nhu `,zoodiff`: so 2 lan ghi zoo gan nhat. kind: "now" (dang giu) | "d" (so da bat) | null (loai ghi gan nhat). */
+    suspend fun fetchZooDiff(apiUrl: String, token: String, kind: String? = null): BotZooDiff? =
+        callBot(apiUrl, token, "GET", if (kind.isNullOrBlank()) "/zoodiff" else "/zoodiff?kind=$kind")
+            ?.let { BotToolsJson.parseZooDiff(it) }
+
+    /** Nhu `,unlocked`: pet da mo khoa theo bac (khong kem so luong). */
+    suspend fun fetchUnlocked(apiUrl: String, token: String): BotUnlocked? =
+        callBot(apiUrl, token, "GET", "/unlocked")?.let { BotToolsJson.parseUnlocked(it) }
+
+    /** Nhu `,setalt` (xem): acc phu dang nhan DM nhac huntbot. */
+    suspend fun fetchAlt(apiUrl: String, token: String): BotAlt? =
+        callBot(apiUrl, token, "GET", "/alt")?.let { BotToolsJson.parseAlt(it) }
+
+    /** Nhu `,setalt <id>` / `,setalt xoa` (userId rong = tat). Tra ve gia tri bot da luu; null neu loi (ke ca ID sai dinh dang). */
+    suspend fun setAlt(apiUrl: String, token: String, userId: String): BotAlt? =
+        callBot(apiUrl, token, "POST", "/alt", BotToolsJson.altBody(userId))?.let { BotToolsJson.parseAlt(it) }
+
+    /** Nhu `,testalt`: thu DM 1 tin vao acc phu. null = khong goi duoc bot. */
+    suspend fun testAlt(apiUrl: String, token: String): BotAltTest? =
+        callBot(apiUrl, token, "POST", "/alt/test", "{}")?.let { BotToolsJson.parseAltTest(it) }
+
     /** Bat/tat che do Event cua bot. Tra ve gia tri bot da luu, hoac null neu loi (mang / sai token). */
     suspend fun setEventMode(apiUrl: String, token: String, enabled: Boolean): Boolean? =
         withContext<Boolean?>(Dispatchers.IO) {

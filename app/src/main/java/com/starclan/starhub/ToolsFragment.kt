@@ -21,9 +21,11 @@ import android.widget.Toast
 import androidx.appcompat.widget.SwitchCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import com.starclan.starhub.data.BotAlt
 import com.starclan.starhub.data.BotNote
 import com.starclan.starhub.data.BotSettings
 import com.starclan.starhub.data.BotToggle
+import com.starclan.starhub.data.BotToolsText
 import com.starclan.starhub.data.ConfigPrefs
 import com.starclan.starhub.data.HubResponse
 import com.starclan.starhub.data.HubResult
@@ -36,6 +38,8 @@ import kotlinx.coroutines.launch
 /**
  * Tab "Công cụ": đưa các lệnh của owo-tracker lên app cho khỏi phải gõ trong Discord.
  *  - Công tắc bot   = ,autocheck ,hbauto ,hbalert ,eventmode ,off + nút báo đã giải captcha (,captcha clear)
+ *  - Acc phụ        = ,setalt ,testalt (acc nhận DM nhắc huntbot: xem / đặt / tắt / thử gửi)
+ *  - Đội hình & zoo = ,teamcheck ,zoodiff ,unlocked (bot trả chữ đã làm sạch, app hiện thẳng)
  *  - Tra cứu        = ,zoo [tìm] ,pets [tìm] ,inv [tìm] ,myweapons [tìm] (tìm ngay trên dữ liệu Hub đã tải)
  *  - Ghi chú        = ,note add / list / done
  * Giao diện dựng bằng code (không XML) cho dễ chỉnh. Mỗi lần mở tab là 1 Fragment mới nên tự tải lại dữ liệu.
@@ -50,8 +54,13 @@ class ToolsFragment : Fragment() {
     private lateinit var resultsBox: LinearLayout
     private lateinit var etSearch: EditText
     private lateinit var notesBox: LinearLayout
+    private lateinit var toolResultBox: LinearLayout
+    private lateinit var tvAltStatus: TextView
+    private lateinit var tvAltResult: TextView
+    private lateinit var etAlt: EditText
     private val switches = LinkedHashMap<String, SwitchCompat>()
     private var updatingSwitches = false
+    private var busy = false   // đang chờ bot trả lời 1 nút ở mục Acc phụ / Đội hình & zoo: chặn bấm liên tiếp (đỡ DM thử nhiều lần)
 
     private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
     private fun c(hex: String) = Color.parseColor(hex)
@@ -82,6 +91,48 @@ class ToolsFragment : Fragment() {
         addSwitch(card, "power", "Cho bot giao việc cho app",
             "Tắt = bot ngừng nhờ app thay gem, huntbot, quét vũ khí… và hủy việc đang chờ (,off)") { on -> setPower(on) }
         col.addView(card)
+
+        // ---- Acc phụ (DM nhắc huntbot) ----
+        col.addView(sectionTitle("Acc phụ nhận DM nhắc huntbot"))
+        val altCard = card()
+        tvAltStatus = text("Đang tải…", 12.5f, UiTheme.TEXT_SECONDARY)
+        altCard.addView(tvAltStatus)
+        etAlt = EditText(ctx).apply {
+            hint = "ID Discord của acc phụ (15–25 chữ số)"
+            setHintTextColor(c(UiTheme.TEXT_MUTED)); setTextColor(c(UiTheme.TEXT_PRIMARY)); textSize = 14f
+            inputType = InputType.TYPE_CLASS_NUMBER; maxLines = 1
+            background = round(UiTheme.RAISED, UiTheme.LINE); setPadding(dp(12), dp(10), dp(12), dp(10))
+        }
+        altCard.addView(etAlt, lp(top = 8))
+        val altRow = LinearLayout(ctx).apply { orientation = LinearLayout.HORIZONTAL }
+        altRow.addView(button("Lưu") { saveAlt() }, weightLp())
+        altRow.addView(secondaryButton("Tắt DM") { sendAlt("") }, weightLp(left = 8))
+        altRow.addView(secondaryButton("Thử gửi DM") { testAlt() }, weightLp(left = 8))
+        altCard.addView(altRow, lp(top = 8))
+        tvAltResult = text("", 12f, UiTheme.TEXT_SECONDARY).also { it.visibility = View.GONE; it.setPadding(0, dp(8), 0, 0) }
+        altCard.addView(tvAltResult)
+        col.addView(altCard)
+
+        // ---- Đội hình & zoo ----
+        col.addView(sectionTitle("Đội hình & zoo"))
+        val toolRow1 = LinearLayout(ctx).apply { orientation = LinearLayout.HORIZONTAL }
+        toolRow1.addView(secondaryButton("Chấm đội hình") {
+            runTool("Chấm đội hình") { u, t -> OwoTrackerApi.fetchTeamCheck(u, t)?.text }
+        }, weightLp())
+        toolRow1.addView(secondaryButton("Pet đã mở khóa") {
+            runTool("Pet đã mở khóa") { u, t -> OwoTrackerApi.fetchUnlocked(u, t)?.let { BotToolsText.unlockedText(it) } }
+        }, weightLp(left = 8))
+        val toolRow2 = LinearLayout(ctx).apply { orientation = LinearLayout.HORIZONTAL }
+        toolRow2.addView(secondaryButton("So zoo: đang giữ") {
+            runTool("So zoo: đang giữ") { u, t -> OwoTrackerApi.fetchZooDiff(u, t, "now")?.text }
+        }, weightLp())
+        toolRow2.addView(secondaryButton("So zoo: số đã bắt") {
+            runTool("So zoo: số đã bắt") { u, t -> OwoTrackerApi.fetchZooDiff(u, t, "d")?.text }
+        }, weightLp(left = 8))
+        col.addView(toolRow1, lp(top = 0))
+        col.addView(toolRow2, lp(top = 8))
+        toolResultBox = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL }
+        col.addView(toolResultBox, lp(top = 8))
 
         // ---- Tra cứu ----
         col.addView(sectionTitle("Tra cứu (zoo · dex · kho · vũ khí)"))
@@ -142,8 +193,14 @@ class ToolsFragment : Fragment() {
         val s = OwoTrackerPrefs.load(requireContext())
         if (s.apiUrl.isBlank() || s.token.isBlank()) {
             tvStatus.text = "Chưa nhập địa chỉ API / token — vào tab Cài đặt."
+            tvAltStatus.text = "Chưa nhập địa chỉ API / token — vào tab Cài đặt."
             setSwitchesEnabled(false)
             return
+        }
+        viewLifecycleOwner.lifecycleScope.launch {
+            val alt = OwoTrackerApi.fetchAlt(s.apiUrl, s.token)
+            if (view == null) return@launch
+            renderAlt(alt)
         }
         // Hiện ngay các công tắc đã lưu lần trước, rồi mới hỏi bot xem có đổi không
         ConfigPrefs.loadToolsSettings(requireContext())?.let { cached ->
@@ -233,6 +290,78 @@ class ToolsFragment : Fragment() {
         captchaBox.addView(box, lp(top = 0, bottom = 8))
     }
 
+    // ------------------------------------------------------------------ acc phụ + đội hình & zoo
+
+    /** Địa chỉ API + token đã lưu; chưa nhập thì báo cho người dùng và trả null. */
+    private fun credsOrToast() = OwoTrackerPrefs.load(requireContext())
+        .takeIf { it.apiUrl.isNotBlank() && it.token.isNotBlank() }
+        ?: run { toast("Chưa nhập địa chỉ API / token — vào tab Cài đặt."); null }
+
+    private fun renderAlt(alt: BotAlt?) {
+        tvAltStatus.text = BotToolsText.altStatus(alt)
+        if (alt != null) etAlt.setText(alt.userId)   // rỗng (đã tắt) thì xóa ô nhập
+    }
+
+    /** Nút Lưu: chỉ nhận dãy 15–25 chữ số (ô trống KHÔNG tắt acc phụ — muốn tắt thì bấm "Tắt DM"). */
+    private fun saveAlt() {
+        val id = etAlt.text.toString().trim()
+        if (!BotToolsText.isValidAltId(id)) { toast("ID phải là dãy 15–25 chữ số"); return }
+        sendAlt(id)
+    }
+
+    /** Gửi ID lên bot (như ,setalt <id>); id rỗng = tắt (như ,setalt xoa). */
+    private fun sendAlt(id: String) {
+        val s = credsOrToast() ?: return
+        if (busy) return
+        busy = true
+        viewLifecycleOwner.lifecycleScope.launch {
+            val res = try { OwoTrackerApi.setAlt(s.apiUrl, s.token, id) } finally { busy = false }
+            if (view == null) return@launch
+            if (res == null) toast("Không lưu được (kiểm tra mạng / token / cập nhật bot)")
+            else {
+                renderAlt(res)
+                toast(if (res.userId.isBlank()) "Đã tắt DM acc phụ" else "Đã lưu acc phụ")
+            }
+        }
+    }
+
+    private fun testAlt() {
+        val s = credsOrToast() ?: return
+        if (busy) return
+        busy = true
+        tvAltResult.visibility = View.VISIBLE
+        tvAltResult.text = "Đang gửi…"
+        viewLifecycleOwner.lifecycleScope.launch {
+            val res = try { OwoTrackerApi.testAlt(s.apiUrl, s.token) } finally { busy = false }
+            if (view == null) return@launch
+            tvAltResult.text = BotToolsText.altTestMessage(res)
+        }
+    }
+
+    /** Gọi bot lấy 1 đoạn chữ rồi hiện trong khung kết quả. fetch trả null = lỗi mạng / sai token / bot chưa cập nhật. */
+    private fun runTool(title: String, fetch: suspend (String, String) -> String?) {
+        val s = credsOrToast() ?: return
+        if (busy) return
+        busy = true
+        showToolResult(title, "Đang tải…")
+        viewLifecycleOwner.lifecycleScope.launch {
+            val body = try { fetch(s.apiUrl, s.token) } finally { busy = false }
+            if (view == null) return@launch
+            showToolResult(title, body ?: "Không lấy được từ bot — kiểm tra mạng, token, hoặc cập nhật bot lên bản có đường này.")
+        }
+    }
+
+    private fun showToolResult(title: String, body: String) {
+        toolResultBox.removeAllViews()
+        val box = card()
+        box.addView(text(title, 13f, UiTheme.SELECTED, bold = true))
+        box.addView(text(body, 12.5f, UiTheme.TEXT_PRIMARY).also {
+            it.setTextIsSelectable(true)   // cho bôi đen / sao chép (vd chép ID, tên pet)
+            it.setPadding(0, dp(4), 0, 0)
+        })
+        toolResultBox.addView(box)
+    }
+
     // ------------------------------------------------------------------ tra cứu
 
     private fun renderSearch(q: String) {
@@ -315,6 +444,17 @@ class ToolsFragment : Fragment() {
         setTextColor(c(UiTheme.ACCENT_ON)); background = round(UiTheme.ACCENT, UiTheme.ACCENT)
         setOnClickListener { onClick() }
     }
+
+    /** Nút phụ (nền nhạt, viền): dùng cho các nút không phải việc chính của màn hình. */
+    private fun secondaryButton(label: String, onClick: () -> Unit) = Button(requireContext()).apply {
+        text = label; isAllCaps = false; textSize = 13f
+        setTextColor(c(UiTheme.TEXT_PRIMARY)); background = round(UiTheme.RAISED, UiTheme.LINE)
+        setOnClickListener { onClick() }
+    }
+
+    /** Tham số cho nút nằm trong hàng ngang, chia đều chiều rộng. */
+    private fun weightLp(left: Int = 0) = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+        .also { it.leftMargin = dp(left) }
 
     private fun addSwitch(parent: LinearLayout, id: String, title: String, sub: String, onChange: (Boolean) -> Unit) {
         val row = LinearLayout(requireContext()).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
