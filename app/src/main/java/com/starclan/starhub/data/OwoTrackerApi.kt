@@ -271,6 +271,10 @@ object OwoTrackerApi {
     suspend fun setAlt(apiUrl: String, token: String, userId: String): BotAlt? =
         callBot(apiUrl, token, "POST", "/alt", BotToolsJson.altBody(userId))?.let { BotToolsJson.parseAlt(it) }
 
+    /** GET /clean: phien don kho cua bot (da lap ke hoach moi chua, xong may buoc, vi sao khong co buoc). null = khong hoi duoc / bot cu. */
+    suspend fun fetchClean(apiUrl: String, token: String): BotClean? =
+        callBot(apiUrl, token, "GET", "/clean")?.let { BotToolsJson.parseClean(it) }
+
     /** Nhu `,testalt`: thu DM 1 tin vao acc phu. null = khong goi duoc bot. */
     suspend fun testAlt(apiUrl: String, token: String): BotAltTest? =
         callBot(apiUrl, token, "POST", "/alt/test", "{}")?.let { BotToolsJson.parseAltTest(it) }

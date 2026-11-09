@@ -32,6 +32,12 @@ data class BotAlt(val userId: String)
 /** POST /alt/test (lenh ,testalt). reason: "" (on) | "no_alt" (chua dat) | "dm_failed" (khong DM duoc). */
 data class BotAltTest(val ok: Boolean, val userId: String, val reason: String)
 
+/**
+ * GET /clean: tinh trang phien don kho cua bot. atMs = luc bot lap ke hoach (0 = chua co phien nao); cursor = so buoc da xong;
+ * emptyReason = vi sao khong co buoc tu dong (chi co khi total = 0).
+ */
+data class BotClean(val active: Boolean, val cursor: Int, val total: Int, val atMs: Long, val emptyReason: String)
+
 /** Cong tac co the bat/tat qua POST /settings. `key` la ten bot hieu. */
 enum class BotToggle(val key: String) {
     AUTO_CHECK("auto_check"),
@@ -137,6 +143,17 @@ object BotToolsJson {
         return try {
             val o = JsonParser.parseString(json).asJsonObject
             BotAltTest(bool(o, "ok", false), str(o, "alt_user_id") ?: "", str(o, "reason") ?: "")
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    /** Thieu `active` -> false, `cursor` / `total` / `at_epoch` -> 0, `empty_reason` -> rong. at_epoch tinh bang GIAY (bot) -> atMs = ms. */
+    fun parseClean(json: String): BotClean? {
+        return try {
+            val o = JsonParser.parseString(json).asJsonObject
+            val at = (o.get("at_epoch")?.takeIf { it.isJsonPrimitive && it.asJsonPrimitive.isNumber }?.asLong ?: 0L) * 1000L
+            BotClean(bool(o, "active", false), int(o, "cursor") ?: 0, int(o, "total") ?: 0, at, str(o, "empty_reason") ?: "")
         } catch (e: Exception) {
             null
         }

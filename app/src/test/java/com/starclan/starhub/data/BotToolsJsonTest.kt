@@ -106,6 +106,19 @@ class BotToolsJsonTest {
         assertEquals("""{"user_id":""}""", BotToolsJson.altBody(""))
     }
 
+    @Test fun clean_parse() {
+        // at_epoch tinh bang GIAY -> atMs = ms
+        assertEquals(BotClean(true, 2, 5, 1794204000_000L, ""),
+            BotToolsJson.parseClean("""{"active":true,"cursor":2,"total":5,"at_epoch":1794204000,"empty_reason":"","pending":1}"""))
+        assertEquals(BotClean(false, 0, 0, 0L, "5 cây chưa rõ bậc"),
+            BotToolsJson.parseClean("""{"active":false,"cursor":0,"total":0,"at_epoch":0,"empty_reason":"5 cây chưa rõ bậc"}"""))
+        // thieu khoa -> mac dinh an toan; sai dang / sai kieu -> null hoac mac dinh, khong nem loi
+        assertEquals(BotClean(false, 0, 0, 0L, ""), BotToolsJson.parseClean("{}"))
+        assertEquals(0L, BotToolsJson.parseClean("""{"at_epoch":"abc"}""")!!.atMs)
+        assertNull(BotToolsJson.parseClean("loi"))
+        assertNull(BotToolsJson.parseClean("[1]"))
+    }
+
     @Test fun alt_test_parse() {
         assertEquals(BotAltTest(true, "123456789012345678", ""),
             BotToolsJson.parseAltTest("""{"ok":true,"alt_user_id":"123456789012345678","reason":""}"""))

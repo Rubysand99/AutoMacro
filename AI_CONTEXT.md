@@ -11,6 +11,11 @@ repo Python/discord.py rieng) de tao 1 he thong tap trung: owo-tracker la
 "bo nao" (biet luc nao can lam gi), AutoMacro la "tay chan" (thuc thi tren
 dien thoai). Xem muc "Ket noi voi owo-tracker" ben duoi.
 
+## v35 — Hien thi trang thai "Don kho tu dong" (9/11/2026)
+- Bot: `GET /clean` (active/cursor/total/at_epoch/empty_reason/pending); phien khong co buoc ghi `empty_reason`; moi buoc gui kem `step_no`/`step_total`.
+- App: `data/CleanupStatus.kt` (CleanupPhase, CleanupStatusText.line/headerLine/idleStatus/mismatchReason, thuan Kotlin, co test); `CleanupGate.status` (StateFlow) do service + CleanupRunner cap nhat; FarmOverlay hien dong trang thai duoi nut "Don kho tu dong" (tab Misc) + dong dau Hub, dem nguoc 45s cho file.
+- Cac giai doan: EXPORTING -> WAIT_FILE (45s) -> (hoi /clean) NO_PLAN / WAIT_NEXT / RUNNING n/total / WAIT_FARM -> DONE hoac FAILED (kem ly do).
+
 ## v34 — Tab Cong cu: acc phu + doi hinh & zoo (8/11/2026)
 - Bot (owo-tracker) them 6 duong API (README cua bot co mo ta chi tiet): `GET /teamcheck`, `GET /zoodiff?kind=d|now`, `GET /unlocked`, `GET|POST /alt`, `POST /alt/test`. Logic thuan o `tools_api.py`; `,zoodiff` tach ra `zoodiff_report()` de lenh Discord va API dung chung. Chu bot tra ve da bo ky hieu Discord (`**`, backtick, `<:emoji:id>`).
 - App: `ToolsFragment` them 2 muc. "Acc phu nhan DM nhac huntbot" = xem trang thai / o nhap ID (chi nhan 15-25 chu so) / Luu / Tat DM / Thu gui DM. "Doi hinh & zoo" = 4 nut (Cham doi hinh, Pet da mo khoa, So zoo dang giu, So zoo so da bat), ket qua hien trong khung chu co the boi den chep. Co co `busy` chan bam lien tiep (tranh DM thu nhieu lan).

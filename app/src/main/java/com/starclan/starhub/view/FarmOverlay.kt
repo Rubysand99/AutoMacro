@@ -23,6 +23,8 @@ import com.starclan.starhub.data.FarmCommandConfig
 import com.starclan.starhub.data.HubFormat
 import com.starclan.starhub.data.SpeedMode
 import com.starclan.starhub.data.StatsFormat
+import com.starclan.starhub.data.CleanupPhase
+import com.starclan.starhub.data.CleanupStatusText
 import com.starclan.starhub.engine.CleanupGate
 import com.starclan.starhub.engine.FarmController
 import com.starclan.starhub.engine.FarmState
@@ -149,6 +151,8 @@ object FarmOverlay {
     private val collapsed = mutableSetOf<String>()   // nho trang thai thu gon trong luc app chay
 
     private var scope: CoroutineScope? = null
+    private var btnClean: TextView? = null
+    private var tvCleanStatus: TextView? = null
     private var refreshJob: Job? = null
     private var idleJob: Job? = null
     private var lastExpandedAlert: String? = null   // canh bao da lam menu tu mo (chi mo lai khi canh bao doi)
@@ -716,9 +720,10 @@ object FarmOverlay {
         cleanBtn.setOnClickListener {
             val on = !CleanupGate.enabled
             if (on) CleanupGate.turnOn() else CleanupGate.turnOff()
-            cleanBtn.text = if (on) "Dọn kho tự động: BẬT (bấm để dừng)" else "Dọn kho tự động: Tắt"
-            styleBtn(cleanBtn, if (on) Btn.ACTIVE else Btn.SECONDARY)
+            renderCleanup()
         }
+        btnClean = cleanBtn
+        tvCleanStatus = caption(service, "", C_MUTED).also { it.textSize = 12.5f }
 
         // Dung moi tab de bam duoc: hang tren cung (Bat dau/Dung + thu gon + tat Hub) luon hien o moi tab
         val rowMute = LinearLayout(service)
@@ -815,6 +820,7 @@ object FarmOverlay {
         // Misc: hoc loi khuyen vu khi, thong ke, tai nguyen, nhiem vu, zoo
         addTo(TAB_MISC, tagBtn)
         addTo(TAB_MISC, cleanBtn)
+        addTo(TAB_MISC, tvCleanStatus!!)
         addTo(TAB_MISC, caption(service, "Bật là app gõ nw inv export trước, rồi tự dọn theo kế hoạch Tom lập. Dừng farm trước. Tự tắt khi có lỗi hoặc đóng Hub.", C_MUTED))
         addGroupTo(TAB_MISC, "stats", "Thống kê", R.drawable.ic_chart)
         addGroupTo(TAB_MISC, "res", "Tài nguyên", R.drawable.ic_coin)
@@ -944,6 +950,16 @@ object FarmOverlay {
         scope = s
         s.launch {
             FarmController.state.collect { st -> render(st) }
+        }
+        s.launch {
+            CleanupGate.status.collect { renderCleanup(); render(FarmController.state.value) }
+        }
+        s.launch {
+            // dem nguoc "con Ns" can lam moi moi giay khi dang cho
+            while (true) {
+                delay(1_000)
+                if (CleanupGate.status.value.busy) renderCleanup()
+            }
         }
         s.launch {
             TagCollector.progress.collect { p ->
@@ -1094,6 +1110,24 @@ object FarmOverlay {
         setGroup("stats", t?.let { "${it.hunts} hunt · ${it.battles} battle" } ?: "", rows)
     }
 
+    /** Nut + dong trang thai "Don kho tu dong": luon cho Ruby biet app dang cho gi / lam buoc nao / xong chua / loi o dau. */
+    private fun renderCleanup() {
+        val st = CleanupGate.status.value
+        val on = CleanupGate.enabled
+        btnClean?.text = if (on) "Dọn kho tự động: BẬT (bấm để dừng)" else "Dọn kho tự động: Tắt"
+        styleBtn(btnClean, if (on) Btn.ACTIVE else Btn.SECONDARY)
+        val tv = tvCleanStatus ?: return
+        val text = CleanupStatusText.line(st, System.currentTimeMillis())
+        tv.text = text
+        tv.visibility = if (text.isEmpty()) View.GONE else View.VISIBLE
+        tv.setTextColor(Color.parseColor(when (st.phase) {
+            CleanupPhase.FAILED -> UiTheme.BAD
+            CleanupPhase.DONE -> C_GOOD
+            CleanupPhase.NO_PLAN, CleanupPhase.WAIT_FARM -> C_WARN
+            else -> C_TEXT
+        }))
+    }
+
     private fun render(st: FarmState) {
         if (root == null) return
         val hub = st.hub
@@ -1115,6 +1149,8 @@ object FarmOverlay {
         if (st.running && st.lastCommand.isNotEmpty()) detail.append("\nLệnh gần nhất: ").append(st.lastCommand)
         if (!st.huntPaused.isNullOrBlank()) detail.append("\nHunt tạm dừng: ").append(st.huntPaused)
         // tieu de da ghi "Đã dừng" thi khong lap lai y het o dong chi tiet
+        val cleanLine = CleanupStatusText.headerLine(CleanupGate.status.value, System.currentTimeMillis())
+        if (cleanLine.isNotEmpty()) detail.append("\n").append(cleanLine)
         tvStatusDetail?.text = if (detail.toString().trim() == title) "" else detail.toString()
 
         val modeShort = when (st.huntMode) {

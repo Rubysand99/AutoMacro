@@ -17,6 +17,9 @@ import android.view.accessibility.AccessibilityEvent
 import android.widget.FrameLayout
 import android.widget.TextView
 import com.starclan.starhub.R
+import com.starclan.starhub.data.CleanupPhase
+import com.starclan.starhub.data.CleanupStatus
+import com.starclan.starhub.data.CleanupStatusText
 import com.starclan.starhub.data.CommandGuard
 import com.starclan.starhub.data.FarmCmd
 import com.starclan.starhub.data.OwoTrackerApi
@@ -186,8 +189,12 @@ class AutoAccessibilityService : AccessibilityService() {
         if (System.currentTimeMillis() < captchaPauseUntilMs) return
 
         // Vua bat "Don kho tu dong": viec DAU TIEN la go `nw inv export` (dung 1 lan), roi doi Tom nhan file + lap ke hoach
+        if (CleanupGate.enabled && CleanupGate.exportPending && FarmController.isRunning()) {
+            CleanupGate.set(CleanupStatus(CleanupPhase.EXPORTING, detail = "Farm đang chạy — chờ farm dừng rồi app mới gõ nw inv export."))
+        }
         if (CleanupGate.enabled && CleanupGate.exportPending && !FarmController.isRunning()) {
             CleanupGate.exportPending = false
+            CleanupGate.set(CleanupStatus(CleanupPhase.EXPORTING, command = CommandGuard.EXPORT_COMMAND, detail = "Đang gõ nw inv export vào Discord…"))
             val st = OwoTrackerPrefs.load(this)
             if (CommandGuard.isSafeCommand(CommandGuard.EXPORT_COMMAND)) {
                 val r = try {
@@ -197,9 +204,15 @@ class AutoAccessibilityService : AccessibilityService() {
                     SendResult.SEND_FAILED
                 }
                 if (r == SendResult.OK) {
-                    CleanupGate.holdUntilMs = System.currentTimeMillis() + CleanupGate.HOLD_AFTER_EXPORT_MS
+                    val now = System.currentTimeMillis()
+                    CleanupGate.exportSentMs = now
+                    CleanupGate.holdUntilMs = now + CleanupGate.HOLD_AFTER_EXPORT_MS
+                    CleanupGate.set(CleanupStatus(CleanupPhase.WAIT_FILE, command = CommandGuard.EXPORT_COMMAND,
+                        untilMs = CleanupGate.holdUntilMs, sinceMs = now))
                 } else {
-                    CleanupGate.turnOff()
+                    val why = if (r == SendResult.CAPTCHA) "OwO đang đòi captcha — giải captcha rồi bật lại."
+                        else "Không gõ được nw inv export vào Discord (kiểm tra Discord đang mở đúng kênh chat)."
+                    CleanupGate.finish(CleanupStatus(CleanupPhase.FAILED, command = CommandGuard.EXPORT_COMMAND, detail = why))
                     if (r == SendResult.CAPTCHA) {
                         alertCaptcha()
                         captchaPauseUntilMs = System.currentTimeMillis() + 10 * 60 * 1000L
@@ -210,6 +223,7 @@ class AutoAccessibilityService : AccessibilityService() {
         }
 
         val commands = OwoTrackerApi.fetchPending(apiUrl, token)
+        updateCleanupIdle(apiUrl, token, commands.count { CommandGuard.isCleanAction(it.action) })
         if (commands.isEmpty()) return
 
         val settings = OwoTrackerPrefs.load(this)
@@ -233,6 +247,11 @@ class AutoAccessibilityService : AccessibilityService() {
             val isClean = CommandGuard.isCleanAction(cmd.action)
             // Buoc don kho: chi lam khi Ruby BAT cong tac "Don kho tu dong" va khong dang farm; con lai de nguyen (khong ack)
             if (isClean && (!CleanupGate.enabled || FarmController.isRunning() || System.currentTimeMillis() < CleanupGate.holdUntilMs)) continue
+            val stepNo = cmd.params["step_no"]?.toIntOrNull() ?: 0
+            val stepTotal = cmd.params["step_total"]?.toIntOrNull() ?: 0
+            if (isClean) {
+                CleanupGate.set(CleanupStatus(CleanupPhase.RUNNING, stepNo, stepTotal, commandText.orEmpty().trim(), "Đang gõ lệnh vào Discord…"))
+            }
             if (commandText.isNullOrBlank()) {
                 Log.w(TAG, "Lenh '${cmd.action}' khong co command_text - bo qua")
                 ackAndRemember(apiUrl, token, cmd.id, signature, "failed")
@@ -290,7 +309,13 @@ class AutoAccessibilityService : AccessibilityService() {
                     false
                 }
                 if (!cleaned) {
-                    CleanupGate.turnOff()   // co loi -> tu tat, bot cung dung phien
+                    val why = when {
+                        result == SendResult.CAPTCHA -> "OwO đang đòi captcha — giải captcha rồi bật lại."
+                        result != SendResult.OK -> "Không gõ được lệnh vào Discord."
+                        else -> CleanupGate.lastFailure.ifBlank { "Bước không hoàn thành." }
+                    }
+                    // co loi -> tu tat, bot cung dung phien
+                    CleanupGate.finish(CleanupStatus(CleanupPhase.FAILED, stepNo, stepTotal, commandText.orEmpty().trim(), why))
                     if (result == SendResult.CAPTCHA) {
                         alertCaptcha()
                         captchaPauseUntilMs = System.currentTimeMillis() + 10 * 60 * 1000L
@@ -317,6 +342,13 @@ class AutoAccessibilityService : AccessibilityService() {
             Log.d(TAG, "Lenh '${cmd.action}' (${cmd.id}) -> $result")
 
             ackAndRemember(apiUrl, token, cmd.id, signature, if (result == SendResult.OK) "done" else "failed")
+            if (isClean && result == SendResult.OK) {
+                if (stepTotal in 1..stepNo) {
+                    CleanupGate.finish(CleanupStatus(CleanupPhase.DONE, stepNo, stepTotal))
+                } else {
+                    CleanupGate.set(CleanupStatus(CleanupPhase.WAIT_NEXT, stepNo, stepTotal, detail = "Nghỉ vài giây, chờ Tom giao bước kế…"))
+                }
+            }
 
             if (result == SendResult.CAPTCHA) {
                 alertCaptcha()
@@ -326,6 +358,21 @@ class AutoAccessibilityService : AccessibilityService() {
             // Nghi ngau nhien giua 2 lenh, khong gui lien tuc nhu may
             delay(Random.nextLong(2500, 5500))
         }
+    }
+
+    /**
+     * Sau 45 giay cho file: hoi bot (GET /clean) xem Tom dang o dau de Hub hien dung (cho file / khong co ke hoach / cho buoc ke / xong).
+     * Chi chay khi cong tac dang BAT va da go export; buoc sap chay thi tu dat trang thai.
+     */
+    private suspend fun updateCleanupIdle(apiUrl: String, token: String, pendingClean: Int) {
+        if (!CleanupGate.enabled || CleanupGate.exportPending || CleanupGate.exportSentMs <= 0L) return
+        val now = System.currentTimeMillis()
+        if (now < CleanupGate.holdUntilMs) return
+        val clean = if (pendingClean == 0) OwoTrackerApi.fetchClean(apiUrl, token) else null
+        val next = CleanupStatusText.idleStatus(
+            clean, CleanupGate.exportSentMs, now, FarmController.isRunning(), pendingClean, CleanupGate.status.value
+        ) ?: return
+        if (next.finished) CleanupGate.finish(next) else CleanupGate.set(next)
     }
 
     /** Rung + chuong de Ruby biet OwO dang doi giai captcha. */
