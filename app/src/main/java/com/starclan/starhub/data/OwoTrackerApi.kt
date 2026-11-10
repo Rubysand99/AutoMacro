@@ -329,6 +329,33 @@ object OwoTrackerApi {
     suspend fun fetchWeaponReviewLists(apiUrl: String, token: String): WeaponReviewLists? =
         callBot(apiUrl, token, "GET", "/weapon-review/lists")?.let { WeaponReviewLists.parse(it) }
 
+    /** Bat tu duyet cac cay "Chua ro" (bot doc dong gon NeonUtil). Tra ve null neu OK, nguoc lai la thong bao loi. */
+    suspend fun startAutoNeonReview(apiUrl: String, token: String): String? =
+        withContext(Dispatchers.IO) {
+            try {
+                val conn = URL(joinUrl(apiUrl, "/weapon-review/autoneon")).openConnection() as HttpURLConnection
+                try {
+                    conn.requestMethod = "POST"
+                    conn.setRequestProperty("Authorization", "Bearer $token")
+                    conn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+                    conn.doOutput = true
+                    conn.connectTimeout = 8_000
+                    conn.readTimeout = 15_000
+                    conn.outputStream.use { it.write("{}".toByteArray(Charsets.UTF_8)) }
+                    if (conn.responseCode == 200) null
+                    else {
+                        val body = (conn.errorStream ?: conn.inputStream).bufferedReader().use { it.readText() }
+                        com.google.gson.JsonParser.parseString(body).asJsonObject.get("error")?.asString ?: "lỗi ${conn.responseCode}"
+                    }
+                } finally {
+                    conn.disconnect()
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "startAutoNeonReview loi: ${e.message}")
+                "mất kết nối bot"
+            }
+        }
+
     /** Dung duyet vu khi (an nut Giu/Bo/?). true = bot da nhan. */
     suspend fun stopWeaponReview(apiUrl: String, token: String): Boolean =
         callBot(apiUrl, token, "POST", "/weapon-review/stop", "{}") != null

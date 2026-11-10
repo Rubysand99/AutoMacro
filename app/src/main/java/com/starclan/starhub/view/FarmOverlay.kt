@@ -573,6 +573,9 @@ object FarmOverlay {
         head.addView(title, lparams(0, LinearLayout.LayoutParams.WRAP_CONTENT, weight = 1f))
         head.addView(reload, lparams(dp(84), LinearLayout.LayoutParams.WRAP_CONTENT))
         card.addView(head)
+        val autoBtn2 = pill(service, "Tự duyệt các cây Chưa rõ (đọc NeonUtil)", Btn.PRIMARY, 12.5f)
+        autoBtn2.setOnClickListener { scope?.launch { FarmController.reviewAutoNeon(service) } }
+        card.addView(autoBtn2, lparams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).also { it.topMargin = dp(6) })
 
         val segRow = LinearLayout(service)
         segRow.orientation = LinearLayout.HORIZONTAL

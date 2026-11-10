@@ -448,6 +448,18 @@ object FarmController {
         }
     }
 
+    /** Nut "Tu duyet": bot xep hang cac cay Chua ro, nho app go `owo w <ID>` tung cay va doc dong gon NeonUtil. Phai DUNG farm. */
+    suspend fun reviewAutoNeon(context: Context) {
+        if (isRunning() || TagCollector.isRunning()) {
+            update { it.copy(status = "Dừng farm trước rồi bấm Tự duyệt (để tin Neon không bị lẫn)") }
+            return
+        }
+        val s = OwoTrackerPrefs.load(context)
+        if (s.apiUrl.isBlank() || s.token.isBlank()) return
+        val err = OwoTrackerApi.startAutoNeonReview(s.apiUrl, s.token)
+        update { it.copy(status = if (err == null) "Đang tự duyệt các cây Chưa rõ — bấm Dừng để ngừng" else "Không bật được tự duyệt: $err") }
+    }
+
     /** Nut "Dung" tren Hub: bao bot dung duyet, an hang nut Giu/Bo/? ngay (khong cho lan lam moi Hub ke tiep). */
     suspend fun reviewStop(context: Context) {
         val s = OwoTrackerPrefs.load(context)
