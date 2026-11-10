@@ -448,6 +448,22 @@ object FarmController {
         }
     }
 
+    /** Nut "Dung" tren Hub: bao bot dung duyet, an hang nut Giu/Bo/? ngay (khong cho lan lam moi Hub ke tiep). */
+    suspend fun reviewStop(context: Context) {
+        val s = OwoTrackerPrefs.load(context)
+        if (s.apiUrl.isBlank() || s.token.isBlank()) return
+        if (!OwoTrackerApi.stopWeaponReview(s.apiUrl, s.token)) {
+            update { it.copy(status = "Không dừng được duyệt vũ khí (mất kết nối bot?) — bấm lại") }
+            return
+        }
+        update { st ->
+            val hub = st.hub
+            val rv = hub?.weaponReview
+            if (hub == null || rv == null) st
+            else st.copy(hub = hub.copy(weaponReview = rv.copy(active = false, currentId = null)))
+        }
+    }
+
     /** Tai 3 danh sach ID vu khi cho tab Misc (null = loi mang / chua nhap API). */
     suspend fun loadReviewLists(context: Context): WeaponReviewLists? {
         val s = OwoTrackerPrefs.load(context)

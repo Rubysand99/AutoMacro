@@ -329,6 +329,10 @@ object OwoTrackerApi {
     suspend fun fetchWeaponReviewLists(apiUrl: String, token: String): WeaponReviewLists? =
         callBot(apiUrl, token, "GET", "/weapon-review/lists")?.let { WeaponReviewLists.parse(it) }
 
+    /** Dung duyet vu khi (an nut Giu/Bo/?). true = bot da nhan. */
+    suspend fun stopWeaponReview(apiUrl: String, token: String): Boolean =
+        callBot(apiUrl, token, "POST", "/weapon-review/stop", "{}") != null
+
     /** Chon 1 cay (ID) de kiem tra tay. true = bot da nhan va dat lam cay dang duyet. */
     suspend fun selectWeaponReview(apiUrl: String, token: String, id: String): Boolean {
         val safe = id.filter { it.isLetterOrDigit() }

@@ -752,15 +752,18 @@ object FarmOverlay {
         val keepBtn = pill(service, "Giữ", Btn.GOOD, 13f)
         val dropBtn = pill(service, "Bỏ", Btn.DANGER, 13f)
         val unkBtn = pill(service, "?", Btn.SECONDARY, 13f)
-        for (b in listOf(keepBtn, dropBtn, unkBtn)) { b.minHeight = dp(40); b.minWidth = dp(54); b.setPadding(dp(8), dp(4), dp(8), dp(4)) }
+        val stopBtn = pill(service, "Dừng", Btn.SECONDARY, 13f)
+        for (b in listOf(keepBtn, dropBtn, unkBtn, stopBtn)) { b.minHeight = dp(40); b.minWidth = dp(54); b.setPadding(dp(8), dp(4), dp(8), dp(4)) }
         rvRow.addView(rvInfo, lparams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT))
         rvRow.addView(keepBtn, lparams(LinearLayout.LayoutParams.WRAP_CONTENT, dp(40)).also { it.rightMargin = dp(6) })
         rvRow.addView(dropBtn, lparams(LinearLayout.LayoutParams.WRAP_CONTENT, dp(40)).also { it.rightMargin = dp(6) })
-        rvRow.addView(unkBtn, lparams(LinearLayout.LayoutParams.WRAP_CONTENT, dp(40)))
+        rvRow.addView(unkBtn, lparams(LinearLayout.LayoutParams.WRAP_CONTENT, dp(40)).also { it.rightMargin = dp(6) })
+        rvRow.addView(stopBtn, lparams(LinearLayout.LayoutParams.WRAP_CONTENT, dp(40)))
         reviewRow = rvRow
         tvReviewInfo = rvInfo
         keepBtn.setOnClickListener { scope?.launch { FarmController.reviewDecision(service, "keep") } }
         dropBtn.setOnClickListener { scope?.launch { FarmController.reviewDecision(service, "drop") } }
+        stopBtn.setOnClickListener { scope?.launch { FarmController.reviewStop(service) } }
         unkBtn.setOnClickListener { scope?.launch { FarmController.reviewDecision(service, "unknown") } }
         container.addView(rvRow, LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).also { it.topMargin = dp(6) })
