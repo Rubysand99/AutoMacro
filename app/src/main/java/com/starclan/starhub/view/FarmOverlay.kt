@@ -547,6 +547,135 @@ object FarmOverlay {
         setGroup("cmds", cmdSummary(FarmController.state.value.commands), rows)
     }
 
+    /**
+     * Khung "Duyet vu khi tay" (tab Misc): 3 danh sach ID Giu / Bo / Chua ro. Cham 1 ID -> app go `owo w <ID>`, roi dung
+     * nut Giu / Bo / ? tren bong bong de chuyen cay sang danh sach khac. Bam "Tai lai" de cap nhat danh sach tu bot.
+     */
+    private fun buildWeaponListsCard(service: AutoAccessibilityService): View {
+        val pageSize = 30
+        var data: com.starclan.starhub.data.WeaponReviewLists? = null
+        var tab = 0          // 0 = Giu, 1 = Bo, 2 = Chua ro
+        var page = 0
+        var loading = false
+        var msg = "Bấm Tải lại để xem danh sách từ bot"
+
+        val card = LinearLayout(service)
+        card.orientation = LinearLayout.VERTICAL
+        card.setPadding(dp(10), dp(8), dp(10), dp(8))
+        card.background = roundBg(C_PANEL, 14, UiTheme.LINE)
+
+        val title = caption(service, "Duyệt vũ khí tay", UiTheme.TEXT_PRIMARY)
+        title.setTypeface(null, Typeface.BOLD)
+        val reload = pill(service, "Tải lại", Btn.SECONDARY, 12f)
+        val head = LinearLayout(service)
+        head.orientation = LinearLayout.HORIZONTAL
+        head.gravity = Gravity.CENTER_VERTICAL
+        head.addView(title, lparams(0, LinearLayout.LayoutParams.WRAP_CONTENT, weight = 1f))
+        head.addView(reload, lparams(dp(84), LinearLayout.LayoutParams.WRAP_CONTENT))
+        card.addView(head)
+
+        val segRow = LinearLayout(service)
+        segRow.orientation = LinearLayout.HORIZONTAL
+        segRow.setPadding(0, dp(6), 0, dp(6))
+        val segBtns = listOf("Giữ", "Bỏ", "Chưa rõ").map { pill(service, it, Btn.SECONDARY, 12f) }
+        for ((i, b) in segBtns.withIndex()) {
+            segRow.addView(b, lparams(0, LinearLayout.LayoutParams.WRAP_CONTENT, weight = 1f).also {
+                it.setMargins(if (i == 0) 0 else dp(3), 0, if (i == segBtns.size - 1) 0 else dp(3), 0)
+            })
+        }
+        card.addView(segRow)
+
+        val chips = LinearLayout(service)
+        chips.orientation = LinearLayout.VERTICAL
+        card.addView(chips)
+
+        val pager = LinearLayout(service)
+        pager.orientation = LinearLayout.HORIZONTAL
+        pager.gravity = Gravity.CENTER_VERTICAL
+        val prev = pill(service, "◀", Btn.SECONDARY, 12f)
+        val next = pill(service, "▶", Btn.SECONDARY, 12f)
+        val pageInfo = caption(service, "", C_MUTED)
+        pageInfo.gravity = Gravity.CENTER
+        pager.addView(prev, lparams(dp(56), LinearLayout.LayoutParams.WRAP_CONTENT))
+        pager.addView(pageInfo, lparams(0, LinearLayout.LayoutParams.WRAP_CONTENT, weight = 1f))
+        pager.addView(next, lparams(dp(56), LinearLayout.LayoutParams.WRAP_CONTENT))
+        card.addView(pager)
+        card.addView(caption(service, "Chạm 1 ID để app gõ owo w <ID> (dừng farm trước), rồi bấm Giữ / Bỏ / ? trên bong bóng để chuyển cây sang danh sách khác. Chọn tay sẽ không bị file export ghi đè; kế hoạch dọn kho cũ bị hủy, cần xuất lại nw inv export.", C_MUTED))
+
+        fun listFor(d: com.starclan.starhub.data.WeaponReviewLists?): List<String> = when (tab) {
+            0 -> d?.keep.orEmpty()
+            1 -> d?.drop.orEmpty()
+            else -> d?.unknown.orEmpty()
+        }
+
+        fun refresh() {
+            val d = data
+            for ((i, b) in segBtns.withIndex()) {
+                val n = when (i) { 0 -> d?.keep?.size; 1 -> d?.drop?.size; else -> d?.unknown?.size }
+                b.text = listOf("Giữ", "Bỏ", "Chưa rõ")[i] + (if (n != null) " $n" else "")
+                styleBtn(b, if (i == tab) Btn.ACTIVE else Btn.SECONDARY)
+            }
+            val ids = listFor(d)
+            val pages = maxOf(1, (ids.size + pageSize - 1) / pageSize)
+            page = page.coerceIn(0, pages - 1)
+            chips.removeAllViews()
+            if (d == null || ids.isEmpty()) {
+                chips.addView(caption(service, if (d == null) msg else "Danh sách trống", C_MUTED))
+            } else {
+                val slice = ids.drop(page * pageSize).take(pageSize)
+                for (rowIds in slice.chunked(3)) {
+                    val row = LinearLayout(service)
+                    row.orientation = LinearLayout.HORIZONTAL
+                    for (j in 0 until 3) {
+                        val id = rowIds.getOrNull(j)
+                        val cell = TextView(service)
+                        cell.gravity = Gravity.CENTER
+                        cell.textSize = 12.5f
+                        cell.setPadding(dp(4), dp(8), dp(4), dp(8))
+                        if (id != null) {
+                            cell.text = id
+                            cell.setTypeface(Typeface.MONOSPACE, Typeface.BOLD)
+                            val isCur = id == d.currentId
+                            cell.setTextColor(Color.parseColor(if (isCur) UiTheme.SELECTED else UiTheme.TEXT_PRIMARY))
+                            cell.background = roundBg(UiTheme.RAISED, 10, if (isCur) UiTheme.SELECTED else UiTheme.LINE)
+                            cell.isClickable = true
+                            cell.setOnClickListener {
+                                data = d.copy(currentId = id)
+                                refresh()
+                                scope?.launch { FarmController.reviewSelect(service, id) }
+                            }
+                        }
+                        row.addView(cell, lparams(0, LinearLayout.LayoutParams.WRAP_CONTENT, weight = 1f, margin = dp(2)))
+                    }
+                    chips.addView(row)
+                }
+            }
+            pager.visibility = if (pages > 1) View.VISIBLE else View.GONE
+            pageInfo.text = "Trang ${page + 1}/$pages"
+            reload.text = if (loading) "…" else "Tải lại"
+            relayout()
+        }
+
+        fun load() {
+            if (loading) return
+            loading = true
+            refresh()
+            scope?.launch {
+                val r = FarmController.loadReviewLists(service)
+                loading = false
+                if (r == null) msg = "Không tải được danh sách (mất kết nối bot, hoặc bot chưa cập nhật bản mới)" else data = r
+                refresh()
+            }
+        }
+
+        reload.setOnClickListener { load() }
+        for ((i, b) in segBtns.withIndex()) b.setOnClickListener { tab = i; page = 0; refresh() }
+        prev.setOnClickListener { page--; refresh() }
+        next.setOnClickListener { page++; refresh() }
+        refresh()
+        return card
+    }
+
     private fun cmdSummary(c: FarmCommandConfig) = "${c.enabledCount()}/${c.total()} bật"
 
     /** Dien noi dung 1 nhom: dong tom tat tren tieu de + cac dong ben duoi. visible=false -> an ca the */
@@ -622,14 +751,17 @@ object FarmOverlay {
         rvInfo.setPadding(dp(4), 0, dp(8), 0)
         val keepBtn = pill(service, "Giữ", Btn.GOOD, 13f)
         val dropBtn = pill(service, "Bỏ", Btn.DANGER, 13f)
-        for (b in listOf(keepBtn, dropBtn)) { b.minHeight = dp(40); b.minWidth = dp(54); b.setPadding(dp(8), dp(4), dp(8), dp(4)) }
+        val unkBtn = pill(service, "?", Btn.SECONDARY, 13f)
+        for (b in listOf(keepBtn, dropBtn, unkBtn)) { b.minHeight = dp(40); b.minWidth = dp(54); b.setPadding(dp(8), dp(4), dp(8), dp(4)) }
         rvRow.addView(rvInfo, lparams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT))
         rvRow.addView(keepBtn, lparams(LinearLayout.LayoutParams.WRAP_CONTENT, dp(40)).also { it.rightMargin = dp(6) })
-        rvRow.addView(dropBtn, lparams(LinearLayout.LayoutParams.WRAP_CONTENT, dp(40)))
+        rvRow.addView(dropBtn, lparams(LinearLayout.LayoutParams.WRAP_CONTENT, dp(40)).also { it.rightMargin = dp(6) })
+        rvRow.addView(unkBtn, lparams(LinearLayout.LayoutParams.WRAP_CONTENT, dp(40)))
         reviewRow = rvRow
         tvReviewInfo = rvInfo
         keepBtn.setOnClickListener { scope?.launch { FarmController.reviewDecision(service, "keep") } }
         dropBtn.setOnClickListener { scope?.launch { FarmController.reviewDecision(service, "drop") } }
+        unkBtn.setOnClickListener { scope?.launch { FarmController.reviewDecision(service, "unknown") } }
         container.addView(rvRow, LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).also { it.topMargin = dp(6) })
 
@@ -822,6 +954,7 @@ object FarmOverlay {
         addTo(TAB_MISC, cleanBtn)
         addTo(TAB_MISC, tvCleanStatus!!)
         addTo(TAB_MISC, caption(service, "Bật là app gõ nw inv export trước, rồi tự dọn theo kế hoạch Tom lập. Dừng farm trước. Tự tắt khi có lỗi hoặc đóng Hub.", C_MUTED))
+        addTo(TAB_MISC, buildWeaponListsCard(service))
         addGroupTo(TAB_MISC, "stats", "Thống kê", R.drawable.ic_chart)
         addGroupTo(TAB_MISC, "res", "Tài nguyên", R.drawable.ic_coin)
         addGroupTo(TAB_MISC, "quest", "Nhiệm vụ", R.drawable.ic_quest)

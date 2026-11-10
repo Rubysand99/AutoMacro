@@ -10,6 +10,8 @@ import com.starclan.starhub.data.FarmStatsStore
 import com.starclan.starhub.data.HubFormat
 import com.starclan.starhub.data.HubResponse
 import com.starclan.starhub.data.HubResult
+import com.starclan.starhub.data.HubWeaponReview
+import com.starclan.starhub.data.WeaponReviewLists
 import com.starclan.starhub.data.OwoTrackerApi
 import com.starclan.starhub.data.OwoTrackerPrefs
 import com.starclan.starhub.data.SpeedMode
@@ -429,7 +431,8 @@ object FarmController {
                 else st.copy(hub = hub.copy(weaponReview = rv.copy(
                     currentId = res.nextId, remaining = res.remaining,
                     kept = (rv.kept ?: 0) + if (decision == "keep") 1 else 0,
-                    dropped = (rv.dropped ?: 0) + if (decision == "drop") 1 else 0)))
+                    dropped = (rv.dropped ?: 0) + if (decision == "drop") 1 else 0,
+                    unknown = (rv.unknown ?: 0) + if (decision == "unknown") 1 else 0)))
             }
             val next = res.nextId ?: return
             if (isRunning() || TagCollector.isRunning()) {
@@ -437,6 +440,44 @@ object FarmController {
                 return
             }
             val cmd = "owo w $next"
+            if (!CommandGuard.isSafeCommand(cmd)) return
+            val r = DiscordSender(service).send(cmd, s, reopenChannel = false)
+            if (r != SendResult.OK) update { it.copy(status = "Không gõ được $cmd (${describeSend(r)})") }
+        } finally {
+            reviewBusy.set(false)
+        }
+    }
+
+    /** Tai 3 danh sach ID vu khi cho tab Misc (null = loi mang / chua nhap API). */
+    suspend fun loadReviewLists(context: Context): WeaponReviewLists? {
+        val s = OwoTrackerPrefs.load(context)
+        if (s.apiUrl.isBlank() || s.token.isBlank()) return null
+        return OwoTrackerApi.fetchWeaponReviewLists(s.apiUrl, s.token)
+    }
+
+    /**
+     * Ruby chạm 1 ID trong danh sach: bao bot dat cay do la cay dang duyet, roi (neu KHONG dang farm) go `owo w <ID>`
+     * de xem cay; sau do dung 2 nut Giu / Bo (hoac ?) nhu binh thuong. CHI ghi danh sach - khong dismantle gi.
+     */
+    suspend fun reviewSelect(service: AutoAccessibilityService, id: String) {
+        if (!reviewBusy.compareAndSet(false, true)) return
+        try {
+            val s = OwoTrackerPrefs.load(service)
+            if (s.apiUrl.isBlank() || s.token.isBlank()) return
+            if (!OwoTrackerApi.selectWeaponReview(s.apiUrl, s.token, id)) {
+                update { it.copy(status = "Không chọn được cây $id (bot đang quét kho / tự duyệt, hoặc mất kết nối)") }
+                return
+            }
+            update { st ->
+                val hub = st.hub
+                if (hub == null) st
+                else st.copy(hub = hub.copy(weaponReview = (hub.weaponReview ?: HubWeaponReview()).copy(active = true, currentId = id)))
+            }
+            if (isRunning() || TagCollector.isRunning()) {
+                update { it.copy(status = "Đã chọn cây $id — đang farm nên chưa tự gõ, hãy dừng farm") }
+                return
+            }
+            val cmd = "owo w $id"
             if (!CommandGuard.isSafeCommand(cmd)) return
             val r = DiscordSender(service).send(cmd, s, reopenChannel = false)
             if (r != SendResult.OK) update { it.copy(status = "Không gõ được $cmd (${describeSend(r)})") }

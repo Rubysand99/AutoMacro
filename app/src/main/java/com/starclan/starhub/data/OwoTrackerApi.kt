@@ -303,7 +303,7 @@ object OwoTrackerApi {
     suspend fun postWeaponReview(apiUrl: String, token: String, decision: String): ReviewDecisionResult? =
         withContext<ReviewDecisionResult?>(Dispatchers.IO) {
             try {
-                if (decision != "keep" && decision != "drop") return@withContext null
+                if (decision != "keep" && decision != "drop" && decision != "unknown") return@withContext null
                 val url = URL(joinUrl(apiUrl, "/weapon-review"))
                 val conn = url.openConnection() as HttpURLConnection
                 try {
@@ -324,6 +324,17 @@ object OwoTrackerApi {
                 null
             }
         }
+
+    /** 3 danh sach ID vu khi (Giu / Bo / Khong xac dinh) de Ruby tu check tay. null = loi mang / bot chua cap nhat. */
+    suspend fun fetchWeaponReviewLists(apiUrl: String, token: String): WeaponReviewLists? =
+        callBot(apiUrl, token, "GET", "/weapon-review/lists")?.let { WeaponReviewLists.parse(it) }
+
+    /** Chon 1 cay (ID) de kiem tra tay. true = bot da nhan va dat lam cay dang duyet. */
+    suspend fun selectWeaponReview(apiUrl: String, token: String, id: String): Boolean {
+        val safe = id.filter { it.isLetterOrDigit() }
+        if (safe.isEmpty()) return false
+        return callBot(apiUrl, token, "POST", "/weapon-review/select", """{"id":"$safe"}""") != null
+    }
 
     /** Bao bot Hub noi BAT (on=true) / TAT (on=false): Hub tat = bot khong giao viec cho app (nhu `,off`). true = bot da nhan. */
     suspend fun setPower(apiUrl: String, token: String, on: Boolean): Boolean =

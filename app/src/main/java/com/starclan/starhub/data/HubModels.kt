@@ -327,8 +327,33 @@ data class HubWeaponReview(
     @SerializedName("current_id") val currentId: String? = null,
     val remaining: Int? = null,
     val kept: Int? = null,
-    val dropped: Int? = null
+    val dropped: Int? = null,
+    val unknown: Int? = null
 )
+
+/** 3 danh sach ID vu khi (tab Misc): Giu / Bo / Khong xac dinh */
+data class WeaponReviewLists(
+    val keep: List<String>,
+    val drop: List<String>,
+    val unknown: List<String>,
+    val currentId: String?
+) {
+    companion object {
+        fun parse(json: String): WeaponReviewLists? = try {
+            val o = com.google.gson.JsonParser.parseString(json).asJsonObject
+            fun ids(k: String): List<String> =
+                o.get(k)?.takeIf { it.isJsonArray }?.asJsonArray?.mapNotNull { e ->
+                    e.takeIf { it.isJsonPrimitive }?.asString?.takeIf { it.isNotBlank() }
+                }.orEmpty()
+            WeaponReviewLists(
+                ids("keep"), ids("drop"), ids("unknown"),
+                o.get("current_id")?.takeIf { it.isJsonPrimitive }?.asString?.takeIf { it.isNotBlank() }
+            )
+        } catch (e: Exception) {
+            null
+        }
+    }
+}
 
 /** Tra loi cua bot sau khi bam Giu/Bo: cay ke tiep can kiem tra (null = het cay) */
 data class ReviewDecisionResult(val decided: String?, val nextId: String?, val remaining: Int) {

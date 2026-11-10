@@ -113,6 +113,7 @@ dien thoai). Xem muc "Ket noi voi owo-tracker" ben duoi.
 ## v22 — Duyet vu khi Giu / Bo bang 2 nut tren Hub noi
 - Tracker: `,weaponreview` (start|stop|undo|export|reset) -> embed danh sach (dang kiem tra / con lai / ID Giu / ID Bo), queue `owo w <id>` dau tien;
   `POST /weapon-review {decision}` ghi quyet dinh, XOA tin lenh + tin tra loi OwO cua cay do (chua embed danh sach), tra `next_id`; `/hub` co `weapon_review`.
+  Duyet tay 3 danh sach (tab Misc, khung "Duyệt vũ khí tay"): `GET /weapon-review/lists` -> {keep,drop,unknown,current_id}; `POST /weapon-review/select {id}` chon cay (app go `owo w <ID>`); `decision` nhan them `unknown` (nut "?"). Quyet dinh tay co `manual` nen `,weaponimport` khong ghi de; doi tay thi bot huy ke hoach don kho (can `nw inv export` lai).
   Cay co SAO hoac dang trang bi = GIU mac dinh, khong dua vao hang doi. CHI GHI DANH SACH, khong tu dismantle/ban.
 - App: `FarmController.reviewDecision` (POST roi go `owo w <next>` neu KHONG farm), 2 nut Giu/Bo canh bong bong (chi hien khi phien duyet dang chay).
   Bot can quyen Manage Messages trong kenh de xoa tin. CHUA BIEN DICH tren may.
