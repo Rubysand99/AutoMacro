@@ -74,7 +74,7 @@ data class FarmState(
  *
  *  1. Lay link kenh duoc chi dinh tu bot (,setchannel) -> mo Discord vao DUNG kenh.
  *  2. Go `owo zoo`, doi bot doc xong -> biet pet nao da co (ke ca so luong 0).
- *  3. Lap: viec vat (daily, quest...) -> `owo hunt` -> `owo battle` -> nghi ngau nhien.
+ *  3. Lap: viec vat (daily, quest...) -> hunt / battle / `owo` (THU TU NGAU NHIEN moi vong) -> nghi ngau nhien.
  *  4. Treo lau: nghi giai lao, nghi theo phien (chay 1.5-2.5 gio nghi 15-45 phut), gioi han tong gio chay,
  *     gio yen lang (tuy chon), tu mo lai kenh khi go loi, tu mo lai khi OwO im lang.
  *  5. Su co -> dung + reo chuong + nho bot nhan tin TAG Ruby tren Discord (dien thoai/may khac cung bao).
@@ -590,11 +590,22 @@ object FarmController {
         recentSends.addLast(System.currentTimeMillis())
     }
 
+    /** Lan gan nhat go thanh cong hunt / battle: thu tu moi vong la ngau nhien nen hai lan cung lenh co the sat nhau (OwO cooldown 15s) */
+    private val sameCmdAt = mutableMapOf<String, Long>()
+    private const val SAME_CMD_GAP_MS = 15_500L
+
     private suspend fun sendCommand(
         sender: DiscordSender,
         settings: OwoTrackerPrefs.Settings,
         text: String
     ): SendResult {
+        if (text == HUNT_COMMAND || text == BATTLE_COMMAND) {
+            val wait = SAME_CMD_GAP_MS - (System.currentTimeMillis() - (sameCmdAt[text] ?: 0L))
+            if (wait > 0) {
+                update { it.copy(status = "Chờ cooldown ${text.removePrefix("owo ")}…") }
+                delay(wait + Random.nextLong(100L, 900L))
+            }
+        }
         awaitBurstSlot()
         update { it.copy(lastCommand = text) }
         sendCounter++
@@ -606,7 +617,10 @@ object FarmController {
             Log.e(TAG, "Gui '$text' loi: ${e.message}")
             SendResult.SEND_FAILED
         }
-        if (result == SendResult.OK) lastSendOkAtMs = System.currentTimeMillis()
+        if (result == SendResult.OK) {
+            lastSendOkAtMs = System.currentTimeMillis()
+            if (text == HUNT_COMMAND || text == BATTLE_COMMAND) sameCmdAt[text] = lastSendOkAtMs
+        }
         return result
     }
 
@@ -1099,7 +1113,7 @@ object FarmController {
         var cyclesUntilRest = _state.value.speed.let { Random.nextInt(it.restEveryMin, it.restEveryMax + 1) }
         silenceBaselineMs = System.currentTimeMillis()
 
-        while (isActive) {
+        cycle@ while (isActive) {
             val cycleStart = System.currentTimeMillis()
             val sp = _state.value.speed   // doc moi vong: doi toc do giua chung co hieu luc ngay
 
@@ -1145,6 +1159,11 @@ object FarmController {
             val huntOn = cmds.isEnabled(FarmCmd.HUNT)
             val pauseReason = if (huntOn) huntPauseReason(_state.value.hub, _state.value.huntMode) else null
             update { it.copy(huntPaused = pauseReason) }
+            // 4.5-4.6b hunt / battle / "owo": THU TU NGAU NHIEN moi vong (khong luc nao cung hunt -> battle -> owo)
+            var cycleOk = true   // false neu battle go loi: lenh "owo" ke sau bi bo qua
+            for (step in listOf(0, 1, 2).shuffled()) {
+                when (step) {
+                    0 -> {
             if (!huntOn) {
                 // Hunt tat o Setting: khong go hunt (battle va viec vat van chay neu dang bat)
             } else if (pauseReason == null) {
@@ -1166,17 +1185,18 @@ object FarmController {
                     update { it.copy(status = "Lỗi gõ lệnh (${describeSend(huntResult)}), lần $failsInRow — đang khắc phục…") }
                     if (failsInRow >= 2) reopenChannel(sender, link)
                     waitWithCountdown(minOf(4_000L * failsInRow, 30_000L), "Thử lại sau lỗi gõ lệnh")
-                    continue
+                    continue@cycle
                 }
                 // Khac lenh (hunt -> battle) thi go luon, khong nghi. Chi cooldown cua CHINH lenh do (hunt -> hunt) moi phai cho.
             } else {
                 update { it.copy(status = "Hunt tạm dừng — $pauseReason") }
             }
 
-            // 4.6 battle (tat o Setting thi bo qua; battleResult = OK de lenh "owo" ben duoi van chay neu dang bat)
-            var battleResult = SendResult.OK
+                    }
+                    1 -> {
+            // 4.6 battle (tat o Setting thi bo qua; cycleOk = false chi khi battle loi)
             if (cmds.isEnabled(FarmCmd.BATTLE)) {
-                battleResult = sendCommand(sender, settings, BATTLE_COMMAND)
+                val battleResult = sendCommand(sender, settings, BATTLE_COMMAND)
                 if (battleResult == SendResult.CAPTCHA) {
                     handleCaptcha(ctx)
                     return
@@ -1191,16 +1211,23 @@ object FarmController {
                         hardStop(ctx, "Gõ lệnh lỗi $failsInRow lần liên tiếp (${describeSend(battleResult)}) — đã dừng")
                         return
                     }
+                    cycleOk = false
                     if (failsInRow >= 2) reopenChannel(sender, link)
                 }
             }
 
+                    }
+                    else -> {
             // 4.6b Moi vong go them 1 lan "owo" (ngay sau battle, khong nghi). Loi go chi bo qua: khong tinh vao failsInRow.
-            if (battleResult == SendResult.OK && cmds.isEnabled(FarmCmd.OWO)) {
+            if (cycleOk && cmds.isEnabled(FarmCmd.OWO)) {
                 val owoResult = sendCommand(sender, settings, OWO_COMMAND)
                 if (owoResult == SendResult.CAPTCHA) {
                     handleCaptcha(ctx)
                     return
+                }
+            }
+
+                    }
                 }
             }
 
