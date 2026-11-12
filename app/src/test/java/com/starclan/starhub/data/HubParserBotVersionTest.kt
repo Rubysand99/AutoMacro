@@ -5,6 +5,7 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 class HubParserBotVersionTest {
+    init { TestTexts.install() }   // chu doc tu strings.xml that
     @Test fun doc_phien_ban_bot() =
         assertEquals("v1.12 (a1b2c3d)", HubParser.parse("""{"bot_version":"v1.12 (a1b2c3d)"}""").botVersion)
 

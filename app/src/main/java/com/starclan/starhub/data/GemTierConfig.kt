@@ -49,8 +49,8 @@ object GemTierJson {
 
     /** Nem JsonParseException neu JSON khong dung dang hoac thieu danh sach loai gem/tier. */
     fun parse(body: String): GemTierConfig {
-        val cfg = gson.fromJson(body, GemTierConfig::class.java) ?: throw JsonParseException("Dữ liệu tier gem trống")
-        if (cfg.tiers.isEmpty() || cfg.slots.isEmpty()) throw JsonParseException("Dữ liệu tier gem thiếu loại gem hoặc tier")
+        val cfg = gson.fromJson(body, GemTierConfig::class.java) ?: throw JsonParseException(Texts.get("gemtier_empty"))
+        if (cfg.tiers.isEmpty() || cfg.slots.isEmpty()) throw JsonParseException(Texts.get("gemtier_missing"))
         return cfg
     }
 

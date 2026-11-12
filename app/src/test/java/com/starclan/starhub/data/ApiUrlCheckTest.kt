@@ -4,6 +4,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class ApiUrlCheckTest {
+    init { TestTexts.install() }   // chu doc tu strings.xml that
     @Test fun https_ok() = assertEquals(ApiUrlCheck.Result.OK, ApiUrlCheck.check("https://owo-tracker.up.railway.app"))
     @Test fun https_uppercase_ok() = assertEquals(ApiUrlCheck.Result.OK, ApiUrlCheck.check("HTTPS://example.com"))
     @Test fun trims_spaces() = assertEquals(ApiUrlCheck.Result.OK, ApiUrlCheck.check("  https://example.com  "))

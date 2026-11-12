@@ -6,6 +6,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class BotToolsTextTest {
+    init { TestTexts.install() }   // chu doc tu strings.xml that
 
     @Test fun alt_id_validation_matches_the_bot() {
         assertTrue(BotToolsText.isValidAltId("1238687916176183409"))

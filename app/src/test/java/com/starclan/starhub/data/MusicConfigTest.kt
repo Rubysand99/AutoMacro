@@ -6,6 +6,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class MusicConfigTest {
+    init { TestTexts.install() }   // chu doc tu strings.xml that
     @Test fun default_is_off_and_has_no_track() {
         val m = MusicConfig()
         assertFalse(m.enabled)

@@ -5,6 +5,7 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 class HubDexQueryTest {
+    init { TestTexts.install() }   // chu doc tu strings.xml that
 
     private fun pet(
         name: String?,

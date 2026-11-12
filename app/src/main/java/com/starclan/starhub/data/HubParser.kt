@@ -16,7 +16,7 @@ object HubParser {
     /** Nem JsonParseException neu ca cuc JSON khong phai 1 object hop le. */
     fun parse(body: String): HubResponse {
         val root = JsonParser.parseString(body)
-        if (!root.isJsonObject) throw JsonParseException("Dữ liệu bot trả về không đúng dạng")
+        if (!root.isJsonObject) throw JsonParseException(Texts.get("hubparser_bad_shape"))
         val obj: JsonObject = root.asJsonObject
         val errors = linkedMapOf<String, String>()
 
@@ -26,7 +26,7 @@ object HubParser {
             return try {
                 gson.fromJson(element, type)
             } catch (e: JsonParseException) {
-                errors[key] = (e.message ?: "lỗi không rõ").take(220)
+                errors[key] = (e.message ?: Texts.get("hubparser_unknown_error")).take(220)
                 null
             }
         }

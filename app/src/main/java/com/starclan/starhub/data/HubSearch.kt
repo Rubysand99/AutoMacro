@@ -9,10 +9,10 @@ data class SearchHit(val kind: String, val title: String, val detail: String)
  * Thuan Kotlin de kiem tra de dang.
  */
 object HubSearch {
-    const val KIND_ZOO = "Pet trong zoo"
-    const val KIND_DEX = "Dex loài"
-    const val KIND_INV = "Kho đồ"
-    const val KIND_WEAPON = "Vũ khí"
+    val KIND_ZOO: String get() = Texts.get("search_kind_zoo")
+    val KIND_DEX: String get() = Texts.get("search_kind_dex")
+    val KIND_INV: String get() = Texts.get("search_kind_inv")
+    val KIND_WEAPON: String get() = Texts.get("search_kind_weapon")
 
     /** So ket qua toi da moi nhom (nhieu qua thi hien "con N ket qua nua") */
     const val PER_KIND_LIMIT = 15
@@ -46,14 +46,14 @@ object HubSearch {
                     d.hp?.let { "HP $it" }, d.att?.let { "ATT $it" }, d.pr?.let { "PR $it" },
                     d.wp?.let { "WP $it" }, d.mag?.let { "MAG $it" }, d.mr?.let { "MR $it" }
                 ).joinToString(" ")
-                val own = if (d.owned == true) "đang có x${d.ownedCount ?: 0}" else "chưa có"
+                val own = if (d.owned == true) Texts.get("search_owned", d.ownedCount ?: 0) else Texts.get("search_not_owned")
                 SearchHit(KIND_DEX, d.name ?: "?", listOfNotNull(d.rankVi ?: d.rank, own, stats.ifEmpty { null }).joinToString(" · "))
             }
         groups[KIND_DEX] = dex
 
         val inv = (hub.inventory?.items.orEmpty()).filter { matches(q, it.name, it.code) }
             .sortedByDescending { it.count ?: 0L }
-            .map { SearchHit(KIND_INV, it.name ?: it.code ?: "?", "x${it.count ?: 0}" + (it.code?.let { c -> " · mã $c" } ?: "")) }
+            .map { SearchHit(KIND_INV, it.name ?: it.code ?: "?", "x${it.count ?: 0}" + (it.code?.let { c -> " · " + Texts.get("search_code", c) } ?: "")) }
         groups[KIND_INV] = inv
 
         val weapons = (hub.weapons?.weapons.orEmpty()).filter { matches(q, it.typeName, it.passiveName, it.id) }

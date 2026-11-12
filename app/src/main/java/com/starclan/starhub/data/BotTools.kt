@@ -233,37 +233,36 @@ object BotToolsText {
     fun isValidAltId(raw: String): Boolean = ALT_ID.matches(raw.trim())
 
     fun altStatus(alt: BotAlt?): String = when {
-        alt == null -> "Không hỏi được bot — kiểm tra mạng, token, hoặc cập nhật bot (cần đường /alt)."
-        alt.userId.isBlank() -> "Đang TẮT — tin nhắc huntbot gửi thẳng cho acc chính."
-        else -> "Đang gửi DM nhắc huntbot cho: ${alt.userId}"
+        alt == null -> Texts.get("bt_alt_unreachable")
+        alt.userId.isBlank() -> Texts.get("bt_alt_off")
+        else -> Texts.get("bt_alt_sending", alt.userId)
     }
 
     fun altTestMessage(r: BotAltTest?): String = when {
-        r == null -> "Không gửi được yêu cầu tới bot (kiểm tra mạng / token / cập nhật bot)."
-        r.ok -> "Đã gửi DM thử cho ${r.userId}. Vào acc phụ kiểm tra giúp."
-        r.reason == "no_alt" -> "Chưa đặt acc phụ — nhập ID rồi bấm Lưu."
-        else -> "Không DM được ${r.userId}. Acc phụ phải chung server với bot và bật " +
-            "\"Cho phép tin nhắn trực tiếp từ thành viên máy chủ\" (Cài đặt quyền riêng tư)."
+        r == null -> Texts.get("bt_alttest_unreachable")
+        r.ok -> Texts.get("bt_alttest_ok", r.userId)
+        r.reason == "no_alt" -> Texts.get("bt_alttest_noalt")
+        else -> Texts.get("bt_alttest_failed", r.userId)
     }
 
     fun manualFieldError(field: String): String = when (field) {
-        "name" -> "Tên phải dài 1–${ManualInput.NAME_MAX} ký tự, không xuống dòng."
-        "rank" -> "Rank chỉ gồm chữ cái (vd: common, legendary), tối đa 20 ký tự."
-        "desc" -> "Mô tả phải dài 1–${ManualInput.DESC_MAX} ký tự."
-        in ManualInput.STAT_KEYS -> "${field.uppercase()} phải là số nguyên từ 0 đến ${ManualInput.STAT_MAX}."
-        else -> "Dữ liệu chưa hợp lệ."
+        "name" -> Texts.get("bt_manual_name", ManualInput.NAME_MAX)
+        "rank" -> Texts.get("bt_manual_rank")
+        "desc" -> Texts.get("bt_manual_desc", ManualInput.DESC_MAX)
+        in ManualInput.STAT_KEYS -> Texts.get("bt_manual_stat", field.uppercase(), ManualInput.STAT_MAX)
+        else -> Texts.get("bt_manual_invalid")
     }
 
     fun manualSavedMessage(r: BotManualResult?): String = when {
-        r == null -> "Không lưu được — kiểm tra mạng / token, hoặc cập nhật bot lên bản có đường /manual."
-        r.ok -> "Đã lưu ${r.name}."
-        else -> "Bot không nhận dữ liệu này."
+        r == null -> Texts.get("bt_saved_unreachable")
+        r.ok -> Texts.get("bt_saved_ok", r.name)
+        else -> Texts.get("bt_saved_rejected")
     }
 
     fun unlockedText(u: BotUnlocked): String {
-        if (u.total <= 0 || u.tiers.isEmpty()) return "Chưa có dữ liệu zoo. Gõ owo zoo trong kênh farm một lần."
+        if (u.total <= 0 || u.tiers.isEmpty()) return Texts.get("bt_unlocked_nodata")
         val body = u.tiers.joinToString("\n\n") { "${it.tier} (${it.count})\n${it.pets.joinToString(", ")}" }
-        return "Đã mở khóa ${u.total} con\n\n$body"
+        return Texts.get("bt_unlocked_head", u.total) + "\n\n" + body
     }
 }
 

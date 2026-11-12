@@ -5,6 +5,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class HubSearchTest {
+    init { TestTexts.install() }   // chu doc tu strings.xml that
 
     private val hub = HubResponse(
         zoo = HubZoo(pets = listOf(

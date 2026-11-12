@@ -1,13 +1,21 @@
 package com.starclan.starhub.data
 
 /** Cach sap xep danh sach Pet Dex. DEFAULT = giu thu tu bot gui (loai dang co xep truoc). */
-enum class DexSort(val label: String) {
-    DEFAULT("Mặc định"), TOTAL("Tổng"), HP("HP"), ATT("ATT"), MAG("MAG"),
-    PR("PR"), MR("MR"), WP("WP"), NAME("Tên A-Z")
+enum class DexSort(private val labelKey: String) {
+    DEFAULT("dexsort_default"), TOTAL("dexsort_total"), HP("dexsort_hp"), ATT("dexsort_att"), MAG("dexsort_mag"),
+    PR("dexsort_pr"), MR("dexsort_mr"), WP("dexsort_wp"), NAME("dexsort_name");
+
+    /** Chu hien tren nut sap xep (strings.xml qua [Texts]). */
+    val label: String get() = Texts.get(labelKey)
 }
 
 /** Loc theo viec nguoi choi co loai do hay chua. */
-enum class DexFilter(val label: String) { ALL("Tất cả"), OWNED("Đang có"), MISSING("Chưa có") }
+enum class DexFilter(private val labelKey: String) {
+    ALL("dexfilter_all"), OWNED("dexfilter_owned"), MISSING("dexfilter_missing");
+
+    /** Chu hien tren nut loc (strings.xml qua [Texts]). */
+    val label: String get() = Texts.get(labelKey)
+}
 
 /**
  * Loc + sap xep Pet Dex. Thuan Kotlin (khong dinh Android) de de kiem tra.
@@ -78,6 +86,6 @@ object HubDexQuery {
         val text = ordered.joinToString(" · ") { (name, v) ->
             (if (name == focus) "▸ " else "") + "$name ${v ?: "?"}"
         }
-        return if (sort == DexSort.TOTAL) "$text  (tổng ${total(p)})" else text
+        return if (sort == DexSort.TOTAL) text + "  " + Texts.get("dexquery_total", total(p)) else text
     }
 }

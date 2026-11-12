@@ -6,6 +6,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class GemTierJsonTest {
+    init { TestTexts.install() }   // chu doc tu strings.xml that
     private val sample = """
         {"tiers":["Common","Uncommon","Rare"],
          "slots":[{"slot":"1","name":"Hunting","allowed":["Common","Rare"],"pref":"highest",

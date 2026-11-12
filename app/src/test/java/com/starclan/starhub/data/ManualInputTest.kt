@@ -9,6 +9,7 @@ import org.junit.Test
 
 /** Nhap tay ,petset ,weapontypeset ,passiveset: luat kiem tra phai KHOP voi tools_api.py cua bot (owo-tracker). */
 class ManualInputTest {
+    init { TestTexts.install() }   // chu doc tu strings.xml that
 
     private val goodStats = listOf("10", "1", "3", "1", "2", "3")
 

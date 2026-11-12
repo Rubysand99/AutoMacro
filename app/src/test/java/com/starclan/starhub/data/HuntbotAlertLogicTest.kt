@@ -4,6 +4,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class HuntbotAlertLogicTest {
+    init { TestTexts.install() }   // chu doc tu strings.xml that
     private val e = 1_800_000_000L
 
     @Test fun con_9_phut_thi_bao() = assertEquals(true, HuntbotAlertLogic.shouldNotify(true, 540, e, null))

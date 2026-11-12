@@ -5,6 +5,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class SpeedModeTest {
+    init { TestTexts.install() }   // chu doc tu strings.xml that
     @Test fun ids_are_unique_and_roundtrip() {
         assertEquals(SpeedMode.values().size, SpeedMode.values().map { it.id }.toSet().size)
         for (m in SpeedMode.values()) assertEquals(m, SpeedMode.fromId(m.id))

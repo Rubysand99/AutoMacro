@@ -4,6 +4,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class CountdownFormatTest {
+    init { TestTexts.install() }   // chu doc tu strings.xml that
     @Test fun lam_tron_len() = assertEquals("0:43", CountdownFormat.mmss(42_300))
     @Test fun dung_mot_giay() = assertEquals("0:01", CountdownFormat.mmss(1_000))
     @Test fun con_chut_xiu_van_la_1_giay() = assertEquals("0:01", CountdownFormat.mmss(1))

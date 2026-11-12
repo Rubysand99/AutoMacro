@@ -6,6 +6,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CommandGuardTest {
+    init { TestTexts.install() }   // chu doc tu strings.xml that
     @Test fun owo_commands_ok() {
         for (c in listOf("owo hb 100", "owo use 051 052", "owo dex gowl", "owo w 12AB", "owo weapon", "owo zoo", "OWO cash", "  owo inv  "))
             assertTrue(c, CommandGuard.isSafeCommand(c))

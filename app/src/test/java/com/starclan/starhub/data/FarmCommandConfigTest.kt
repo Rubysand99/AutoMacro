@@ -6,6 +6,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class FarmCommandConfigTest {
+    init { TestTexts.install() }   // chu doc tu strings.xml that
 
     @Test fun default_is_everything_on() {
         val c = FarmCommandConfig.ALL_ON

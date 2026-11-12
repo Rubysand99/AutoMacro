@@ -8,6 +8,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class BotToolsJsonTest {
+    init { TestTexts.install() }   // chu doc tu strings.xml that
 
     @Test fun settings_parse_all_fields() {
         val s = BotToolsJson.parseSettings(

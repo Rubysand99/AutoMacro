@@ -5,6 +5,7 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 class ReviewDecisionResultTest {
+    init { TestTexts.install() }   // chu doc tu strings.xml that
     @Test fun parses_next_id_and_remaining() {
         val r = ReviewDecisionResult.parse("""{"ok":true,"decided":"ab12","decision":"drop","next_id":"cd34","remaining":7}""")!!
         assertEquals("ab12", r.decided)

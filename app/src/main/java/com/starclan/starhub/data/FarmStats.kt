@@ -163,7 +163,7 @@ object StatsFormat {
     /** 3125 -> "52 phút"; 18720 -> "5h12" */
     fun duration(seconds: Long): String {
         val m = (seconds.coerceAtLeast(0L)) / 60L
-        return if (m < 60L) "$m phút" else "${m / 60L}h${(m % 60L).toString().padStart(2, '0')}"
+        return if (m < 60L) Texts.get("fstats_minutes", m) else "${m / 60L}h${(m % 60L).toString().padStart(2, '0')}"
     }
 
     /** "2026-11-03" -> "03/11" (khong dung duoc thi tra lai nguyen chuoi) */

@@ -9,6 +9,7 @@ import java.time.LocalDate
 import java.time.ZoneId
 
 class FarmStatsTest {
+    init { TestTexts.install() }   // chu doc tu strings.xml that
     private val zone = ZoneId.of("UTC")
     private fun book() = StatsBook(zone)
     private fun ms(date: String, h: Int = 12, m: Int = 0, s: Int = 0): Long =
