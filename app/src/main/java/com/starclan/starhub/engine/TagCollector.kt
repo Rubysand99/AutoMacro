@@ -16,6 +16,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlin.random.Random
+import com.starclan.starhub.R
+import com.starclan.starhub.Str
 
 /**
  * Tu hoc loi khuyen vu khi: vao kenh trong server OwO, lan luot go `?tag <vu khi>`, doi OwO tra loi, DOC NGUYEN CHU
@@ -55,22 +57,22 @@ object TagCollector {
     fun stop() {
         job?.cancel()
         job = null
-        _progress.value = Progress(false, results.size, TAGS.size, "Đã dừng (đã lưu ${results.size}/${TAGS.size})")
+        _progress.value = Progress(false, results.size, TAGS.size, Str.get(R.string.tag_da_dung_da_luu, results.size, TAGS.size))
     }
 
     fun start(service: AutoAccessibilityService, context: Context) {
         if (isRunning()) return
         if (!FarmOverlay.isShown()) {
-            _progress.value = Progress(false, results.size, TAGS.size, "Hãy bật Hub nổi trước")
+            _progress.value = Progress(false, results.size, TAGS.size, Str.get(R.string.tag_hay_bat_hub_noi_truoc))
             return
         }
         if (FarmController.isRunning()) {
-            _progress.value = Progress(false, results.size, TAGS.size, "Hãy dừng farm trước rồi bấm lại")
+            _progress.value = Progress(false, results.size, TAGS.size, Str.get(R.string.tag_hay_dung_farm_truoc_roi))
             return
         }
         val settings = OwoTrackerPrefs.load(context)
         if (settings.apiUrl.isBlank() || settings.token.isBlank()) {
-            _progress.value = Progress(false, results.size, TAGS.size, "Chưa nhập địa chỉ API / token ở Cài đặt")
+            _progress.value = Progress(false, results.size, TAGS.size, Str.get(R.string.farm_chua_nhap_dia_chi_api))
             return
         }
         job = scope.launch { run(service, settings) }
@@ -87,7 +89,7 @@ object TagCollector {
         var first = true
         for (tag in todo) {
             if (!FarmOverlay.isShown()) return   // Hub noi bi tat -> dung ngay
-            _progress.value = Progress(true, results.size, TAGS.size, "Đang hỏi ?tag $tag")
+            _progress.value = Progress(true, results.size, TAGS.size, Str.get(R.string.tag_dang_hoi_tag, tag))
             var sent = false
             for (attempt in 1..3) {
                 val r = sender.send("?tag $tag", tagSettings, reopenChannel = first)
@@ -96,29 +98,29 @@ object TagCollector {
                     break
                 }
                 if (r == SendResult.DISCORD_NOT_OPEN || r == SendResult.NO_INPUT || r == SendResult.CAPTCHA) {
-                    fail("Không vào/gõ được trong kênh server OwO ($r)")
+                    fail(Str.get(R.string.tag_khong_vao_go_duoc_trong, r))
                     return
                 }
                 delay(15_000L) // co the dinh slowmode cua kenh -> doi roi thu lai
             }
             if (!sent) {
-                fail("Không gửi được ?tag $tag (kênh có thể chặn gõ hoặc bật slowmode)")
+                fail(Str.get(R.string.tag_khong_gui_duoc_tag_kenh, tag))
                 return
             }
             first = false
             val lines = waitForReply(service, tag)
             results[tag.lowercase()] = lines.joinToString("\n")
-            _progress.value = Progress(true, results.size, TAGS.size, "Đã lưu ?tag $tag")
+            _progress.value = Progress(true, results.size, TAGS.size, Str.get(R.string.tag_da_luu_tag, tag))
             delay(Random.nextLong(5_000L, 9_000L))
         }
 
-        _progress.value = Progress(true, results.size, TAGS.size, "Đang gửi lên bot…")
+        _progress.value = Progress(true, results.size, TAGS.size, Str.get(R.string.tag_dang_gui_len_bot))
         val ok = OwoTrackerApi.uploadWeaponAdvice(settings.apiUrl, settings.token, results.toMap())
         if (ok) {
             results.clear()
-            _progress.value = Progress(false, TAGS.size, TAGS.size, "✅ Xong — bot đã gửi file cho bạn qua Discord")
+            _progress.value = Progress(false, TAGS.size, TAGS.size, Str.get(R.string.tag_xong_bot_da_gui_file))
         } else {
-            fail("Đã học xong nhưng chưa gửi được lên bot (bot đã cập nhật chưa?). Bấm lại để gửi")
+            fail(Str.get(R.string.tag_da_hoc_xong_nhung_chua))
         }
     }
 

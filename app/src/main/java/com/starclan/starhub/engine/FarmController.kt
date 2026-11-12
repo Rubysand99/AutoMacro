@@ -33,11 +33,13 @@ import java.time.Instant
 import java.util.Calendar
 import kotlin.random.Random
 import com.starclan.starhub.view.FarmOverlay
+import com.starclan.starhub.R
+import com.starclan.starhub.Str
 
 /** Trang thai farm de Hub noi hien thi */
 data class FarmState(
     val running: Boolean = false,
-    val status: String = "Đang dừng",
+    val status: String = Str.get(R.string.farm_state_stopped),
     val lastCommand: String = "",
     val hunts: Int = 0,
     val battles: Int = 0,
@@ -159,7 +161,7 @@ object FarmController {
     private const val CAPTCHA_GOLDEN_MS = 10 * 60_000L   // OwO cho giai captcha 10 phut ke tu luc bao
     private const val MIN_COUNTDOWN_MS = 2_000L          // cho ngan hon thi khong can hien dem nguoc
     private const val CAPTCHA_MESSAGE =
-        "🚨 OwO đòi captcha — đã dừng farm! Giải xong gõ ,captcha clear rồi bấm Bắt đầu lại"
+        Str.get(R.string.farm_owo_doi_captcha_da_dung)
 
     // ===============================================================================
 
@@ -344,12 +346,12 @@ object FarmController {
     fun start(service: AutoAccessibilityService) {
         if (isRunning()) return
         if (!FarmOverlay.isShown()) {
-            update { it.copy(alert = "Bật Hub nổi trước rồi mới bắt đầu farm được") }
+            update { it.copy(alert = Str.get(R.string.farm_bat_hub_noi_truoc_roi)) }
             return
         }
         // Dang hoc tag thi dang goi lenh / doc man hinh Discord: chay chong len nhau se bam nham
         if (TagCollector.isRunning()) {
-            update { it.copy(alert = "Đang học lời khuyên vũ khí — dừng lại rồi mới bắt đầu farm được") }
+            update { it.copy(alert = Str.get(R.string.farm_dang_hoc_loi_khuyen_vu)) }
             return
         }
         appCtx = service.applicationContext
@@ -365,7 +367,7 @@ object FarmController {
                 throw e
             } catch (e: Exception) {
                 Log.e(TAG, "Farm loi: ${e.message}", e)
-                hardStop(service.applicationContext, "Lỗi bất ngờ: ${(e.message ?: "không rõ").take(100)}")
+                hardStop(service.applicationContext, Str.get(R.string.farm_unexpected_error, (e.message ?: Str.get(R.string.farm_unknown)).take(100)))
             } finally {
                 // Moi cach ket thuc (dung tay, captcha, loi, het gio) deu chot gio chay vao thong ke
                 recordStats { b, now -> b.endSession(now) }
@@ -379,7 +381,7 @@ object FarmController {
         job = null
         stopAlarm()
         restingNow = false
-        update { it.copy(running = false, resting = false, status = "Đã dừng", alert = null, captchaEndMs = 0L) }
+        update { it.copy(running = false, resting = false, status = Str.get(R.string.overlay_da_dung), alert = null, captchaEndMs = 0L) }
         signalFarmEnded()
     }
 
@@ -397,12 +399,12 @@ object FarmController {
     suspend fun setEventMode(context: Context, enabled: Boolean) {
         val s = OwoTrackerPrefs.load(context)
         if (s.apiUrl.isBlank() || s.token.isBlank()) {
-            update { it.copy(hubError = "Chưa nhập địa chỉ API / token ở Cài đặt") }
+            update { it.copy(hubError = Str.get(R.string.farm_chua_nhap_dia_chi_api)) }
             return
         }
         val saved = OwoTrackerApi.setEventMode(s.apiUrl, s.token, enabled)
         if (saved == null) {
-            update { it.copy(alert = "⚠️ Không đổi được chế độ Event (kiểm tra mạng / bot đã cập nhật chưa)") }
+            update { it.copy(alert = Str.get(R.string.farm_khong_doi_duoc_che_do)) }
             return
         }
         update { st -> st.copy(hub = st.hub?.copy(eventMode = saved)) }
@@ -421,7 +423,7 @@ object FarmController {
             if (s.apiUrl.isBlank() || s.token.isBlank()) return
             val res = OwoTrackerApi.postWeaponReview(s.apiUrl, s.token, decision)
             if (res == null) {
-                update { it.copy(status = "Không ghi được quyết định Giữ/Bỏ (mất kết nối bot?) — bấm lại") }
+                update { it.copy(status = Str.get(R.string.farm_khong_ghi_duoc_quyet_dinh)) }
                 return
             }
             update { st ->
@@ -436,13 +438,13 @@ object FarmController {
             }
             val next = res.nextId ?: return
             if (isRunning() || TagCollector.isRunning()) {
-                update { it.copy(status = "Đã ghi. Cây kế tiếp: $next — đang farm nên chưa tự gõ, hãy dừng farm") }
+                update { it.copy(status = Str.get(R.string.farm_da_ghi_cay_ke_tiep, next)) }
                 return
             }
             val cmd = "owo w $next"
             if (!CommandGuard.isSafeCommand(cmd)) return
             val r = DiscordSender(service).send(cmd, s, reopenChannel = false)
-            if (r != SendResult.OK) update { it.copy(status = "Không gõ được $cmd (${describeSend(r)})") }
+            if (r != SendResult.OK) update { it.copy(status = Str.get(R.string.farm_khong_go_duoc, cmd, describeSend(r))) }
         } finally {
             reviewBusy.set(false)
         }
@@ -451,13 +453,13 @@ object FarmController {
     /** Nut "Tu duyet": bot xep hang cac cay Chua ro, nho app go `owo w <ID>` tung cay va doc dong gon NeonUtil. Phai DUNG farm. */
     suspend fun reviewAutoNeon(context: Context) {
         if (isRunning() || TagCollector.isRunning()) {
-            update { it.copy(status = "Dừng farm trước rồi bấm Tự duyệt (để tin Neon không bị lẫn)") }
+            update { it.copy(status = Str.get(R.string.farm_dung_farm_truoc_roi_bam)) }
             return
         }
         val s = OwoTrackerPrefs.load(context)
         if (s.apiUrl.isBlank() || s.token.isBlank()) return
         val err = OwoTrackerApi.startAutoNeonReview(s.apiUrl, s.token)
-        update { it.copy(status = if (err == null) "Đang tự duyệt các cây Chưa rõ — bấm Dừng để ngừng" else "Không bật được tự duyệt: $err") }
+        update { it.copy(status = if (err == null) Str.get(R.string.farm_dang_tu_duyet_cac_cay) else Str.get(R.string.farm_khong_bat_duoc_tu_duyet, err)) }
     }
 
     /** Nut "Dung" tren Hub: bao bot dung duyet, an hang nut Giu/Bo/? ngay (khong cho lan lam moi Hub ke tiep). */
@@ -465,7 +467,7 @@ object FarmController {
         val s = OwoTrackerPrefs.load(context)
         if (s.apiUrl.isBlank() || s.token.isBlank()) return
         if (!OwoTrackerApi.stopWeaponReview(s.apiUrl, s.token)) {
-            update { it.copy(status = "Không dừng được duyệt vũ khí (mất kết nối bot?) — bấm lại") }
+            update { it.copy(status = Str.get(R.string.farm_khong_dung_duoc_duyet_vu)) }
             return
         }
         update { st ->
@@ -493,7 +495,7 @@ object FarmController {
             val s = OwoTrackerPrefs.load(service)
             if (s.apiUrl.isBlank() || s.token.isBlank()) return
             if (!OwoTrackerApi.selectWeaponReview(s.apiUrl, s.token, id)) {
-                update { it.copy(status = "Không chọn được cây $id (bot đang quét kho / tự duyệt, hoặc mất kết nối)") }
+                update { it.copy(status = Str.get(R.string.farm_khong_chon_duoc_cay_bot, id)) }
                 return
             }
             update { st ->
@@ -502,13 +504,13 @@ object FarmController {
                 else st.copy(hub = hub.copy(weaponReview = (hub.weaponReview ?: HubWeaponReview()).copy(active = true, currentId = id)))
             }
             if (isRunning() || TagCollector.isRunning()) {
-                update { it.copy(status = "Đã chọn cây $id — đang farm nên chưa tự gõ, hãy dừng farm") }
+                update { it.copy(status = Str.get(R.string.farm_da_chon_cay_dang_farm, id)) }
                 return
             }
             val cmd = "owo w $id"
             if (!CommandGuard.isSafeCommand(cmd)) return
             val r = DiscordSender(service).send(cmd, s, reopenChannel = false)
-            if (r != SendResult.OK) update { it.copy(status = "Không gõ được $cmd (${describeSend(r)})") }
+            if (r != SendResult.OK) update { it.copy(status = Str.get(R.string.farm_khong_go_duoc, cmd, describeSend(r))) }
         } finally {
             reviewBusy.set(false)
         }
@@ -517,7 +519,7 @@ object FarmController {
     suspend fun refreshHub(context: Context) {
         val s = OwoTrackerPrefs.load(context)
         if (s.apiUrl.isBlank() || s.token.isBlank()) {
-            update { it.copy(hubError = "Chưa nhập địa chỉ API / token ở Cài đặt") }
+            update { it.copy(hubError = Str.get(R.string.farm_chua_nhap_dia_chi_api)) }
             return
         }
         if (_state.value.captchaEndMs > 0L && !isRunning()) clearCaptchaIfSolved(s)
@@ -536,7 +538,7 @@ object FarmController {
                         .mapNotNull { p -> p.name }
                 }
                 val added = pets.filter { name -> !cur.sessionNewPets.contains(name) }
-                val newAlert = if (added.isNotEmpty()) "🆕 Pet mới: " + added.joinToString(", ") else cur.alert
+                val newAlert = if (added.isNotEmpty()) Str.get(R.string.farm_pet_moi) + added.joinToString(", ") else cur.alert
                 update {
                     it.copy(
                         hub = hub,
@@ -558,21 +560,21 @@ object FarmController {
     }
 
     private fun describeOpen(r: OpenResult): String = when (r) {
-        OpenResult.OK_CHANNEL -> "đã vào kênh"
-        OpenResult.OK_APP_ONLY -> "chỉ mở được app Discord, chưa vào đúng kênh"
-        OpenResult.OK_LINK_FAILED -> "link kênh bị lỗi"
-        OpenResult.NOT_INSTALLED -> "không thấy app Discord"
-        OpenResult.LAUNCH_ERROR -> "Android không cho mở Discord"
-        OpenResult.NOT_FOREGROUND -> "Discord không lên màn hình (kiểm tra đã mở khóa màn hình chưa)"
+        OpenResult.OK_CHANNEL -> Str.get(R.string.farm_da_vao_kenh)
+        OpenResult.OK_APP_ONLY -> Str.get(R.string.farm_chi_mo_duoc_app_discord)
+        OpenResult.OK_LINK_FAILED -> Str.get(R.string.farm_link_kenh_bi_loi)
+        OpenResult.NOT_INSTALLED -> Str.get(R.string.farm_khong_thay_app_discord)
+        OpenResult.LAUNCH_ERROR -> Str.get(R.string.farm_android_khong_cho_mo_discord)
+        OpenResult.NOT_FOREGROUND -> Str.get(R.string.farm_discord_khong_len_man_hinh)
     }
 
     private fun describeSend(r: SendResult): String = when (r) {
         SendResult.OK -> "ok"
-        SendResult.DISCORD_NOT_OPEN -> "không mở được Discord"
-        SendResult.NO_INPUT -> "không thấy ô nhập tin nhắn"
-        SendResult.TYPE_FAILED -> "không gõ được chữ vào ô nhập"
-        SendResult.SEND_FAILED -> "không bấm gửi được"
-        SendResult.CAPTCHA -> "OwO đang đòi captcha"
+        SendResult.DISCORD_NOT_OPEN -> Str.get(R.string.farm_khong_mo_duoc_discord)
+        SendResult.NO_INPUT -> Str.get(R.string.farm_khong_thay_o_nhap_tin)
+        SendResult.TYPE_FAILED -> Str.get(R.string.farm_khong_go_duoc_chu_vao)
+        SendResult.SEND_FAILED -> Str.get(R.string.farm_khong_bam_gui_duoc)
+        SendResult.CAPTCHA -> Str.get(R.string.farm_owo_dang_doi_captcha)
     }
 
     private val recentSends = ArrayDeque<Long>()
@@ -584,8 +586,8 @@ object FarmController {
             while (recentSends.isNotEmpty() && now - recentSends.first() > BURST_WINDOW_MS) recentSends.removeFirst()
             if (recentSends.size < BURST_MAX) break
             val wait = BURST_WINDOW_MS - (now - recentSends.first()) + Random.nextLong(200L, 900L)
-            update { it.copy(status = "Giãn nhịp gõ lệnh (tránh OwO báo Slow down)…") }
-            waitWithCountdown(wait.coerceAtLeast(300L), "Giãn nhịp gõ lệnh")
+            update { it.copy(status = Str.get(R.string.farm_gian_nhip_go_lenh_tranh)) }
+            waitWithCountdown(wait.coerceAtLeast(300L), Str.get(R.string.farm_gian_nhip_go_lenh))
         }
         recentSends.addLast(System.currentTimeMillis())
     }
@@ -602,7 +604,7 @@ object FarmController {
         if (text == HUNT_COMMAND || text == BATTLE_COMMAND) {
             val wait = SAME_CMD_GAP_MS - (System.currentTimeMillis() - (sameCmdAt[text] ?: 0L))
             if (wait > 0) {
-                update { it.copy(status = "Chờ cooldown ${text.removePrefix("owo ")}…") }
+                update { it.copy(status = Str.get(R.string.farm_cho_cooldown, text.removePrefix("owo "))) }
                 delay(wait + Random.nextLong(100L, 900L))
             }
         }
@@ -626,7 +628,7 @@ object FarmController {
 
     /** Mo lai Discord vao dung kenh (co khoa de khong dam vao lenh thay gem dang go) */
     private suspend fun reopenChannel(sender: DiscordSender, link: String): Boolean {
-        update { it.copy(status = "Đang mở lại kênh Discord…") }
+        update { it.copy(status = Str.get(R.string.farm_dang_mo_lai_kenh_discord)) }
         val r = DiscordSender.sendMutex.withLock { sender.openDiscordDetailed(link) }
         return r == OpenResult.OK_CHANNEL
     }
@@ -649,7 +651,7 @@ object FarmController {
         try {
             while (isActive && System.currentTimeMillis() < end) {
                 val left = (end - System.currentTimeMillis()) / 1000
-                val text = if (left >= 90) "$label, còn ${(left + 30) / 60} phút…" else "$label, còn ${left}s…"
+                val text = if (left >= 90) Str.get(R.string.farm_con_phut, label, (left + 30) / 60) else Str.get(R.string.farm_con_s, label, left)
                 update { it.copy(status = text) }
                 delay(5_000)
             }
@@ -741,7 +743,7 @@ object FarmController {
                 val resets = daily.resetsAtEpoch
                 val stale = resets != null && System.currentTimeMillis() / 1000 >= resets
                 if (item.done == true && !stale) {
-                    return "Mode 1: đã đủ lootbox hôm nay (${item.cur ?: "?"}/${item.max ?: "?"})"
+                    return Str.get(R.string.farm_mode_1_da_du_lootbox, item.cur ?: "?", item.max ?: "?")
                 }
                 return null
             }
@@ -758,7 +760,7 @@ object FarmController {
                 val missing = REQUIRED_GEM_SLOTS - equippedSlots
                 val noSpare = missing.filter { it !in spareSlots }
                 if (noSpare.isNotEmpty()) {
-                    return "Mode 2: thiếu gem ${noSpare.joinToString(", ") { HubFormat.gemType(it) }} và trong kho không còn"
+                    return Str.get(R.string.farm_mode_2_thieu_gem_va, noSpare.joinToString(", ") { HubFormat.gemType(it) })
                 }
                 return null
             }
@@ -780,7 +782,7 @@ object FarmController {
     ): SendResult {
         choreAt[key] = System.currentTimeMillis()
         for ((i, cmd) in commands.withIndex()) {
-            update { it.copy(status = "Làm việc vặt: $cmd") }
+            update { it.copy(status = Str.get(R.string.farm_lam_viec_vat, cmd)) }
             val r = sendCommand(sender, settings, cmd)
             if (r != SendResult.OK) return r
             if (i < commands.size - 1) delay(Random.nextLong(2_500L, 5_000L))
@@ -801,7 +803,7 @@ object FarmController {
         choreAt["quest"] = System.currentTimeMillis()
         awaitBurstSlot()
         sendCounter++
-        update { it.copy(status = "Kiểm tra nhiệm vụ…", lastCommand = QUEST_COMMAND) }
+        update { it.copy(status = Str.get(R.string.farm_kiem_tra_nhiem_vu), lastCommand = QUEST_COMMAND) }
         return DiscordSender.sendMutex.withLock {
             val r = try {
                 sender.sendWithoutLock(QUEST_COMMAND, settings, false)
@@ -816,11 +818,11 @@ object FarmController {
                 delay(4_000)
                 val res = QuestClaimer.claimAll(service)
                 if (res.claimed.isNotEmpty()) {
-                    update { it.copy(alert = "🎁 Đã nhận thưởng nhiệm vụ: " + res.claimed.joinToString(", ")) }
+                    update { it.copy(alert = Str.get(R.string.farm_da_nhan_thuong_nhiem_vu) + res.claimed.joinToString(", ")) }
                 } else if (res.tabsFound == 0 && !questUiWarned) {
                     questUiWarned = true
                     update {
-                        it.copy(alert = "⚠️ Không thấy các nút trong Quest Log trên màn hình (Discord có thể không cho app đọc nút). Nhận thưởng nhiệm vụ cần bấm tay")
+                        it.copy(alert = Str.get(R.string.farm_khong_thay_cac_nut_trong))
                     }
                 }
             }
@@ -862,7 +864,7 @@ object FarmController {
         val hb = hub?.huntbot
         if (hb != null && hb.hunting == false && choreDue("huntbot_idle", HUNTBOT_IDLE_NOTIFY_GAP_MS)) {
             choreAt["huntbot_idle"] = System.currentTimeMillis()
-            notifyOwner("🤖 Huntbot đang không chạy. Bạn tự gõ `owo hb 24h` + mã xác nhận để chạy lại nhé.", toAlt = true)
+            notifyOwner(Str.get(R.string.farm_huntbot_dang_khong_chay_ban), toAlt = true)
         }
 
         // owo hb: xem / nhan thanh qua; neu huntbot vua xong thi nhac Ruby tu chay lai (can mat khau xac minh)
@@ -873,8 +875,8 @@ object FarmController {
                 choreAt["huntbot"] = System.currentTimeMillis()
                 choreAt["huntbot_idle"] = System.currentTimeMillis()
                 notifyOwner(
-                    "🤖 Huntbot đã chạy xong và app đã nhận thành quả (owo hb). Chạy lại cần mật khẩu xác nhận: " +
-                        "bot sẽ nhờ app gõ lệnh và gửi ảnh mật khẩu sang acc phụ, bạn chỉ cần đọc rồi nhắn lại đúng mã.",
+                    Str.get(R.string.farm_huntbot_da_chay_xong_va) +
+                        Str.get(R.string.farm_bot_se_nho_app_go),
                     toAlt = true
                 )
             }
@@ -953,7 +955,7 @@ object FarmController {
             if (info == null) {
                 if (unreachableSinceMs == 0L) unreachableSinceMs = now
                 if (now - unreachableSinceMs > BOT_UNREACHABLE_STOP_MS) {
-                    hardStop(ctx, "Mất kết nối với bot hơn 2 phút — đã dừng vì không còn ai canh captcha")
+                    hardStop(ctx, Str.get(R.string.farm_mat_ket_noi_voi_bot))
                     return
                 }
                 continue
@@ -962,7 +964,7 @@ object FarmController {
 
             if (info.off) {
                 val j = job
-                plannedStop("🔴 Đã tắt từ xa bằng lệnh ,off — app đã dừng farm. Gõ ,off on trong kênh Discord rồi bấm Bắt đầu lại")
+                plannedStop(Str.get(R.string.farm_da_tat_tu_xa_bang))
                 j?.cancel()
                 return
             }
@@ -981,7 +983,7 @@ object FarmController {
                 if (age != null) {
                     val silent = minOf(age, sinceBaseline)
                     if (silent > SILENT_STOP_SEC) {
-                        hardStop(ctx, "OwO không trả lời hơn ${silent / 60} phút dù app vẫn gõ — đã dừng")
+                        hardStop(ctx, Str.get(R.string.farm_owo_khong_tra_loi_hon, silent / 60))
                         return
                     }
                     if (silent > SILENT_RECOVER_SEC) {
@@ -1009,11 +1011,11 @@ object FarmController {
         val ctx = service.applicationContext
         var settings = OwoTrackerPrefs.load(ctx)
         if (settings.apiUrl.isBlank() || settings.token.isBlank()) {
-            plannedStop("Chưa nhập địa chỉ API / token ở Cài đặt")
+            plannedStop(Str.get(R.string.farm_chua_nhap_dia_chi_api))
             return
         }
         if (!_state.value.commands.anyEnabled()) {
-            plannedStop("Chưa bật lệnh nào — vào tab Setting, mục \"Lệnh trong farm\" bật ít nhất 1 lệnh rồi bấm Bắt đầu lại")
+            plannedStop(Str.get(R.string.farm_chua_bat_lenh_nao_vao))
             return
         }
 
@@ -1026,20 +1028,20 @@ object FarmController {
         silenceBaselineMs = System.currentTimeMillis()
         update {
             it.copy(
-                running = true, resting = false, status = "Đang chuẩn bị…", hunts = 0, battles = 0,
+                running = true, resting = false, status = Str.get(R.string.farm_dang_chuan_bi), hunts = 0, battles = 0,
                 sessionStartIso = startIso, sessionNewPets = emptyList(), alert = null
             )
         }
 
         // Bot dang TAT app (lenh ,off) -> khong bat dau farm
         if (OwoTrackerApi.fetchAppOff(settings.apiUrl, settings.token) == true) {
-            plannedStop("🔴 Bot đang TẮT app (lệnh ,off). Gõ ,off on trong kênh Discord rồi bấm Bắt đầu lại")
+            plannedStop(Str.get(R.string.farm_bot_dang_tat_app_lenh))
             return
         }
 
         // Dang co canh bao captcha chua giai -> khong go them lenh nao
         if (OwoTrackerApi.fetchCaptchaActive(settings.apiUrl, settings.token) == true) {
-            plannedStop("🚨 OwO đang đòi captcha. Giải xong gõ ,captcha clear (trong kênh Discord) rồi bấm Bắt đầu lại")
+            plannedStop(Str.get(R.string.farm_owo_dang_doi_captcha_giai))
             return
         }
 
@@ -1058,28 +1060,28 @@ object FarmController {
             }
         }
         if (link.isBlank()) {
-            plannedStop("Chưa biết kênh nào để farm. Gõ ,setserver here (theo dõi cả server) hoặc ,setchannel trong Discord (cho bot), hoặc dán link kênh ở Cài đặt")
+            plannedStop(Str.get(R.string.farm_chua_biet_kenh_nao_de))
             return
         }
 
         // --- 2. Mo Discord vao dung kenh (bat buoc vao dung kenh moi go lenh) ---
-        update { it.copy(status = "Đang mở Discord…") }
+        update { it.copy(status = Str.get(R.string.toast_testing_open_discord)) }
         val sender = DiscordSender(service)
         val opened = sender.openDiscordDetailed(link)
         if (opened != OpenResult.OK_CHANNEL) {
-            hardStop(ctx, "Không vào được kênh: " + describeOpen(opened))
+            hardStop(ctx, Str.get(R.string.farm_khong_vao_duoc_kenh) + describeOpen(opened))
             return
         }
         if (!settings.enabled) {
             update {
-                it.copy(alert = "ℹ️ Ô \"Bật tự động kiểm tra lệnh\" trong Cài đặt đang tắt — gem sẽ không tự thay")
+                it.copy(alert = Str.get(R.string.farm_o_bat_tu_dong_kiem))
             }
         }
 
         // --- 3. Check zoo luc bat dau ---
         // Lenh Zoo tat o Setting -> bo qua buoc nay (bot se khong biet chinh xac pet nao da co cho toi khi Ruby tu go owo zoo)
         if (_state.value.commands.isEnabled(FarmCmd.ZOO)) {
-            update { it.copy(status = "Kiểm tra zoo…") }
+            update { it.copy(status = Str.get(R.string.farm_kiem_tra_zoo)) }
             val zooSentAt = System.currentTimeMillis()
             val zooResult = sendCommand(sender, settings, ZOO_COMMAND)
             if (zooResult == SendResult.CAPTCHA) {
@@ -1100,7 +1102,7 @@ object FarmController {
                 }
                 if (!zooRead) Log.w(TAG, "Chua xac nhan bot da doc zoo - van farm")
             } else {
-                hardStop(ctx, "Không gõ được lệnh zoo: " + describeSend(zooResult))
+                hardStop(ctx, Str.get(R.string.farm_khong_go_duoc_lenh_zoo) + describeSend(zooResult))
                 return
             }
         }
@@ -1119,22 +1121,22 @@ object FarmController {
 
             // 4.0 Het tong gio chay toi da
             if (cycleStart - runStartMs > MAX_TOTAL_HOURS * 3_600_000L) {
-                plannedStop("Đã chạy đủ $MAX_TOTAL_HOURS giờ — dừng để nghỉ. Bấm Bắt đầu để chạy tiếp")
+                plannedStop(Str.get(R.string.farm_da_chay_du_gio_dung, MAX_TOTAL_HOURS))
                 return
             }
 
             // 4.1 Gio yen lang
             if (inQuietHours()) {
-                restFor(5 * 60_000L, "Giờ yên lặng")
+                restFor(5 * 60_000L, Str.get(R.string.farm_gio_yen_lang))
                 continue
             }
 
             // 4.2 Het 1 phien -> nghi dai roi mo lai kenh
             if (cycleStart - sessionStartMs > sessionLimitMs) {
-                restFor(Random.nextLong(BREAK_MIN_MS, BREAK_MAX_MS), "Nghỉ giữa phiên")
+                restFor(Random.nextLong(BREAK_MIN_MS, BREAK_MAX_MS), Str.get(R.string.farm_nghi_giua_phien))
                 if (!isActive) return
                 if (!reopenChannel(sender, link)) {
-                    hardStop(ctx, "Sau giờ nghỉ không mở lại được kênh Discord")
+                    hardStop(ctx, Str.get(R.string.farm_sau_gio_nghi_khong_mo))
                     return
                 }
                 sessionStartMs = System.currentTimeMillis()
@@ -1145,14 +1147,14 @@ object FarmController {
             // 4.3 OwO im lang -> mo lai kenh
             if (silentRecoverRequested) {
                 silentRecoverRequested = false
-                update { it.copy(alert = "⚠️ OwO không trả lời hơn 2,5 phút — đang mở lại kênh") }
+                update { it.copy(alert = Str.get(R.string.farm_owo_khong_tra_loi_hon_2)) }
                 reopenChannel(sender, link)
                 silenceBaselineMs = System.currentTimeMillis()
                 delay(3_000)
             }
 
             // 4.4 Hunt va battle len dau de dung nhip cooldown; viec vat chen vao luc cho (4.8)
-            update { it.copy(status = "Đang farm…") }
+            update { it.copy(status = Str.get(R.string.farm_dang_farm)) }
 
             // 4.5 hunt (tuy che do hunt co the tam dung, battle van chay)
             val cmds = _state.value.commands   // doc moi vong: bat/tat lenh giua chung co hieu luc o vong ke tiep
@@ -1179,17 +1181,17 @@ object FarmController {
                 } else {
                     failsInRow++
                     if (failsInRow >= MAX_FAILS_IN_ROW) {
-                        hardStop(ctx, "Gõ lệnh lỗi $failsInRow lần liên tiếp (${describeSend(huntResult)}) — đã dừng")
+                        hardStop(ctx, Str.get(R.string.farm_go_lenh_loi_lan_lien, failsInRow, describeSend(huntResult)))
                         return
                     }
-                    update { it.copy(status = "Lỗi gõ lệnh (${describeSend(huntResult)}), lần $failsInRow — đang khắc phục…") }
+                    update { it.copy(status = Str.get(R.string.farm_loi_go_lenh_lan_dang, describeSend(huntResult), failsInRow)) }
                     if (failsInRow >= 2) reopenChannel(sender, link)
-                    waitWithCountdown(minOf(4_000L * failsInRow, 30_000L), "Thử lại sau lỗi gõ lệnh")
+                    waitWithCountdown(minOf(4_000L * failsInRow, 30_000L), Str.get(R.string.farm_thu_lai_sau_loi_go))
                     continue@cycle
                 }
                 // Khac lenh (hunt -> battle) thi go luon, khong nghi. Chi cooldown cua CHINH lenh do (hunt -> hunt) moi phai cho.
             } else {
-                update { it.copy(status = "Hunt tạm dừng — $pauseReason") }
+                update { it.copy(status = Str.get(R.string.farm_hunt_tam_dung, pauseReason)) }
             }
 
                     }
@@ -1208,7 +1210,7 @@ object FarmController {
                 } else {
                     failsInRow++
                     if (failsInRow >= MAX_FAILS_IN_ROW) {
-                        hardStop(ctx, "Gõ lệnh lỗi $failsInRow lần liên tiếp (${describeSend(battleResult)}) — đã dừng")
+                        hardStop(ctx, Str.get(R.string.farm_go_lenh_loi_lan_lien, failsInRow, describeSend(battleResult)))
                         return
                     }
                     cycleOk = false
@@ -1235,7 +1237,7 @@ object FarmController {
             cyclesUntilRest--
             if (cyclesUntilRest <= 0) {
                 cyclesUntilRest = Random.nextInt(sp.restEveryMin, sp.restEveryMax + 1)
-                restFor(Random.nextLong(sp.restMinMs, sp.restMaxMs), "Nghỉ giải lao")
+                restFor(Random.nextLong(sp.restMinMs, sp.restMaxMs), Str.get(R.string.farm_nghi_giai_lao))
                 continue
             }
 
@@ -1254,10 +1256,10 @@ object FarmController {
                     Log.w(TAG, "Viec chen loi: ${describeSend(r)} (bo qua, thu lai sau)")
                     break
                 }
-                update { it.copy(status = "Đang farm…") }
+                update { it.copy(status = Str.get(R.string.farm_dang_farm)) }
             }
             val left = target - (System.currentTimeMillis() - cycleStart)
-            if (left > 0) waitWithCountdown(left, "Chờ cooldown hunt/battle") else delay(800)
+            if (left > 0) waitWithCountdown(left, Str.get(R.string.farm_cho_cooldown_hunt_battle)) else delay(800)
         }
     }
 }

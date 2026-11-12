@@ -41,6 +41,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 import kotlin.random.Random
+import com.starclan.starhub.Str
 
 /**
  * Service nen chiu trach nhiem "nhin" man hinh Discord (rootInActiveWindow) va "thao tac" thay nguoi dung
@@ -190,11 +191,11 @@ class AutoAccessibilityService : AccessibilityService() {
 
         // Vua bat "Don kho tu dong": viec DAU TIEN la go `nw inv export` (dung 1 lan), roi doi Tom nhan file + lap ke hoach
         if (CleanupGate.enabled && CleanupGate.exportPending && FarmController.isRunning()) {
-            CleanupGate.set(CleanupStatus(CleanupPhase.EXPORTING, detail = "Farm đang chạy — chờ farm dừng rồi app mới gõ nw inv export."))
+            CleanupGate.set(CleanupStatus(CleanupPhase.EXPORTING, detail = Str.get(R.string.svc_farm_dang_chay_cho_farm)))
         }
         if (CleanupGate.enabled && CleanupGate.exportPending && !FarmController.isRunning()) {
             CleanupGate.exportPending = false
-            CleanupGate.set(CleanupStatus(CleanupPhase.EXPORTING, command = CommandGuard.EXPORT_COMMAND, detail = "Đang gõ nw inv export vào Discord…"))
+            CleanupGate.set(CleanupStatus(CleanupPhase.EXPORTING, command = CommandGuard.EXPORT_COMMAND, detail = Str.get(R.string.svc_dang_go_nw_inv_export)))
             val st = OwoTrackerPrefs.load(this)
             if (CommandGuard.isSafeCommand(CommandGuard.EXPORT_COMMAND)) {
                 val r = try {
@@ -210,8 +211,8 @@ class AutoAccessibilityService : AccessibilityService() {
                     CleanupGate.set(CleanupStatus(CleanupPhase.WAIT_FILE, command = CommandGuard.EXPORT_COMMAND,
                         untilMs = CleanupGate.holdUntilMs, sinceMs = now))
                 } else {
-                    val why = if (r == SendResult.CAPTCHA) "OwO đang đòi captcha — giải captcha rồi bật lại."
-                        else "Không gõ được nw inv export vào Discord (kiểm tra Discord đang mở đúng kênh chat)."
+                    val why = if (r == SendResult.CAPTCHA) Str.get(R.string.svc_owo_dang_doi_captcha_giai)
+                        else Str.get(R.string.svc_khong_go_duoc_nw_inv)
                     CleanupGate.finish(CleanupStatus(CleanupPhase.FAILED, command = CommandGuard.EXPORT_COMMAND, detail = why))
                     if (r == SendResult.CAPTCHA) {
                         alertCaptcha()
@@ -250,7 +251,7 @@ class AutoAccessibilityService : AccessibilityService() {
             val stepNo = cmd.params["step_no"]?.toIntOrNull() ?: 0
             val stepTotal = cmd.params["step_total"]?.toIntOrNull() ?: 0
             if (isClean) {
-                CleanupGate.set(CleanupStatus(CleanupPhase.RUNNING, stepNo, stepTotal, commandText.orEmpty().trim(), "Đang gõ lệnh vào Discord…"))
+                CleanupGate.set(CleanupStatus(CleanupPhase.RUNNING, stepNo, stepTotal, commandText.orEmpty().trim(), Str.get(R.string.svc_dang_go_lenh_vao_discord)))
             }
             if (commandText.isNullOrBlank()) {
                 Log.w(TAG, "Lenh '${cmd.action}' khong co command_text - bo qua")
@@ -310,9 +311,9 @@ class AutoAccessibilityService : AccessibilityService() {
                 }
                 if (!cleaned) {
                     val why = when {
-                        result == SendResult.CAPTCHA -> "OwO đang đòi captcha — giải captcha rồi bật lại."
-                        result != SendResult.OK -> "Không gõ được lệnh vào Discord."
-                        else -> CleanupGate.lastFailure.ifBlank { "Bước không hoàn thành." }
+                        result == SendResult.CAPTCHA -> Str.get(R.string.svc_owo_dang_doi_captcha_giai)
+                        result != SendResult.OK -> Str.get(R.string.svc_khong_go_duoc_lenh_vao)
+                        else -> CleanupGate.lastFailure.ifBlank { Str.get(R.string.svc_buoc_khong_hoan_thanh) }
                     }
                     // co loi -> tu tat, bot cung dung phien
                     CleanupGate.finish(CleanupStatus(CleanupPhase.FAILED, stepNo, stepTotal, commandText.orEmpty().trim(), why))
@@ -346,7 +347,7 @@ class AutoAccessibilityService : AccessibilityService() {
                 if (stepTotal in 1..stepNo) {
                     CleanupGate.finish(CleanupStatus(CleanupPhase.DONE, stepNo, stepTotal))
                 } else {
-                    CleanupGate.set(CleanupStatus(CleanupPhase.WAIT_NEXT, stepNo, stepTotal, detail = "Nghỉ vài giây, chờ Tom giao bước kế…"))
+                    CleanupGate.set(CleanupStatus(CleanupPhase.WAIT_NEXT, stepNo, stepTotal, detail = Str.get(R.string.svc_nghi_vai_giay_cho_tom)))
                 }
             }
 

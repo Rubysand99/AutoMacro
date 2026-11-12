@@ -9,6 +9,8 @@ import android.net.Uri
 import android.util.Log
 import com.starclan.starhub.data.ConfigPrefs
 import com.starclan.starhub.data.MusicConfig
+import com.starclan.starhub.R
+import com.starclan.starhub.Str
 
 /**
  * Nhac nen khi farm: lap lai file nhac Ruby chon o tab Config.
@@ -86,7 +88,7 @@ object MusicPlayer {
             mp.setOnErrorListener { _, what, extra ->
                 Log.w(TAG, "MediaPlayer loi what=$what extra=$extra")
                 stop()
-                onError?.invoke("Không phát được file nhạc — chọn lại file khác")
+                onError?.invoke(Str.get(R.string.music_khong_phat_duoc_file_nhac))
                 true
             }
             mp.setOnPreparedListener { it.start() }
@@ -96,7 +98,7 @@ object MusicPlayer {
         } catch (e: Exception) {
             Log.w(TAG, "Khong phat duoc nhac: ${e.message}")
             release()
-            onError?.invoke("Không mở được file nhạc (có thể đã bị xoá hoặc mất quyền đọc) — chọn lại")
+            onError?.invoke(Str.get(R.string.music_khong_mo_duoc_file_nhac))
         }
     }
 

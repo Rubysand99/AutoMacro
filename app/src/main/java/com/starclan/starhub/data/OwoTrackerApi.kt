@@ -9,6 +9,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import java.net.HttpURLConnection
 import java.net.URL
+import com.starclan.starhub.R
+import com.starclan.starhub.Str
 
 private const val TAG = "OwoTrackerApi"
 
@@ -111,27 +113,27 @@ object OwoTrackerApi {
 
             val code = conn.responseCode
             if (code == 401) {
-                return@withContext HubResult.Failure("Token chưa đúng (401) — kiểm tra lại trong Kết nối owo-tracker")
+                return@withContext HubResult.Failure(Str.get(R.string.api_token_chua_dung_401_kiem))
             }
             if (code == 404) {
-                return@withContext HubResult.Failure("Bot chưa có đường /hub (404) — cần cập nhật bot lên bản mới")
+                return@withContext HubResult.Failure(Str.get(R.string.api_bot_chua_co_duong_hub))
             }
             if (code != 200) {
                 Log.w(TAG, "fetchHub: HTTP $code")
-                return@withContext HubResult.Failure("Bot báo lỗi (HTTP $code)")
+                return@withContext HubResult.Failure(Str.get(R.string.api_bot_bao_loi_http, code))
             }
             val body = conn.inputStream.bufferedReader().readText()
             if (body.isBlank()) {
-                HubResult.Failure("Bot trả về dữ liệu trống")
+                HubResult.Failure(Str.get(R.string.api_bot_tra_ve_du_lieu))
             } else {
                 HubResult.Success(HubParser.parse(body))
             }
         } catch (e: JsonParseException) {
             Log.w(TAG, "fetchHub doc JSON loi: ${e.message}")
-            HubResult.Failure("Dữ liệu từ bot không đọc được (${(e.message ?: "lỗi không rõ").take(120)})")
+            HubResult.Failure(Str.get(R.string.api_unreadable_data, (e.message ?: Str.get(R.string.api_unknown_error)).take(120)))
         } catch (e: Exception) {
             Log.w(TAG, "fetchHub loi: ${e.message}")
-            HubResult.Failure("Không kết nối được tới bot — kiểm tra mạng và địa chỉ API")
+            HubResult.Failure(Str.get(R.string.api_khong_ket_noi_duoc_toi))
         }
     }
 
@@ -355,14 +357,14 @@ object OwoTrackerApi {
                     if (conn.responseCode == 200) null
                     else {
                         val body = (conn.errorStream ?: conn.inputStream).bufferedReader().use { it.readText() }
-                        com.google.gson.JsonParser.parseString(body).asJsonObject.get("error")?.asString ?: "lỗi ${conn.responseCode}"
+                        com.google.gson.JsonParser.parseString(body).asJsonObject.get("error")?.asString ?: Str.get(R.string.api_loi, conn.responseCode)
                     }
                 } finally {
                     conn.disconnect()
                 }
             } catch (e: Exception) {
                 Log.w(TAG, "startAutoNeonReview loi: ${e.message}")
-                "mất kết nối bot"
+                Str.get(R.string.api_mat_ket_noi_bot)
             }
         }
 

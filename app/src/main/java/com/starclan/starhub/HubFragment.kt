@@ -122,7 +122,7 @@ class HubFragment : Fragment() {
         )
 
         // Truoc khi co du lieu: cac o hien dau "…" thay vi de trong
-        val loading = TileState("…", "Đang lấy dữ liệu", Tone.IDLE)
+        val loading = TileState("…", Str.get(R.string.hubfrag_dang_lay_du_lieu), Tone.IDLE)
         for (t in listOf(binding.tileDaily, binding.tileHuntbot, binding.tileCowoncy,
                          binding.tileQuest, binding.tileGems, binding.tileZoo)) {
             applyTile(t, loading)
@@ -235,7 +235,7 @@ class HubFragment : Fragment() {
     /** Ve dong tom tat + icon tieu de + noi dung (neu dang mo) cua 1 the. */
     private fun renderCard(card: Card, h: HubResponse) {
         val error = h.sectionErrors?.get(card.key)
-        val line = if (error != null) LineState("Không đọc được mục này", Tone.BAD) else summaryOf(card.key, h)
+        val line = if (error != null) LineState(Str.get(R.string.hubfrag_khong_doc_duoc_muc_nay), Tone.BAD) else summaryOf(card.key, h)
         val ui = card.ui
         ui.tvCardSummary.text = line.text
         ui.tvCardSummary.setTextColor(toneColor(line.tone))
@@ -288,7 +288,7 @@ class HubFragment : Fragment() {
     private fun fillPetDex(body: LinearLayout, d: com.starclan.starhub.data.HubPetDex?) {
         val all = d?.species.orEmpty()
         if (all.isEmpty()) {
-            addText(body, "Chưa tra loài pet nào — gõ owo dex <tên> (hoặc odex <tên>) để bot ghi nhận.", dim = true)
+            addText(body, Str.get(R.string.hubfrag_chua_tra_loai_pet_nao), dim = true)
             return
         }
         val ranks = HubDexQuery.ranks(all)
@@ -309,7 +309,7 @@ class HubFragment : Fragment() {
         if (ranks.size > 1) {
             val rankNow = dexRank
             val rankSel = if (rankNow == null) 0 else ranks.indexOf(rankNow) + 1
-            addChipRow(body, "dexRank", listOf("Mọi hạng") + ranks, rankSel, 6) {
+            addChipRow(body, "dexRank", listOf(Str.get(R.string.hubfrag_moi_hang)) + ranks, rankSel, 6) {
                 dexRank = if (it == 0) null else ranks[it - 1]
                 dexShown = DEX_PAGE_SIZE
                 rerenderCard(KEY_PET_DEX)
@@ -317,28 +317,28 @@ class HubFragment : Fragment() {
         }
 
         val list = HubDexQuery.apply(all, dexSort, dexFilter, dexRank)
-        val hint = if (dexSort == DexSort.DEFAULT || dexSort == DexSort.NAME) "" else " · cao → thấp theo ${dexSort.label}"
-        addText(body, "Hiện ${list.size}/${all.size} loài$hint", sizeSp = 12f, dim = true, topDp = 10)
+        val hint = if (dexSort == DexSort.DEFAULT || dexSort == DexSort.NAME) "" else Str.get(R.string.hubfrag_cao_thap_theo, dexSort.label)
+        addText(body, Str.get(R.string.hubfrag_hien_loai, list.size, all.size, hint), sizeSp = 12f, dim = true, topDp = 10)
         if (list.isEmpty()) {
-            addText(body, "Không có loài nào khớp bộ lọc — thử chọn \"Tất cả\" hoặc \"Mọi hạng\".", dim = true, topDp = 8)
+            addText(body, Str.get(R.string.hubfrag_khong_co_loai_nao_khop), dim = true, topDp = 8)
             return
         }
         val shown = list.take(dexShown)
         for ((i, p) in shown.withIndex()) {
             val icon = iconOf(p.emojiId, p.emojiAnimated, p.emoji, p.name)
             val title = "${p.name ?: "?"}" + (if (p.rankVi != null) " · ${p.rankVi}" else "")
-            val sub = if (p.owned == true) "Đang có ×${HubFormat.num(p.ownedCount)}" else "Chưa có"
+            val sub = if (p.owned == true) Str.get(R.string.hubfrag_dang_co, HubFormat.num(p.ownedCount)) else Str.get(R.string.hubfrag_chua_co)
             addIconTextRow(body, icon, title, sub, topDp = if (i == 0) 8 else 14, iconSizeDp = 30)
             val stats = HubDexQuery.statsLine(p, dexSort)
             addText(body, stats, sizeSp = 13f, dim = true, topDp = 2)
             val price = mutableListOf<String>()
-            if (p.sellCowoncy != null) price.add("Bán ${HubFormat.num(p.sellCowoncy)} (×${HubFormat.num(p.sellSoldCount)})")
-            if (p.sacrificeEssence != null) price.add("Hiến ${HubFormat.num(p.sacrificeEssence)} essence (×${HubFormat.num(p.sacrificeKilledCount)})")
+            if (p.sellCowoncy != null) price.add(Str.get(R.string.hubfrag_ban, HubFormat.num(p.sellCowoncy), HubFormat.num(p.sellSoldCount)))
+            if (p.sacrificeEssence != null) price.add(Str.get(R.string.hubfrag_hien_essence, HubFormat.num(p.sacrificeEssence), HubFormat.num(p.sacrificeKilledCount)))
             if (price.isNotEmpty()) addText(body, price.joinToString(" · "), sizeSp = 12f, dim = true, topDp = 2)
         }
         val remaining = list.size - shown.size
         if (remaining > 0) {
-            val more = addText(body, "Hiện thêm ${minOf(remaining, DEX_PAGE_SIZE)} loài (còn $remaining) ▾",
+            val more = addText(body, Str.get(R.string.hubfrag_hien_them_loai_con, minOf(remaining, DEX_PAGE_SIZE), remaining),
                 sizeSp = 14f, bold = true, topDp = 12)
             more.setTextColor(requireContext().getColor(R.color.brand_violet))
             more.setPadding(0, dp(10), 0, dp(10))
@@ -352,21 +352,21 @@ class HubFragment : Fragment() {
     private fun fillGems(body: LinearLayout, g: HubGems?) {
         val equipped = g?.equipped.orEmpty()
         if (equipped.isEmpty()) {
-            addText(body, "Chưa thấy gem đang trang bị — gõ owo hunt 1 lần để bot ghi nhận.", dim = true)
+            addText(body, Str.get(R.string.hubfrag_chua_thay_gem_dang_trang), dim = true)
         }
         for ((i, e) in equipped.withIndex()) {
             val p = HubFormat.pct(e.percent)
-            val warn = if (p <= 15) "  · sắp hết" else ""
+            val warn = if (p <= 15) Str.get(R.string.hubfrag_sap_het) else ""
             val icon = iconOf(e.emojiId, e.emojiAnimated, e.emoji, e.tier)
             val color = toneColor(HubSummary.gemTone(p))
             addIconTextRow(body, icon, "${HubFormat.gemType(e.slot)} · ${e.tier ?: "?"}$warn",
                 "${e.current ?: "?"}/${e.max ?: "?"} ($p%)", ringPercent = p, ringColor = color, topDp = if (i == 0) 0 else 14)
         }
         val spareAge = g?.spareAgeSeconds?.let { " · " + HubFormat.age(it) }.orEmpty()
-        addText(body, "Dự phòng trong kho$spareAge", sizeSp = 13f, bold = true, dim = true, topDp = 16)
+        addText(body, Str.get(R.string.hubfrag_du_phong_trong_kho, spareAge), sizeSp = 13f, bold = true, dim = true, topDp = 16)
         val spare = g?.spare.orEmpty()
         if (spare.isEmpty()) {
-            addText(body, "(không có, hoặc bot chưa thấy kho)", dim = true, topDp = 2)
+            addText(body, Str.get(R.string.hubfrag_khong_co_hoac_bot_chua), dim = true, topDp = 2)
         } else {
             for ((idx, entry) in spare.groupBy { it.slot ?: "?" }.entries.withIndex()) {
                 val (slot, list) = entry
@@ -381,7 +381,7 @@ class HubFragment : Fragment() {
     private fun fillQuest(body: LinearLayout, q: HubQuest?) {
         val items = q?.quests.orEmpty()
         if (items.isEmpty()) {
-            val msg = if (q?.allDone == true) "Đã xong hết quest hôm nay" else "Chưa có chi tiết quest — gõ owo quest để bot ghi nhận."
+            val msg = if (q?.allDone == true) Str.get(R.string.hubfrag_da_xong_het_quest_hom) else Str.get(R.string.hubfrag_chua_co_chi_tiet_quest)
             addText(body, msg, dim = q?.allDone != true)
             return
         }
@@ -401,7 +401,7 @@ class HubFragment : Fragment() {
     private fun fillTeam(body: LinearLayout, t: HubTeam?) {
         val members = t?.members.orEmpty()
         if (members.isEmpty()) {
-            addText(body, "Chưa có đội hình — gõ owo team 1 lần để bot ghi nhận.", dim = true)
+            addText(body, Str.get(R.string.hubfrag_chua_co_doi_hinh_go), dim = true)
             return
         }
         for ((i, m) in members.withIndex()) {
@@ -417,7 +417,7 @@ class HubFragment : Fragment() {
     private fun fillZooChart(parent: LinearLayout, z: HubZoo?) {
         val tiers = z?.byTier.orEmpty().filterValues { (it.total ?: 0) > 0 }
         if (tiers.isEmpty()) return
-        addText(parent, "So sánh theo tier", sizeSp = 13f, bold = true, dim = true)
+        addText(parent, Str.get(R.string.hubfrag_so_sanh_theo_tier), sizeSp = 13f, bold = true, dim = true)
         val chart = BarChartView(requireContext())
         chart.labelColor = binding.tvHubStatus.currentTextColor
         chart.entries = tiers.entries.sortedByDescending { it.value.total ?: 0L }
@@ -452,7 +452,7 @@ class HubFragment : Fragment() {
     }
 
     private fun tileOrError(errors: Map<String, String>?, key: String, build: () -> TileState): TileState =
-        if (errors?.containsKey(key) == true) TileState("Lỗi", "Không đọc được", Tone.BAD, IconSpec(unicode = "⚠️")) else build()
+        if (errors?.containsKey(key) == true) TileState(Str.get(R.string.hubfrag_loi), Str.get(R.string.hubfrag_khong_doc_duoc), Tone.BAD, IconSpec(unicode = "⚠️")) else build()
 
     private fun setCardAge(key: String, ageSeconds: Long?, elapsedSec: Long) {
         val card = cards.firstOrNull { it.key == key } ?: return

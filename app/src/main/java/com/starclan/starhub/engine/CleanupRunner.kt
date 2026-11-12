@@ -9,6 +9,8 @@ import com.starclan.starhub.service.AutoAccessibilityService
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import com.starclan.starhub.R
+import com.starclan.starhub.Str
 
 /**
  * Cong tac "Don kho tu dong" o Hub (mac dinh TAT, tu tat khi dong Hub / khi co loi / khi xong). Chi khi BAT thi app moi lam cac lenh
@@ -60,14 +62,14 @@ object CleanupGate {
 
     fun turnOn() {
         enabled = true; exportPending = true; holdUntilMs = 0L; lastFailure = ""
-        set(CleanupStatus(CleanupPhase.EXPORTING, detail = "Chờ lượt kiểm tra kế tiếp (tối đa 15 giây) rồi app gõ nw inv export…"))
+        set(CleanupStatus(CleanupPhase.EXPORTING, detail = Str.get(R.string.clean_cho_luot_kiem_tra_ke)))
     }
 
     fun turnOff() {
         enabled = false; exportPending = false
         val cur = _status.value
         if (cur.finished) return   // dong ket qua (xong / loi) khong bi xoa khi tat cong tac
-        val note = if (cur.busy) "Đã tắt. Phiên của Tom có thể còn dang dở — gõ ,cleanstop trong Discord nếu muốn hủy hẳn." else ""
+        val note = if (cur.busy) Str.get(R.string.clean_da_tat_phien_cua_tom) else ""
         set(CleanupStatus(CleanupPhase.OFF, detail = note))
     }
 }
@@ -84,16 +86,16 @@ object CleanupRunner {
 
     suspend fun run(service: AutoAccessibilityService, mode: String, params: Map<String, String>): Boolean {
         CleanupGate.lastFailure = ""
-        CleanupGate.progress("Đã gõ lệnh. Chờ OwO trả lời…")
+        CleanupGate.progress(Str.get(R.string.clean_da_go_lenh_cho_owo))
         delay(3_500)   // doi OwO tra loi
         return when (mode) {
             "star" -> star(service)
             "tier", "id" -> dismantle(service, mode, params)
             "export" -> {
-                CleanupGate.progress("Đã gõ nw inv export — chờ NeonUtil gửi file")
+                CleanupGate.progress(Str.get(R.string.clean_da_go_nw_inv_export))
                 true   // chi go `nw inv export`; Neon tra file thi Tom tu nhan
             }
-            else -> fail("bước không rõ (mode=$mode)")
+            else -> fail(Str.get(R.string.clean_buoc_khong_ro_mode, mode))
         }
     }
 
@@ -104,47 +106,47 @@ object CleanupRunner {
     }
 
     private suspend fun star(service: AutoAccessibilityService): Boolean {
-        CleanupGate.progress("Tìm nút sao trên tin của OwO…")
+        CleanupGate.progress(Str.get(R.string.clean_tim_nut_sao_tren_tin))
         if (ButtonClicker.has(service, "star_outline_dim")) {
-            if (!ButtonClicker.clickOnce(service, "star_outline_dim")) return fail("không bấm được nút sao")
-            CleanupGate.progress("Đã bấm sao")
+            if (!ButtonClicker.clickOnce(service, "star_outline_dim")) return fail(Str.get(R.string.clean_khong_bam_duoc_nut_sao))
+            CleanupGate.progress(Str.get(R.string.clean_da_bam_sao))
             delay(1_500)
             return true
         }
         // Khong co nut sao chua danh dau: da sao san thi OK, khong thay gi ca thi that bai
         if (ButtonClicker.has(service, "star_yellow")) {
-            CleanupGate.progress("Cây này đã có sao sẵn")
+            CleanupGate.progress(Str.get(R.string.clean_cay_nay_da_co_sao))
             return true
         }
-        return fail("không thấy nút sao trên màn hình (OwO chưa trả lời, hoặc Discord không đang ở kênh chat)")
+        return fail(Str.get(R.string.clean_khong_thay_nut_sao_tren))
     }
 
     private suspend fun dismantle(service: AutoAccessibilityService, mode: String, params: Map<String, String>): Boolean {
-        CleanupGate.progress("Chờ tin xác nhận của OwO…")
+        CleanupGate.progress(Str.get(R.string.clean_cho_tin_xac_nhan_cua))
         var waited = 0
         while (!ButtonClicker.has(service, "dismantle") && waited < 6_000) { delay(1_000); waited += 1_000 }
         if (!ButtonClicker.has(service, "dismantle")) {
             // Khong co gi de ra (bac trong, cay da het) -> bo qua neu bot danh dau optional
             if (params["optional"] == "1") {
-                CleanupGate.progress("Không có cây nào để rã ở mục này — bỏ qua")
+                CleanupGate.progress(Str.get(R.string.clean_khong_co_cay_nao_de))
                 return true
             }
-            return fail("không thấy nút Dismantle sau 6 giây (OwO không trả lời, hoặc không có cây nào để rã)")
+            return fail(Str.get(R.string.clean_khong_thay_nut_dismantle_sau))
         }
         val text = ButtonClicker.textAbove(service, "dismantle")
         val count = CommandGuard.parseWeaponCount(text)
-        CleanupGate.progress(if (count != null) "OwO báo $count cây — đang đối chiếu kế hoạch…" else "Đang đọc tin xác nhận của OwO…")
+        CleanupGate.progress(if (count != null) Str.get(R.string.clean_owo_bao_cay_dang_doi, count) else Str.get(R.string.clean_dang_doc_tin_xac_nhan))
         val expect = params["expect"]?.toIntOrNull()
         val expectMax = params["expect_max"]?.toIntOrNull()
         val expectId = params["expect_id"]
         if (!CommandGuard.confirmMatches(mode, text, expect, expectMax, expectId)) {
             Log.w(TAG, "Tin xac nhan khong khop (mode=$mode) - bam Cancel")
-            CleanupGate.progress("Không khớp kế hoạch → bấm Cancel")
+            CleanupGate.progress(Str.get(R.string.clean_khong_khop_ke_hoach_bam))
             ButtonClicker.clickOnce(service, "cancel")
             return fail(CleanupStatusText.mismatchReason(mode, count, expect, expectMax, expectId))
         }
-        CleanupGate.progress("Khớp kế hoạch → bấm Dismantle")
-        if (!ButtonClicker.clickOnce(service, "dismantle")) return fail("không bấm được nút Dismantle")
+        CleanupGate.progress(Str.get(R.string.clean_khop_ke_hoach_bam_dismantle))
+        if (!ButtonClicker.clickOnce(service, "dismantle")) return fail(Str.get(R.string.clean_khong_bam_duoc_nut_dismantle))
         delay(2_500)
         return true
     }

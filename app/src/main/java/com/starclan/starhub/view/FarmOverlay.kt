@@ -39,6 +39,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import kotlin.math.abs
+import com.starclan.starhub.Str
 
 /**
  * Hub noi tren man hinh Discord. Dung cua so overlay cua dich vu Accessibility nen
@@ -69,7 +70,7 @@ object FarmOverlay {
     private const val PREFS = "starhub_overlay"
     private const val PREF_TAB = "tab"
     private const val PREF_AUTO_COLLAPSE = "auto_collapse"
-    private const val STATS_CLEAR_LABEL = "Xóa thống kê"
+    private val STATS_CLEAR_LABEL: String get() = Str.get(R.string.overlay_clear_stats)
     private var clearStatsConfirmUntilMs = 0L
 
     // Mau lay tu UiTheme (cung he mau voi man hinh XML cua app). C_PANEL = SURFACE + do trong suot F2.
@@ -338,7 +339,7 @@ object FarmOverlay {
         top.orientation = LinearLayout.HORIZONTAL
         val l = caption(ctx, name)
         val v = TextView(ctx)
-        v.text = if (low) "$text · sắp hết" else text
+        v.text = if (low) Str.get(R.string.overlay_sap_het, text) else text
         v.textSize = 13f
         v.setTextColor(Color.parseColor(if (low) C_WARN else C_TEXT))
         v.gravity = Gravity.END
@@ -508,7 +509,7 @@ object FarmOverlay {
         left.addView(caption(ctx, cmd.shown, C_MUTED))
         line.addView(left, lparams(0, LinearLayout.LayoutParams.WRAP_CONTENT, weight = 1f))
         val on = FarmController.state.value.commands.isEnabled(cmd)
-        val b = pill(ctx, if (on) "BẬT" else "TẮT", if (on) Btn.ACTIVE else Btn.SECONDARY, 12f)
+        val b = pill(ctx, if (on) Str.get(R.string.overlay_bat) else Str.get(R.string.overlay_tat), if (on) Btn.ACTIVE else Btn.SECONDARY, 12f)
         b.setOnClickListener {
             val now = FarmController.state.value.commands.isEnabled(cmd)
             FarmController.setCommandEnabled(ctx.applicationContext, cmd, !now)
@@ -523,7 +524,7 @@ object FarmOverlay {
         val line = LinearLayout(ctx)
         line.orientation = LinearLayout.HORIZONTAL
         line.setPadding(0, dp(2), 0, dp(4))
-        val presets = listOf("Bật tất cả" to FarmCommandConfig.ALL_ON, "Chỉ hunt + battle" to FarmCommandConfig.HUNT_BATTLE_ONLY)
+        val presets = listOf(Str.get(R.string.overlay_bat_tat_ca) to FarmCommandConfig.ALL_ON, Str.get(R.string.overlay_chi_hunt_battle) to FarmCommandConfig.HUNT_BATTLE_ONLY)
         for ((i, pr) in presets.withIndex()) {
             val b = pill(ctx, pr.first, Btn.SECONDARY, 12f)
             b.setOnClickListener { FarmController.changeCommands(ctx.applicationContext) { pr.second } }
@@ -543,7 +544,7 @@ object FarmOverlay {
             rows.add(Row("", "", build = { c -> caption(c, g.label).also { it.setPadding(0, dp(6), 0, dp(2)) } }))
             for (cmd in FarmCmd.values()) if (cmd.group == g) rows.add(Row("", "", build = { c -> commandRow(c, cmd) }))
         }
-        rows.add(Row("", "", build = { c -> caption(c, "Tắt lệnh nào thì farm bỏ qua lệnh đó. Đổi giữa chừng có hiệu lực từ vòng kế tiếp; lệnh bot nhờ app gõ xen (check cash/inv/zoo…) cũng bị chặn nếu bạn tắt lệnh đó; đổi gem thì không bị chặn.", C_MUTED) }))
+        rows.add(Row("", "", build = { c -> caption(c, Str.get(R.string.overlay_tat_lenh_nao_thi_farm), C_MUTED) }))
         setGroup("cmds", cmdSummary(FarmController.state.value.commands), rows)
     }
 
@@ -557,30 +558,30 @@ object FarmOverlay {
         var tab = 0          // 0 = Giu, 1 = Bo, 2 = Chua ro
         var page = 0
         var loading = false
-        var msg = "Bấm Tải lại để xem danh sách từ bot"
+        var msg = Str.get(R.string.overlay_bam_tai_lai_de_xem)
 
         val card = LinearLayout(service)
         card.orientation = LinearLayout.VERTICAL
         card.setPadding(dp(10), dp(8), dp(10), dp(8))
         card.background = roundBg(C_PANEL, 14, UiTheme.LINE)
 
-        val title = caption(service, "Duyệt vũ khí tay", UiTheme.TEXT_PRIMARY)
+        val title = caption(service, Str.get(R.string.overlay_duyet_vu_khi_tay), UiTheme.TEXT_PRIMARY)
         title.setTypeface(null, Typeface.BOLD)
-        val reload = pill(service, "Tải lại", Btn.SECONDARY, 12f)
+        val reload = pill(service, Str.get(R.string.overlay_tai_lai), Btn.SECONDARY, 12f)
         val head = LinearLayout(service)
         head.orientation = LinearLayout.HORIZONTAL
         head.gravity = Gravity.CENTER_VERTICAL
         head.addView(title, lparams(0, LinearLayout.LayoutParams.WRAP_CONTENT, weight = 1f))
         head.addView(reload, lparams(dp(84), LinearLayout.LayoutParams.WRAP_CONTENT))
         card.addView(head)
-        val autoBtn2 = pill(service, "Tự duyệt các cây Chưa rõ (đọc NeonUtil)", Btn.PRIMARY, 12.5f)
+        val autoBtn2 = pill(service, Str.get(R.string.overlay_tu_duyet_cac_cay_chua), Btn.PRIMARY, 12.5f)
         autoBtn2.setOnClickListener { scope?.launch { FarmController.reviewAutoNeon(service) } }
         card.addView(autoBtn2, lparams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).also { it.topMargin = dp(6) })
 
         val segRow = LinearLayout(service)
         segRow.orientation = LinearLayout.HORIZONTAL
         segRow.setPadding(0, dp(6), 0, dp(6))
-        val segBtns = listOf("Giữ", "Bỏ", "Chưa rõ").map { pill(service, it, Btn.SECONDARY, 12f) }
+        val segBtns = listOf(Str.get(R.string.overlay_giu), Str.get(R.string.overlay_bo), Str.get(R.string.overlay_chua_ro)).map { pill(service, it, Btn.SECONDARY, 12f) }
         for ((i, b) in segBtns.withIndex()) {
             segRow.addView(b, lparams(0, LinearLayout.LayoutParams.WRAP_CONTENT, weight = 1f).also {
                 it.setMargins(if (i == 0) 0 else dp(3), 0, if (i == segBtns.size - 1) 0 else dp(3), 0)
@@ -603,7 +604,7 @@ object FarmOverlay {
         pager.addView(pageInfo, lparams(0, LinearLayout.LayoutParams.WRAP_CONTENT, weight = 1f))
         pager.addView(next, lparams(dp(56), LinearLayout.LayoutParams.WRAP_CONTENT))
         card.addView(pager)
-        card.addView(caption(service, "Chạm 1 ID để app gõ owo w <ID> (dừng farm trước), rồi bấm Giữ / Bỏ / ? trên bong bóng để chuyển cây sang danh sách khác. Chọn tay sẽ không bị file export ghi đè; kế hoạch dọn kho cũ bị hủy, cần xuất lại nw inv export.", C_MUTED))
+        card.addView(caption(service, Str.get(R.string.overlay_cham_1_id_de_app), C_MUTED))
 
         fun listFor(d: com.starclan.starhub.data.WeaponReviewLists?): List<String> = when (tab) {
             0 -> d?.keep.orEmpty()
@@ -615,7 +616,7 @@ object FarmOverlay {
             val d = data
             for ((i, b) in segBtns.withIndex()) {
                 val n = when (i) { 0 -> d?.keep?.size; 1 -> d?.drop?.size; else -> d?.unknown?.size }
-                b.text = listOf("Giữ", "Bỏ", "Chưa rõ")[i] + (if (n != null) " $n" else "")
+                b.text = listOf(Str.get(R.string.overlay_giu), Str.get(R.string.overlay_bo), Str.get(R.string.overlay_chua_ro))[i] + (if (n != null) " $n" else "")
                 styleBtn(b, if (i == tab) Btn.ACTIVE else Btn.SECONDARY)
             }
             val ids = listFor(d)
@@ -623,7 +624,7 @@ object FarmOverlay {
             page = page.coerceIn(0, pages - 1)
             chips.removeAllViews()
             if (d == null || ids.isEmpty()) {
-                chips.addView(caption(service, if (d == null) msg else "Danh sách trống", C_MUTED))
+                chips.addView(caption(service, if (d == null) msg else Str.get(R.string.overlay_danh_sach_trong), C_MUTED))
             } else {
                 val slice = ids.drop(page * pageSize).take(pageSize)
                 for (rowIds in slice.chunked(3)) {
@@ -655,7 +656,7 @@ object FarmOverlay {
             }
             pager.visibility = if (pages > 1) View.VISIBLE else View.GONE
             pageInfo.text = "Trang ${page + 1}/$pages"
-            reload.text = if (loading) "…" else "Tải lại"
+            reload.text = if (loading) "…" else Str.get(R.string.overlay_tai_lai)
             relayout()
         }
 
@@ -666,7 +667,7 @@ object FarmOverlay {
             scope?.launch {
                 val r = FarmController.loadReviewLists(service)
                 loading = false
-                if (r == null) msg = "Không tải được danh sách (mất kết nối bot, hoặc bot chưa cập nhật bản mới)" else data = r
+                if (r == null) msg = Str.get(R.string.overlay_khong_tai_duoc_danh_sach) else data = r
                 refresh()
             }
         }
@@ -679,7 +680,7 @@ object FarmOverlay {
         return card
     }
 
-    private fun cmdSummary(c: FarmCommandConfig) = "${c.enabledCount()}/${c.total()} bật"
+    private fun cmdSummary(c: FarmCommandConfig) = Str.get(R.string.overlay_bat_2, c.enabledCount(), c.total())
 
     /** Dien noi dung 1 nhom: dong tom tat tren tieu de + cac dong ben duoi. visible=false -> an ca the */
     private fun setGroup(key: String, summary: String, rows: List<Row>, visible: Boolean = true) {
@@ -752,10 +753,10 @@ object FarmOverlay {
         rvInfo.textSize = 11.5f
         rvInfo.setTextColor(Color.parseColor(C_LABEL))
         rvInfo.setPadding(dp(4), 0, dp(8), 0)
-        val keepBtn = pill(service, "Giữ", Btn.GOOD, 13f)
-        val dropBtn = pill(service, "Bỏ", Btn.DANGER, 13f)
+        val keepBtn = pill(service, Str.get(R.string.overlay_giu), Btn.GOOD, 13f)
+        val dropBtn = pill(service, Str.get(R.string.overlay_bo), Btn.DANGER, 13f)
         val unkBtn = pill(service, "?", Btn.SECONDARY, 13f)
-        val stopBtn = pill(service, "Dừng", Btn.SECONDARY, 13f)
+        val stopBtn = pill(service, Str.get(R.string.overlay_dung), Btn.SECONDARY, 13f)
         for (b in listOf(keepBtn, dropBtn, unkBtn, stopBtn)) { b.minHeight = dp(40); b.minWidth = dp(54); b.setPadding(dp(8), dp(4), dp(8), dp(4)) }
         rvRow.addView(rvInfo, lparams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT))
         rvRow.addView(keepBtn, lparams(LinearLayout.LayoutParams.WRAP_CONTENT, dp(40)).also { it.rightMargin = dp(6) })
@@ -837,13 +838,13 @@ object FarmOverlay {
         waitView = countdown
 
         // -- Nut: hang 1 (bat dau/dung + tat chuong), hang 2 (hunt mode, thu gon, tat hub) --
-        val toggle = pill(service, "Bắt đầu", Btn.PRIMARY, 14f, R.drawable.ic_play)
-        val muteBtn = pill(service, "Tắt chuông", Btn.DANGER, 13f, R.drawable.ic_alert)
+        val toggle = pill(service, Str.get(R.string.overlay_bat_dau), Btn.PRIMARY, 14f, R.drawable.ic_play)
+        val muteBtn = pill(service, Str.get(R.string.overlay_tat_chuong), Btn.DANGER, 13f, R.drawable.ic_alert)
         muteBtn.visibility = View.GONE
-        val modeBtn = pill(service, "Hunt mode 3 · không dừng", Btn.SECONDARY, 13f, R.drawable.ic_sliders)
+        val modeBtn = pill(service, Str.get(R.string.overlay_hunt_mode_3_khong_dung), Btn.SECONDARY, 13f, R.drawable.ic_sliders)
         val hideBtn = iconButton(service, R.drawable.ic_minus)
         val closeBtn = iconButton(service, R.drawable.ic_close)
-        val eventBtn = pill(service, "Event: Tắt", Btn.SECONDARY, 13f, R.drawable.ic_star)
+        val eventBtn = pill(service, Str.get(R.string.overlay_event_tat), Btn.SECONDARY, 13f, R.drawable.ic_star)
         val autoBtn = pill(service, "")
         val clearStatsBtn = pill(service, STATS_CLEAR_LABEL, Btn.DANGER)
         btnToggle = toggle
@@ -851,10 +852,10 @@ object FarmOverlay {
         btnMode = modeBtn
         btnEvent = eventBtn
         btnAuto = autoBtn
-        val tagBtn = pill(service, "Học lời khuyên vũ khí", Btn.SECONDARY, 13f, R.drawable.ic_quest)
+        val tagBtn = pill(service, Str.get(R.string.overlay_hoc_loi_khuyen_vu_khi), Btn.SECONDARY, 13f, R.drawable.ic_quest)
         btnTags = tagBtn
         // Don kho tu dong: BAT thi app tu lam cac buoc bot giao (go lenh + bam sao / Dismantle khi so cay khop). Mac dinh TAT.
-        val cleanBtn = pill(service, "Dọn kho tự động: Tắt", Btn.SECONDARY, 13f, R.drawable.ic_sliders)
+        val cleanBtn = pill(service, Str.get(R.string.overlay_don_kho_tu_dong_tat), Btn.SECONDARY, 13f, R.drawable.ic_sliders)
         cleanBtn.setOnClickListener {
             val on = !CleanupGate.enabled
             if (on) CleanupGate.turnOn() else CleanupGate.turnOff()
@@ -947,10 +948,10 @@ object FarmOverlay {
                 it.setMargins(if (i == 0) 0 else dp(3), 0, if (i == SpeedMode.values().size - 1) 0 else dp(3), 0)
             })
         }
-        addTo(TAB_SETTING, caption(service, "Tốc độ farm"))
+        addTo(TAB_SETTING, caption(service, Str.get(R.string.overlay_toc_do_farm)))
         addTo(TAB_SETTING, speedRow)
-        addTo(TAB_SETTING, caption(service, "Nhanh: nhiều lệnh hơn nhưng dễ bị OwO nghi ngờ hơn. Chậm: an toàn hơn. Có hiệu lực từ vòng kế tiếp.", C_MUTED))
-        addGroupTo(TAB_SETTING, "cmds", "Lệnh trong farm", R.drawable.ic_sliders)
+        addTo(TAB_SETTING, caption(service, Str.get(R.string.overlay_nhanh_nhieu_lenh_hon_nhung), C_MUTED))
+        addGroupTo(TAB_SETTING, "cmds", Str.get(R.string.overlay_lenh_trong_farm), R.drawable.ic_sliders)
         buildCommandGroup()
         addTo(TAB_SETTING, modeBtn)
         addTo(TAB_SETTING, autoBtn)
@@ -959,15 +960,15 @@ object FarmOverlay {
         addTo(TAB_MISC, tagBtn)
         addTo(TAB_MISC, cleanBtn)
         addTo(TAB_MISC, tvCleanStatus!!)
-        addTo(TAB_MISC, caption(service, "Bật là app gõ nw inv export trước, rồi tự dọn theo kế hoạch Tom lập. Dừng farm trước. Tự tắt khi có lỗi hoặc đóng Hub.", C_MUTED))
+        addTo(TAB_MISC, caption(service, Str.get(R.string.overlay_bat_la_app_go_nw), C_MUTED))
         addTo(TAB_MISC, buildWeaponListsCard(service))
-        addGroupTo(TAB_MISC, "stats", "Thống kê", R.drawable.ic_chart)
-        addGroupTo(TAB_MISC, "res", "Tài nguyên", R.drawable.ic_coin)
-        addGroupTo(TAB_MISC, "quest", "Nhiệm vụ", R.drawable.ic_quest)
-        addGroupTo(TAB_MISC, "zoo", "Zoo & pet mới", R.drawable.ic_pets)
+        addGroupTo(TAB_MISC, "stats", Str.get(R.string.overlay_thong_ke), R.drawable.ic_chart)
+        addGroupTo(TAB_MISC, "res", Str.get(R.string.overlay_tai_nguyen), R.drawable.ic_coin)
+        addGroupTo(TAB_MISC, "quest", Str.get(R.string.overlay_nhiem_vu), R.drawable.ic_quest)
+        addGroupTo(TAB_MISC, "zoo", Str.get(R.string.overlay_zoo_pet_moi), R.drawable.ic_pets)
         // Event: bat/tat che do event + dem su kien
         addTo(TAB_EVENT, eventBtn)
-        addGroupTo(TAB_EVENT, "event", "Sự kiện", R.drawable.ic_star)
+        addGroupTo(TAB_EVENT, "event", Str.get(R.string.overlay_su_kien), R.drawable.ic_star)
 
         val scroll = MaxHeightScrollView(service, (screenH * 0.46f).toInt())
         scroll.isVerticalScrollBarEnabled = false
@@ -1016,7 +1017,7 @@ object FarmOverlay {
                 render(FarmController.state.value)
             } else {
                 clearStatsConfirmUntilMs = now + 4_000L
-                clearStatsBtn.text = "Bấm lại để xóa hết thống kê"
+                clearStatsBtn.text = Str.get(R.string.overlay_bam_lai_de_xoa_het)
                 scope?.launch {
                     delay(4_000L)
                     clearStatsBtn.text = STATS_CLEAR_LABEL
@@ -1103,9 +1104,9 @@ object FarmOverlay {
         s.launch {
             TagCollector.progress.collect { p ->
                 val label = when {
-                    p.running -> "Đang học ${p.done}/${p.total} · bấm để dừng"
+                    p.running -> Str.get(R.string.overlay_dang_hoc_bam_de_dung, p.done, p.total)
                     p.message.isNotEmpty() -> p.message
-                    else -> "Học lời khuyên vũ khí"
+                    else -> Str.get(R.string.overlay_hoc_loi_khuyen_vu_khi)
                 }
                 btnTags?.text = label
                 styleBtn(btnTags, if (p.running) Btn.ACTIVE else Btn.SECONDARY)
@@ -1145,7 +1146,7 @@ object FarmOverlay {
     }
 
     private fun updateAutoBtn() {
-        btnAuto?.text = if (autoCollapse) "Tự thu gọn menu: BẬT" else "Tự thu gọn menu: Tắt"
+        btnAuto?.text = if (autoCollapse) Str.get(R.string.overlay_tu_thu_gon_menu_bat) else Str.get(R.string.overlay_tu_thu_gon_menu_tat)
         styleBtn(btnAuto, if (autoCollapse) Btn.ACTIVE else Btn.SECONDARY)
     }
 
@@ -1197,16 +1198,16 @@ object FarmOverlay {
         val t = byDate[todayKey]
         val rows = mutableListOf<Row>()
         if (t == null) {
-            rows.add(Row("Hôm nay", "Chưa có số liệu (bấm Bắt đầu để farm)", Tone.MUTED))
+            rows.add(Row(Str.get(R.string.overlay_hom_nay), Str.get(R.string.overlay_chua_co_so_lieu_bam), Tone.MUTED))
         } else {
-            val runText = StatsFormat.duration(t.seconds).replace(" phút", "p")
+            val runText = StatsFormat.duration(t.seconds).replace(Str.get(R.string.overlay_phut), "p")
             rows.add(Row("", "", build = { c ->
                 tileRow(
                     c,
                     listOf(
                         Triple("Hunt", t.hunts.toString(), UiTheme.TEXT_PRIMARY),
                         Triple("Battle", t.battles.toString(), UiTheme.TEXT_PRIMARY),
-                        Triple("Chạy", runText, UiTheme.TEXT_PRIMARY)
+                        Triple(Str.get(R.string.overlay_chay), runText, UiTheme.TEXT_PRIMARY)
                     )
                 ).first
             }))
@@ -1223,24 +1224,24 @@ object FarmOverlay {
             chart.also { it.setPadding(0, dp(8), 0, 0) }
         }))
         if (t != null) {
-            rows.add(Row("Phiên chạy", "${t.sessions} phiên"))
-            rows.add(Row("Pet mới", "${t.newPets}"))
-            rows.add(Row("Captcha", "${t.captchas} lần", if (t.captchas > 0) Tone.WARN else Tone.NORMAL))
+            rows.add(Row(Str.get(R.string.overlay_phien_chay), Str.get(R.string.overlay_phien, t.sessions)))
+            rows.add(Row(Str.get(R.string.overlay_pet_moi), "${t.newPets}"))
+            rows.add(Row("Captcha", Str.get(R.string.overlay_lan, t.captchas), if (t.captchas > 0) Tone.WARN else Tone.NORMAL))
             if (t.maxSlowdown30m > 0) {
-                rows.add(Row("Slow down", "cao nhất ${t.maxSlowdown30m} lần/30 phút", Tone.WARN))
+                rows.add(Row("Slow down", Str.get(R.string.overlay_cao_nhat_lan_30_phut, t.maxSlowdown30m), Tone.WARN))
             }
             val first = t.cashFirst
             val last = t.cashLast
             if (first != null && last != null) {
-                rows.add(Row("Cowoncy", "${StatsFormat.signed(last - first)} (từ lần đọc đầu ngày)"))
+                rows.add(Row("Cowoncy", Str.get(R.string.overlay_tu_lan_doc_dau_ngay, StatsFormat.signed(last - first))))
             } else {
-                rows.add(Row("Cowoncy", "Chưa đọc owo cash hôm nay", Tone.MUTED))
+                rows.add(Row("Cowoncy", Str.get(R.string.overlay_chua_doc_owo_cash_hom), Tone.MUTED))
             }
         }
         if (days.size > 1) {
             rows.add(
                 Row(
-                    "Tổng ${days.size} ngày",
+                    Str.get(R.string.overlay_tong_ngay, days.size),
                     "${days.sumOf { it.hunts }} hunt · ${days.sumOf { it.battles }} battle · ${StatsFormat.duration(days.sumOf { it.seconds })}",
                     Tone.MUTED
                 )
@@ -1253,7 +1254,7 @@ object FarmOverlay {
     private fun renderCleanup() {
         val st = CleanupGate.status.value
         val on = CleanupGate.enabled
-        btnClean?.text = if (on) "Dọn kho tự động: BẬT (bấm để dừng)" else "Dọn kho tự động: Tắt"
+        btnClean?.text = if (on) Str.get(R.string.overlay_don_kho_tu_dong_bat) else Str.get(R.string.overlay_don_kho_tu_dong_tat)
         styleBtn(btnClean, if (on) Btn.ACTIVE else Btn.SECONDARY)
         val tv = tvCleanStatus ?: return
         val text = CleanupStatusText.line(st, System.currentTimeMillis())
@@ -1275,9 +1276,9 @@ object FarmOverlay {
         val dotColor: String
         val title: String
         when {
-            st.running && st.resting -> { dotColor = C_WARN; title = "Đang nghỉ" }
-            st.running -> { dotColor = C_GOOD; title = "Đang farm" }
-            else -> { dotColor = C_OFF; title = "Đã dừng" }
+            st.running && st.resting -> { dotColor = C_WARN; title = Str.get(R.string.overlay_dang_nghi) }
+            st.running -> { dotColor = C_GOOD; title = Str.get(R.string.overlay_dang_farm) }
+            else -> { dotColor = C_OFF; title = Str.get(R.string.overlay_da_dung) }
         }
         tvDot?.setTextColor(Color.parseColor(dotColor))
         tvStatusTitle?.text = title
@@ -1285,17 +1286,17 @@ object FarmOverlay {
         tvHuntBig?.text = st.hunts.toString()
         tvBattleBig?.text = st.battles.toString()
         val detail = StringBuilder(st.status)
-        if (st.running && st.lastCommand.isNotEmpty()) detail.append("\nLệnh gần nhất: ").append(st.lastCommand)
-        if (!st.huntPaused.isNullOrBlank()) detail.append("\nHunt tạm dừng: ").append(st.huntPaused)
+        if (st.running && st.lastCommand.isNotEmpty()) detail.append(Str.get(R.string.overlay_lenh_gan_nhat)).append(st.lastCommand)
+        if (!st.huntPaused.isNullOrBlank()) detail.append(Str.get(R.string.overlay_hunt_tam_dung)).append(st.huntPaused)
         // tieu de da ghi "Đã dừng" thi khong lap lai y het o dong chi tiet
         val cleanLine = CleanupStatusText.headerLine(CleanupGate.status.value, System.currentTimeMillis())
         if (cleanLine.isNotEmpty()) detail.append("\n").append(cleanLine)
         tvStatusDetail?.text = if (detail.toString().trim() == title) "" else detail.toString()
 
         val modeShort = when (st.huntMode) {
-            1 -> "đủ lootbox"
-            2 -> "thiếu gem"
-            else -> "không dừng"
+            1 -> Str.get(R.string.overlay_du_lootbox)
+            2 -> Str.get(R.string.overlay_thieu_gem)
+            else -> Str.get(R.string.overlay_khong_dung)
         }
         btnMode?.text = "Hunt mode ${st.huntMode} · $modeShort"
         for ((i, m) in SpeedMode.values().withIndex()) {
@@ -1303,15 +1304,15 @@ object FarmOverlay {
         }
         for ((cmd, b) in cmdButtons) {
             val on = st.commands.isEnabled(cmd)
-            b.text = if (on) "BẬT" else "TẮT"
+            b.text = if (on) Str.get(R.string.overlay_bat) else Str.get(R.string.overlay_tat)
             styleBtn(b, if (on) Btn.ACTIVE else Btn.SECONDARY)
         }
         for ((b, cfg) in presetButtons) styleBtn(b, if (st.commands == cfg) Btn.ACTIVE else Btn.SECONDARY)
         groups["cmds"]?.summary?.text = cmdSummary(st.commands)
-        setBtnState(btnToggle, if (st.running) "Dừng" else "Bắt đầu", if (st.running) Btn.DANGER else Btn.PRIMARY, if (st.running) R.drawable.ic_stop else R.drawable.ic_play)
+        setBtnState(btnToggle, if (st.running) Str.get(R.string.overlay_dung) else Str.get(R.string.overlay_bat_dau), if (st.running) Btn.DANGER else Btn.PRIMARY, if (st.running) R.drawable.ic_stop else R.drawable.ic_play)
         btnMute?.visibility = if (st.ringing) View.VISIBLE else View.GONE
         val eventOn = hub?.eventMode == true
-        btnEvent?.text = if (eventOn) "Event: BẬT" else "Event: Tắt"
+        btnEvent?.text = if (eventOn) Str.get(R.string.overlay_event_bat) else Str.get(R.string.overlay_event_tat)
         styleBtn(btnEvent, if (eventOn) Btn.ACTIVE else Btn.SECONDARY)
 
         // Dem nguoc: thoi gian vang captcha (uu tien, mau do) > app dang cho (nghi / gian nhip / cooldown)
@@ -1320,9 +1321,9 @@ object FarmOverlay {
         if (cd != null) {
             when {
                 st.captchaEndMs > 0L ->
-                    cd.start(st.captchaEndMs, 10 * 60_000L, "Thời gian vàng giải captcha", true)
+                    cd.start(st.captchaEndMs, 10 * 60_000L, Str.get(R.string.overlay_thoi_gian_vang_giai_captcha), true)
                 st.waitEndMs > nowMs ->
-                    cd.start(st.waitEndMs, st.waitTotalMs, st.waitLabel.ifBlank { "Đang chờ" }, false)
+                    cd.start(st.waitEndMs, st.waitTotalMs, st.waitLabel.ifBlank { Str.get(R.string.overlay_dang_cho) }, false)
                 else -> cd.clear()
             }
         }
@@ -1342,7 +1343,7 @@ object FarmOverlay {
             reviewRow?.visibility = wantVisible
             relayout()
         }
-        if (reviewing) tvReviewInfo?.text = "Cây ${rv?.currentId} · còn ${rv?.remaining ?: 0}"
+        if (reviewing) tvReviewInfo?.text = Str.get(R.string.overlay_cay_con, rv?.currentId, rv?.remaining ?: 0)
 
         val alertText = st.alert
         if (alertText.isNullOrBlank()) {
@@ -1366,7 +1367,7 @@ object FarmOverlay {
         // --- chua co du lieu tu bot ---
         if (hub == null) {
             val err = st.hubError
-            val msg = if (err.isNullOrBlank()) "Đang tải dữ liệu từ bot…" else "Lỗi: $err"
+            val msg = if (err.isNullOrBlank()) Str.get(R.string.overlay_dang_tai_du_lieu_tu) else Str.get(R.string.overlay_loi, err)
             setGroup("farm", "", listOf(Row("", msg, if (err.isNullOrBlank()) Tone.MUTED else Tone.WARN)))
             for (k in listOf("gem", "res", "hb", "quest", "zoo", "event")) setGroup(k, "", emptyList())
             return
@@ -1379,41 +1380,41 @@ object FarmOverlay {
         val b = hub.battle
         val streakNow = b?.streak ?: 0
         if (b == null) {
-            farmRows.add(Row("Chuỗi battle", "Chưa có dữ liệu (gõ owo battle)", Tone.MUTED))
+            farmRows.add(Row(Str.get(R.string.overlay_chuoi_battle), Str.get(R.string.overlay_chua_co_du_lieu_go), Tone.MUTED))
         } else {
             val lost = b.lastLostStreak ?: 0
-            val best = b.bestStreak?.let { " · cao nhất $it" } ?: ""
-            farmRows.add(Row("Chuỗi battle", "$streakNow$best${ageText(b.ageSeconds)}"))
-            if (b.result == "lost" && lost > 0) farmRows.add(Row("", "Vừa thua, mất chuỗi $lost", Tone.WARN))
+            val best = b.bestStreak?.let { Str.get(R.string.overlay_cao_nhat, it) } ?: ""
+            farmRows.add(Row(Str.get(R.string.overlay_chuoi_battle), "$streakNow$best${ageText(b.ageSeconds)}"))
+            if (b.result == "lost" && lost > 0) farmRows.add(Row("", Str.get(R.string.overlay_vua_thua_mat_chuoi, lost), Tone.WARN))
         }
         val modeLong = when (st.huntMode) {
-            1 -> "Dừng hunt khi đủ lootbox ngày"
-            2 -> "Dừng hunt khi thiếu gem"
-            else -> "Không dừng"
+            1 -> Str.get(R.string.overlay_dung_hunt_khi_du_lootbox)
+            2 -> Str.get(R.string.overlay_dung_hunt_khi_thieu_gem)
+            else -> Str.get(R.string.overlay_khong_dung_2)
         }
         farmRows.add(Row("Hunt mode", "${st.huntMode} · $modeLong"))
-        if (!st.huntPaused.isNullOrBlank()) farmRows.add(Row("Hunt", "Tạm dừng: ${st.huntPaused}", Tone.WARN))
+        if (!st.huntPaused.isNullOrBlank()) farmRows.add(Row("Hunt", Str.get(R.string.overlay_tam_dung, st.huntPaused), Tone.WARN))
         hub.slowdown?.takeIf { (it.count30m ?: 0) > 0 }?.let { sd ->
-            farmRows.add(Row("OwO báo chậm", "${sd.count30m} lần/30 phút${ageText(sd.ageSeconds)} — app đang tự giãn nhịp gõ", Tone.WARN))
+            farmRows.add(Row(Str.get(R.string.overlay_owo_bao_cham), Str.get(R.string.overlay_lan_30_phut_app_dang, sd.count30m, ageText(sd.ageSeconds)), Tone.WARN))
         }
         val tagP = TagCollector.progress.value
         if (tagP.running || tagP.message.isNotEmpty()) {
             val tagText = if (tagP.running) "${tagP.done}/${tagP.total} · ${tagP.message}" else tagP.message
-            farmRows.add(Row("Học tag", tagText, if (tagText.startsWith("✅")) Tone.GOOD else if (tagText.startsWith("⚠️")) Tone.WARN else Tone.NORMAL))
+            farmRows.add(Row(Str.get(R.string.overlay_hoc_tag), tagText, if (tagText.startsWith("✅")) Tone.GOOD else if (tagText.startsWith("⚠️")) Tone.WARN else Tone.NORMAL))
         }
-        setGroup("farm", if (b == null) "" else "chuỗi $streakNow", farmRows)
+        setGroup("farm", if (b == null) "" else Str.get(R.string.overlay_chuoi, streakNow), farmRows)
 
         // ===== Gem =====
         val gemRows = mutableListOf<Row>()
         gemRows.add(
-            if (eventOn) Row("Event", "BẬT — dùng cả slot 4 (Special)", Tone.GOOD)
-            else Row("Event", "Tắt — gem Special không tự dùng", Tone.MUTED)
+            if (eventOn) Row("Event", Str.get(R.string.overlay_bat_dung_ca_slot_4), Tone.GOOD)
+            else Row("Event", Str.get(R.string.overlay_tat_gem_special_khong_tu), Tone.MUTED)
         )
         val eq = hub.gems?.equipped.orEmpty()
         if (eq.isEmpty()) {
-            gemRows.add(Row("", "Đang dùng: chưa có dữ liệu (gõ owo hunt)", Tone.MUTED))
+            gemRows.add(Row("", Str.get(R.string.overlay_dang_dung_chua_co_du), Tone.MUTED))
         } else {
-            gemRows.add(Row("", "Đang dùng:", Tone.MUTED))
+            gemRows.add(Row("", Str.get(R.string.overlay_dang_dung), Tone.MUTED))
             for (g in eq) {
                 val low = (g.percent ?: 100) < 20
                 val gemName = HubFormat.gemType(g.slot)
@@ -1424,26 +1425,26 @@ object FarmOverlay {
         }
         val spare = hub.gems?.spare.orEmpty()
         if (spare.isEmpty()) {
-            gemRows.add(Row("", "Trong kho: chưa có dữ liệu (gõ owo inv)", Tone.MUTED))
+            gemRows.add(Row("", Str.get(R.string.overlay_trong_kho_chua_co_du), Tone.MUTED))
         } else {
             gemRows.add(Row("", "Trong kho${ageText(hub.gems?.spareAgeSeconds)}:", Tone.MUTED))
             for (entry in spare.groupBy { it.slot ?: "?" }.entries.sortedBy { it.key }) {
                 gemRows.add(Row(HubFormat.gemType(entry.key), entry.value.joinToString(" · ") { g -> "${g.tier ?: "?"} ×${g.count ?: 0}" }))
             }
         }
-        setGroup("gem", if (eq.isEmpty()) "" else "${eq.size} đang dùng", gemRows)
+        setGroup("gem", if (eq.isEmpty()) "" else Str.get(R.string.overlay_dang_dung_2, eq.size), gemRows)
 
         // ===== Tai nguyen =====
         val resRows = mutableListOf<Row>()
         val cashAmount = hub.cowoncy?.amount
         val wsAmount = hub.weaponShards?.amount
         if (cashAmount == null) {
-            resRows.add(Row("Cowoncy", "Chưa có dữ liệu (gõ owo cash)", Tone.MUTED))
+            resRows.add(Row("Cowoncy", Str.get(R.string.overlay_chua_co_du_lieu_go_2), Tone.MUTED))
         } else {
             resRows.add(Row("Cowoncy", "${HubFormat.num(cashAmount)}${ageText(hub.cowoncy?.ageSeconds)}"))
         }
         if (wsAmount == null) {
-            resRows.add(Row("Weapon shards", "Chưa có dữ liệu (gõ owo ws)", Tone.MUTED))
+            resRows.add(Row("Weapon shards", Str.get(R.string.overlay_chua_co_du_lieu_go_3), Tone.MUTED))
         } else {
             resRows.add(Row("Weapon shards", "${HubFormat.num(wsAmount)}${ageText(hub.weaponShards?.ageSeconds)}"))
         }
@@ -1458,28 +1459,28 @@ object FarmOverlay {
         val h = hub.huntbot
         var hbSummary = ""
         if (h == null) {
-            hbRows.add(Row("", "Chưa có dữ liệu (gõ owo hb)", Tone.MUTED))
+            hbRows.add(Row("", Str.get(R.string.overlay_chua_co_du_lieu_go_4), Tone.MUTED))
         } else {
             if (h.hunting == true) {
                 val left = h.secondsLeft?.let { it - elapsed }
                 val timeText = when {
-                    left == null -> h.timeRemainingText?.let { "còn $it" } ?: "chưa rõ giờ xong"
-                    left > 0L -> "còn ${HubFormat.shortDuration(left)}"
-                    else -> "đã tới giờ xong"
+                    left == null -> h.timeRemainingText?.let { Str.get(R.string.overlay_con, it) } ?: Str.get(R.string.overlay_chua_ro_gio_xong)
+                    left > 0L -> Str.get(R.string.overlay_con, HubFormat.shortDuration(left))
+                    else -> Str.get(R.string.overlay_da_toi_gio_xong)
                 }
                 val pct = h.progressPct?.let { "${HubFormat.trimNum(it)}%" } ?: ""
                 val pctInt = h.progressPct?.toInt()
                 if (pctInt != null) {
-                    hbRows.add(Row("", "", build = { c -> ringRow(c, pctInt, "Đang săn", timeText) }))
+                    hbRows.add(Row("", "", build = { c -> ringRow(c, pctInt, Str.get(R.string.overlay_dang_san), timeText) }))
                 } else {
-                    hbRows.add(Row("Trạng thái", "Đang săn", Tone.GOOD))
-                    hbRows.add(Row("Thời gian", timeText))
+                    hbRows.add(Row(Str.get(R.string.overlay_trang_thai), Str.get(R.string.overlay_dang_san), Tone.GOOD))
+                    hbRows.add(Row(Str.get(R.string.overlay_thoi_gian), timeText))
                 }
-                h.animalsCaptured?.let { hbRows.add(Row("Bắt được", "${HubFormat.num(it)} con")) }
+                h.animalsCaptured?.let { hbRows.add(Row(Str.get(R.string.overlay_bat_duoc), "${HubFormat.num(it)} con")) }
                 hbSummary = listOf(pct, timeText).filter { it.isNotEmpty() }.joinToString(" · ")
             } else {
-                hbRows.add(Row("Trạng thái", "KHÔNG chạy — bạn tự chạy lại", Tone.WARN))
-                hbSummary = "không chạy"
+                hbRows.add(Row(Str.get(R.string.overlay_trang_thai), Str.get(R.string.overlay_khong_chay_ban_tu_chay), Tone.WARN))
+                hbSummary = Str.get(R.string.overlay_khong_chay)
             }
             h.essence?.let { hbRows.add(Row("Essence", HubFormat.num(it))) }
             val traitNames = listOf(
@@ -1489,7 +1490,7 @@ object FarmOverlay {
             val traits = h.traits
             if (traits != null) {
                 val text = traitNames.mapNotNull { (k, n) -> traits[k]?.let { "$n $it" } }.joinToString(" · ")
-                if (text.isNotEmpty()) hbRows.add(Row("Cấp", text, Tone.MUTED))
+                if (text.isNotEmpty()) hbRows.add(Row(Str.get(R.string.overlay_cap), text, Tone.MUTED))
             }
         }
         setGroup("hb", hbSummary, hbRows)
@@ -1499,18 +1500,18 @@ object FarmOverlay {
         val d = hub.daily
         var questSummary = ""
         if (d == null) {
-            questRows.add(Row("Daily", "Chưa có dữ liệu (gõ owo daily)", Tone.MUTED))
+            questRows.add(Row("Daily", Str.get(R.string.overlay_chua_co_du_lieu_go_5), Tone.MUTED))
         } else {
             val left = d.secondsLeft?.let { it - elapsed }
             val ready = left != null && left <= 0L
             val timeText = when {
-                left == null -> "chưa rõ giờ nhận"
-                left > 0L -> "còn ${HubFormat.shortDuration(left)} nữa nhận được"
-                else -> "sẵn sàng nhận"
+                left == null -> Str.get(R.string.overlay_chua_ro_gio_nhan)
+                left > 0L -> Str.get(R.string.overlay_con_nua_nhan_duoc, HubFormat.shortDuration(left))
+                else -> Str.get(R.string.overlay_san_sang_nhan)
             }
-            val streak = d.streak?.let { " · chuỗi ${HubFormat.num(it)} ngày" } ?: ""
+            val streak = d.streak?.let { Str.get(R.string.overlay_chuoi_ngay, HubFormat.num(it)) } ?: ""
             questRows.add(Row("Daily", "$timeText$streak", if (ready) Tone.GOOD else Tone.NORMAL))
-            questSummary = if (ready) "daily sẵn sàng" else ""
+            questSummary = if (ready) Str.get(R.string.overlay_daily_san_sang) else ""
         }
         val q = hub.quest
         val dailyProg = hub.checklists?.daily?.progress
@@ -1523,9 +1524,9 @@ object FarmOverlay {
             if (questSummary.isEmpty()) questSummary = prog.first()
         }
         val qItems = q?.quests.orEmpty()
-        if (qItems.isNotEmpty()) questRows.add(Row("Quest", "còn ${qItems.count { it.done != true }}/${qItems.size} chưa xong"))
+        if (qItems.isNotEmpty()) questRows.add(Row("Quest", Str.get(R.string.overlay_con_chua_xong, qItems.count { it.done != true }, qItems.size)))
         q?.seals?.let { questRows.add(Row("Seals", HubFormat.num(it))) }
-        if (q == null && prog.isEmpty()) questRows.add(Row("Quest", "Chưa có dữ liệu (gõ owo q)", Tone.MUTED))
+        if (q == null && prog.isEmpty()) questRows.add(Row("Quest", Str.get(R.string.overlay_chua_co_du_lieu_go_6), Tone.MUTED))
         setGroup("quest", questSummary, questRows)
 
         // ===== Zoo & pet moi =====
@@ -1533,35 +1534,35 @@ object FarmOverlay {
         val z = hub.zoo
         var unlocked = 0
         if (z == null) {
-            zooRows.add(Row("Zoo", "Chưa có dữ liệu (gõ owo zoo)", Tone.MUTED))
+            zooRows.add(Row("Zoo", Str.get(R.string.overlay_chua_co_du_lieu_go_7), Tone.MUTED))
         } else {
             val sacrificed = z.sacrificedPets.orEmpty().size
             unlocked = z.unlockedTotal ?: (z.pets.orEmpty().size + sacrificed)
-            val points = z.zooPoints?.let { " · $it điểm" } ?: ""
-            zooRows.add(Row("Zoo", "$unlocked loài đã mở khóa$points${ageText(z.ageSeconds)}"))
-            if (sacrificed > 0) zooRows.add(Row("", "Trong đó $sacrificed loài số lượng 0 (đã hiến tế)", Tone.MUTED))
+            val points = z.zooPoints?.let { Str.get(R.string.overlay_diem, it) } ?: ""
+            zooRows.add(Row("Zoo", Str.get(R.string.overlay_loai_da_mo_khoa, unlocked, points, ageText(z.ageSeconds))))
+            if (sacrificed > 0) zooRows.add(Row("", Str.get(R.string.overlay_trong_do_loai_so_luong, sacrificed), Tone.MUTED))
         }
         // pet moi: chi tinh tu luc bat Hub / bat farm (tat bat lai la xoa trang)
         val sessionNames = st.sessionNewPets.toSet()
         val newPets = hub.newPets?.pets.orEmpty().filter { (it.name ?: "") in sessionNames }
         if (newPets.isEmpty()) {
-            zooRows.add(Row("Pet mới", "Chưa có lần farm này", Tone.MUTED))
+            zooRows.add(Row(Str.get(R.string.overlay_pet_moi), Str.get(R.string.overlay_chua_co_lan_farm_nay), Tone.MUTED))
         } else {
             newPets.take(6).forEachIndexed { i, p ->
                 val text = (p.name ?: "?") + (p.rankVi?.let { " · $it" } ?: "") + " ×${p.timesFound ?: 1}"
-                zooRows.add(Row(if (i == 0) "Pet mới" else "", text, Tone.GOOD))
+                zooRows.add(Row(if (i == 0) Str.get(R.string.overlay_pet_moi) else "", text, Tone.GOOD))
             }
         }
         val zooSummary = listOfNotNull(
-            if (z != null) "$unlocked loài" else null,
-            if (newPets.isNotEmpty()) "${newPets.size} mới" else null
+            if (z != null) Str.get(R.string.overlay_loai, unlocked) else null,
+            if (newPets.isNotEmpty()) Str.get(R.string.overlay_moi, newPets.size) else null
         ).joinToString(" · ")
         setGroup("zoo", zooSummary, zooRows)
 
         // ===== Su kien (nam trong tab Event; chua thay tin su kien thi hien dong bao chua co) =====
         val evCounters = hub.event?.counters.orEmpty()
         if (evCounters.isEmpty()) {
-            setGroup("event", "", listOf(Row("", "Chưa thấy tin sự kiện nào từ bot", Tone.MUTED)))
+            setGroup("event", "", listOf(Row("", Str.get(R.string.overlay_chua_thay_tin_su_kien), Tone.MUTED)))
         } else {
             val evRows = mutableListOf<Row>()
             for (c in evCounters) {
@@ -1570,7 +1571,7 @@ object FarmOverlay {
             val latest = hub.event?.recent.orEmpty().firstOrNull()
             val rewardText = latest?.rewards.orEmpty().joinToString(", ") { r -> "${HubFormat.num(r.amount)} ${r.item ?: "?"}" }
             if (latest != null && rewardText.isNotEmpty()) {
-                evRows.add(Row("Gần nhất", rewardText + ageText(latest.ageSeconds), Tone.GOOD))
+                evRows.add(Row(Str.get(R.string.overlay_gan_nhat), rewardText + ageText(latest.ageSeconds), Tone.GOOD))
             }
             val evSummary = evCounters.joinToString(" · ") { c -> "${c.kind ?: "?"} ${c.current ?: "?"}/${c.max ?: "?"}" }
             setGroup("event", evSummary, evRows)

@@ -11,6 +11,8 @@ import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
 import com.starclan.starhub.data.CountdownFormat
+import com.starclan.starhub.R
+import com.starclan.starhub.Str
 
 /**
  * Dong ho dem nguoc cho Hub noi: dong chu "Ly do · m:ss" + thanh tien do co dan ve 0 (cap nhat moi 0,1 giay
@@ -78,7 +80,7 @@ class WaitCountdownView(context: Context) : LinearLayout(context) {
         val left = endMs - System.currentTimeMillis()
         if (left <= 0L) {
             if (danger) {
-                title.text = "$label · HẾT GIỜ (0:00)"
+                title.text = Str.get(R.string.wait_het_gio_0_00, label)
                 bar.progress = 0
                 if (lastText != "0:00") {
                     lastText = "0:00"
