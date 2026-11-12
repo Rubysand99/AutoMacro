@@ -160,8 +160,7 @@ object FarmController {
     private const val SILENT_STOP_SEC = 360L      // 6 phut -> dung han
     private const val CAPTCHA_GOLDEN_MS = 10 * 60_000L   // OwO cho giai captcha 10 phut ke tu luc bao
     private const val MIN_COUNTDOWN_MS = 2_000L          // cho ngan hon thi khong can hien dem nguoc
-    private const val CAPTCHA_MESSAGE =
-        Str.get(R.string.farm_owo_doi_captcha_da_dung)
+    private val CAPTCHA_MESSAGE: String get() = Str.get(R.string.farm_owo_doi_captcha_da_dung)
 
     // ===============================================================================
 
