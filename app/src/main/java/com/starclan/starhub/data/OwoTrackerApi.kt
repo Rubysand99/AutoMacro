@@ -275,6 +275,16 @@ object OwoTrackerApi {
     suspend fun fetchClean(apiUrl: String, token: String): BotClean? =
         callBot(apiUrl, token, "GET", "/clean")?.let { BotToolsJson.parseClean(it) }
 
+    /** Nhu `,petset`: nhap tay 1 pet. null = khong goi duoc bot / bot tu choi (400) / bot chua co duong /manual/pet. */
+    suspend fun saveManualPet(apiUrl: String, token: String, pet: ManualPet): BotManualResult? =
+        callBot(apiUrl, token, "POST", ManualKind.PET.path, BotToolsJson.petBody(pet))?.let { BotToolsJson.parseManual(it) }
+
+    /** Nhu `,weapontypeset` (kind = WEAPON_TYPE) / `,passiveset` (kind = PASSIVE): nhap tay ten + mo ta. kind = PET khong dung o day. */
+    suspend fun saveManualDesc(apiUrl: String, token: String, kind: ManualKind, d: ManualDesc): BotManualResult? {
+        require(kind != ManualKind.PET) { "pet co du lieu rieng, dung saveManualPet" }
+        return callBot(apiUrl, token, "POST", kind.path, BotToolsJson.descBody(d))?.let { BotToolsJson.parseManual(it) }
+    }
+
     /** Nhu `,testalt`: thu DM 1 tin vao acc phu. null = khong goi duoc bot. */
     suspend fun testAlt(apiUrl: String, token: String): BotAltTest? =
         callBot(apiUrl, token, "POST", "/alt/test", "{}")?.let { BotToolsJson.parseAltTest(it) }

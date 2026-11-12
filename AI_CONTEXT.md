@@ -11,6 +11,14 @@ repo Python/discord.py rieng) de tao 1 he thong tap trung: owo-tracker la
 "bo nao" (biet luc nao can lam gi), AutoMacro la "tay chan" (thuc thi tren
 dien thoai). Xem muc "Ket noi voi owo-tracker" ben duoi.
 
+## v36 — Nhap tay pet / loai vu khi / passive + chuoi UI ra strings.xml (12/11/2026)
+- Bot (owo-tracker) them 3 duong `POST /manual/pet|weapontype|passive` (nhu `,petset` `,weapontypeset` `,passiveset`); luat kiem tra thuan o `tools_api.py` (`parse_pet_manual`, `parse_desc_manual`), luu chung ham voi lenh Discord (`save_pet_manual`, `save_weapontype_manual`, `save_passive`). Tra `{"ok":true,"name":...}`; truong sai -> 400 kem `field`. Test: `test_tools_api.py`, `test_tools_handlers.py`.
+- App: `ToolsFragment` them muc "Nhap tay" (3 nut chon loai; pet co rank + 6 o chi so, 2 loai con lai co ten + mo ta). `BotTools.kt` them `ManualKind`, `ManualPet`, `ManualDesc`, `ManualCheck`, `ManualInput` (kiem tra o nhap TRUOC khi gui, cung luat voi bot — **sua luat o bot thi sua ca o day**), `BotToolsJson.petBody/descBody/parseManual`, `BotToolsText.manualFieldError/manualSavedMessage`. `OwoTrackerApi.saveManualPet/saveManualDesc`. Bot cu khong co duong /manual -> app bao "cap nhat bot".
+- Test thuan Kotlin moi: `ManualInputTest` (16 test). Da bien dich + chay JUnit offline bang compiler Kotlin nhung cua Gradle (`kotlin-compiler-embeddable` + junit + gson trong `/opt/gradle/lib`): 35 test pass (BotToolsJsonTest, BotToolsTextTest, ManualInputTest). `ToolsFragment` / `ConfigFragment` / `OwoTrackerApi` can Android SDK nen **CHUA BIEN DICH o may nay**: da kiem tra cu phap + doi chieu loai loi voi ban cu, va kiem tra moi `R.string.*` deu co trong strings.xml / dung so tham so dinh dang — nhung van phai xem ket qua GitHub Actions.
+- Chuoi tieng Viet viet thang: da chuyen het o `ToolsFragment` + `ConfigFragment` sang `res/values/strings.xml` (ten `tools_*`, `config_*`; dung lai `tab_tools`, `tab_config`, `btn_save`, `hub_section_gems`, `section_gem_tier`). Code UI moi nen dung `getString(R.string.x)`.
+- **VAN CON chuoi viet thang** (co y chua doi): cac doi tuong Kotlin thuan co test so khop dung chu (`BotToolsText`, `HubFormat`, `HubSummary`, `CleanupStatus`, `FarmCommandConfig`, `HubSearch`...) — khong dung `R` duoc trong test JVM nen can doi cach (truyen `Resources` / interface) moi chuyen duoc; va `FarmOverlay` (~130 dong), `FarmController`, `CleanupRunner`, `TagCollector`, `HubFragment`. Doi tung file mot va nho chay lai test.
+- Chua thu tren may that: muc Nhap tay (go ban phim so cho o chi so, o mo ta nhieu dong, nut chon loai doi mau).
+
 ## v35 — Hien thi trang thai "Don kho tu dong" (9/11/2026)
 - Bot: `GET /clean` (active/cursor/total/at_epoch/empty_reason/pending); phien khong co buoc ghi `empty_reason`; moi buoc gui kem `step_no`/`step_total`.
 - App: `data/CleanupStatus.kt` (CleanupPhase, CleanupStatusText.line/headerLine/idleStatus/mismatchReason, thuan Kotlin, co test); `CleanupGate.status` (StateFlow) do service + CleanupRunner cap nhat; FarmOverlay hien dong trang thai duoi nut "Don kho tu dong" (tab Misc) + dong dau Hub, dem nguoc 45s cho file.
@@ -21,7 +29,7 @@ dien thoai). Xem muc "Ket noi voi owo-tracker" ben duoi.
 - App: `ToolsFragment` them 2 muc. "Acc phu nhan DM nhac huntbot" = xem trang thai / o nhap ID (chi nhan 15-25 chu so) / Luu / Tat DM / Thu gui DM. "Doi hinh & zoo" = 4 nut (Cham doi hinh, Pet da mo khoa, So zoo dang giu, So zoo so da bat), ket qua hien trong khung chu co the boi den chep. Co co `busy` chan bam lien tiep (tranh DM thu nhieu lan).
 - Thuan Kotlin + test: `BotTools.kt` them 5 data class + parser (`parseTeamCheck/ZooDiff/Unlocked/Alt/AltTest`, `altBody`) va `BotToolsText` (chu hien thi, `isValidAltId`). Test: `BotToolsJsonTest` (them), `BotToolsTextTest` (moi). Da bien dich + chay JUnit offline bang compiler Kotlin nhung cua Gradle: 18 test pass. `ToolsFragment` / `OwoTrackerApi` can Android SDK nen CHUA bien dich o may nay — kiem tra qua GitHub Actions.
 - Neu bot cu chua cap nhat (khong co duong moi) thi app hien thong bao "cap nhat bot" thay vi bao loi kho hieu.
-- Chua lam: `,petset`, `,weapontypeset` / `,passiveset` (nhap tay, can UI nhap lieu rieng).
+- (Da lam o v36: `,petset`, `,weapontypeset`, `,passiveset` — muc "Nhap tay" tab Cong cu.)
 
 ## v33 — Don kho tu dong (8/11/2026)
 - Bot (owo-tracker): Neon tra loi dung lenh `nw inv export` cua OWNER (reply truc tiep + file .json) -> `import_weapon_export(auto_session=True)`
@@ -58,7 +66,7 @@ dien thoai). Xem muc "Ket noi voi owo-tracker" ben duoi.
 - Bottom nav co 3 tab: Hub / Cong cu / Cai dat. `ToolsFragment.kt` dung UI hoan toan bang code (khong XML), moi lan mo tab la Fragment moi nen tu tai lai.
 - Cong tac bot -> `GET/POST /settings` (khoa auto_check, hb_auto, hb_alert; event_mode dung `/event-mode`, app_on dung `/power` nhu truoc), ghi chu -> `/notes`, bao giai captcha -> `POST /captcha/clear`. Ben bot them o owo-tracker (handler `handle_*_settings/notes/captcha_clear`, test `test_v30.py`).
 - Tra cuu: `data/HubSearch.kt` (thuan Kotlin, bo dau tieng Viet, toi da 15 ket qua/nhom) tim tren du lieu `/hub` da tai: zoo, dex, kho, vu khi. Parse JSON cong cu o `data/BotTools.kt`. Test: `HubSearchTest`, `BotToolsJsonTest`.
-- Chua lam (co the them sau): `,petset`, `,weapontypeset`/`,passiveset` (nhap tay). (`,setalt`/`,testalt`/`,teamcheck`/`,zoodiff`/`,unlocked` da lam o v34.)
+- Chua lam (da xong o v34 / v36): `,petset`, `,weapontypeset`/`,passiveset` (nhap tay, v36). (`,setalt`/`,testalt`/`,teamcheck`/`,zoodiff`/`,unlocked` da lam o v34.)
 
 ## v26 — Bat / tat tung lenh farm + cau hinh (6/11/2026)
 - Tab Setting cua Hub noi co khung "Lenh trong farm": moi lenh 1 nut BAT/TAT (15 lenh, 3 nhom: chinh / viec vat / kiem tra) + 2 cau hinh nhanh "Bat tat ca" va "Chi hunt + battle".

@@ -38,6 +38,29 @@ data class BotAltTest(val ok: Boolean, val userId: String, val reason: String)
  */
 data class BotClean(val active: Boolean, val cursor: Int, val total: Int, val atMs: Long, val emptyReason: String)
 
+/** Ket qua POST /manual/pet|weapontype|passive: ok + ten bot da luu (lenh ,petset ,weapontypeset ,passiveset). */
+data class BotManualResult(val ok: Boolean, val name: String)
+
+/** Loai du lieu nhap tay. `path` la duong cua bot. */
+enum class ManualKind(val path: String) {
+    PET("/manual/pet"),
+    WEAPON_TYPE("/manual/weapontype"),
+    PASSIVE("/manual/passive")
+}
+
+data class ManualPet(
+    val name: String, val rank: String,
+    val hp: Int, val att: Int, val pr: Int, val wp: Int, val mag: Int, val mr: Int
+)
+
+data class ManualDesc(val name: String, val desc: String)
+
+/** Ket qua kiem tra o nhap tay: Ok = du lieu sach de gui; Bad = ten truong sai (name, rank, desc, hp, att, pr, wp, mag, mr, body). */
+sealed class ManualCheck<out T> {
+    data class Ok<T>(val value: T) : ManualCheck<T>()
+    data class Bad(val field: String) : ManualCheck<Nothing>()
+}
+
 /** Cong tac co the bat/tat qua POST /settings. `key` la ten bot hieu. */
 enum class BotToggle(val key: String) {
     AUTO_CHECK("auto_check"),
@@ -159,6 +182,28 @@ object BotToolsJson {
         }
     }
 
+    /** Thieu `ok` -> false; thieu `name` -> chuoi rong. */
+    fun parseManual(json: String): BotManualResult? {
+        return try {
+            val o = JsonParser.parseString(json).asJsonObject
+            BotManualResult(bool(o, "ok", false), str(o, "name") ?: "")
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    /** Body POST /manual/pet (chi so la so nguyen JSON). */
+    fun petBody(p: ManualPet) = com.google.gson.JsonObject().apply {
+        addProperty("name", p.name); addProperty("rank", p.rank)
+        addProperty("hp", p.hp); addProperty("att", p.att); addProperty("pr", p.pr)
+        addProperty("wp", p.wp); addProperty("mag", p.mag); addProperty("mr", p.mr)
+    }.toString()
+
+    /** Body POST /manual/weapontype va /manual/passive. */
+    fun descBody(d: ManualDesc) = com.google.gson.JsonObject().apply {
+        addProperty("name", d.name); addProperty("desc", d.desc)
+    }.toString()
+
     /** Body POST /alt. userId rong = tat. Dung Gson de ID luon la chuoi JSON hop le. */
     fun altBody(userId: String) = com.google.gson.JsonObject().apply {
         addProperty("user_id", userId)
@@ -201,9 +246,76 @@ object BotToolsText {
             "\"Cho phép tin nhắn trực tiếp từ thành viên máy chủ\" (Cài đặt quyền riêng tư)."
     }
 
+    fun manualFieldError(field: String): String = when (field) {
+        "name" -> "Tên phải dài 1–${ManualInput.NAME_MAX} ký tự, không xuống dòng."
+        "rank" -> "Rank chỉ gồm chữ cái (vd: common, legendary), tối đa 20 ký tự."
+        "desc" -> "Mô tả phải dài 1–${ManualInput.DESC_MAX} ký tự."
+        in ManualInput.STAT_KEYS -> "${field.uppercase()} phải là số nguyên từ 0 đến ${ManualInput.STAT_MAX}."
+        else -> "Dữ liệu chưa hợp lệ."
+    }
+
+    fun manualSavedMessage(r: BotManualResult?): String = when {
+        r == null -> "Không lưu được — kiểm tra mạng / token, hoặc cập nhật bot lên bản có đường /manual."
+        r.ok -> "Đã lưu ${r.name}."
+        else -> "Bot không nhận dữ liệu này."
+    }
+
     fun unlockedText(u: BotUnlocked): String {
         if (u.total <= 0 || u.tiers.isEmpty()) return "Chưa có dữ liệu zoo. Gõ owo zoo trong kênh farm một lần."
         val body = u.tiers.joinToString("\n\n") { "${it.tier} (${it.count})\n${it.pets.joinToString(", ")}" }
         return "Đã mở khóa ${u.total} con\n\n$body"
+    }
+}
+
+/**
+ * Kiem tra o nhap tay (,petset ,weapontypeset ,passiveset) TRUOC khi gui — cung luat voi tools_api.py cua bot
+ * (parse_pet_manual / parse_desc_manual), de loi hien ngay tren app thay vi bi bot tra 400.
+ * Thuan Kotlin (khong dung Android) de test duoc.
+ */
+object ManualInput {
+    const val NAME_MAX = 60
+    const val DESC_MAX = 1000
+    const val STAT_MAX = 100000
+    /** Thu tu 6 chi so pet: HP ATT PR WP MAG MR. */
+    val STAT_KEYS = listOf("hp", "att", "pr", "wp", "mag", "mr")
+
+    private val RANK = Regex("^[A-Za-z]{1,20}$")
+    private val DIGITS = Regex("^\\d{1,6}$")
+
+    // Giong bot: ky tu dieu khien la \x00-\x1f va \x7f.
+    private fun isCtl(c: Char) = c.code < 0x20 || c.code == 0x7f
+    private fun len(s: String) = s.codePointCount(0, s.length)   // dem ky tu that (emoji = 1), giong len() cua Python
+
+    private fun cleanName(raw: String): String? {
+        val s = raw.trim()
+        return if (s.isEmpty() || len(s) > NAME_MAX || s.any { isCtl(it) }) null else s
+    }
+
+    /** Mo ta cho phep xuong dong; \r bi bo (EditText nhieu dong chi cho \n). */
+    private fun cleanDesc(raw: String): String? {
+        val s = raw.replace("\r", "").trim()
+        return if (s.isEmpty() || len(s) > DESC_MAX || s.any { it != '\n' && isCtl(it) }) null else s
+    }
+
+    /** `stats` theo thu tu STAT_KEYS (HP ATT PR WP MAG MR), moi o la chu nguoi dung go: chi nhan day 1-6 chu so, 0..STAT_MAX. */
+    fun pet(name: String, rank: String, stats: List<String>): ManualCheck<ManualPet> {
+        val n = cleanName(name) ?: return ManualCheck.Bad("name")
+        val r = rank.trim()
+        if (!RANK.matches(r)) return ManualCheck.Bad("rank")
+        if (stats.size != STAT_KEYS.size) return ManualCheck.Bad("body")
+        val v = IntArray(STAT_KEYS.size)
+        for (i in STAT_KEYS.indices) {
+            val s = stats[i].trim()
+            val x = if (DIGITS.matches(s)) s.toInt() else -1
+            if (x < 0 || x > STAT_MAX) return ManualCheck.Bad(STAT_KEYS[i])
+            v[i] = x
+        }
+        return ManualCheck.Ok(ManualPet(n, r, v[0], v[1], v[2], v[3], v[4], v[5]))
+    }
+
+    fun desc(name: String, desc: String): ManualCheck<ManualDesc> {
+        val n = cleanName(name) ?: return ManualCheck.Bad("name")
+        val d = cleanDesc(desc) ?: return ManualCheck.Bad("desc")
+        return ManualCheck.Ok(ManualDesc(n, d))
     }
 }

@@ -57,17 +57,17 @@ class ConfigFragment : Fragment() {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(16), dp(16), dp(16), dp(24))
         }
-        col.addView(text("Config", 22f, UiTheme.TEXT_PRIMARY, bold = true))
-        col.addView(text("Lựa chọn ở đây được lưu ngay trên máy, không cần bấm Lưu.", 12f, UiTheme.TEXT_MUTED)
+        col.addView(text(getString(R.string.tab_config), 22f, UiTheme.TEXT_PRIMARY, bold = true))
+        col.addView(text(getString(R.string.config_note_autosave), 12f, UiTheme.TEXT_MUTED)
             .also { it.setPadding(0, dp(2), 0, dp(6)) })
 
         // ---- Nhạc nền ----
-        col.addView(sectionTitle("Nhạc nền"))
+        col.addView(sectionTitle(getString(R.string.config_section_music)))
         val musicCard = card()
         val row = LinearLayout(ctx).apply { orientation = LinearLayout.HORIZONTAL; gravity = android.view.Gravity.CENTER_VERTICAL }
         val left = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL }
-        left.addView(text("Phát nhạc khi farm", 14f, UiTheme.TEXT_PRIMARY, bold = true))
-        left.addView(text("Bắt đầu farm thì nhạc tự phát (lặp lại), dừng farm thì nhạc tự tắt. Chuông báo captcha vẫn kêu bình thường.", 11.5f, UiTheme.TEXT_MUTED))
+        left.addView(text(getString(R.string.config_music_title), 14f, UiTheme.TEXT_PRIMARY, bold = true))
+        left.addView(text(getString(R.string.config_music_sub), 11.5f, UiTheme.TEXT_MUTED))
         row.addView(left, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         swMusic = SwitchCompat(ctx).apply { setOnCheckedChangeListener { _, on -> if (!updatingUi) onMusicToggled(on) } }
         row.addView(swMusic, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
@@ -77,9 +77,9 @@ class ConfigFragment : Fragment() {
         tvTrack = text("", 13f, UiTheme.TEXT_SECONDARY)
         musicCard.addView(tvTrack, lp(top = 0, bottom = 6))
         val btnRow = LinearLayout(ctx).apply { orientation = LinearLayout.HORIZONTAL }
-        btnRow.addView(button("Chọn file nhạc") { pickMusic.launch(arrayOf("audio/*")) },
+        btnRow.addView(button(getString(R.string.config_pick_track)) { pickMusic.launch(arrayOf("audio/*")) },
             LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-        btnPreview = button("Nghe thử") { onPreviewClicked() }
+        btnPreview = button(getString(R.string.config_preview)) { onPreviewClicked() }
         btnRow.addView(btnPreview, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).also { it.leftMargin = dp(8) })
         musicCard.addView(btnRow, lp(top = 0, bottom = 8))
 
@@ -102,9 +102,9 @@ class ConfigFragment : Fragment() {
         col.addView(musicCard)
 
         // ---- Tier gem ----
-        col.addView(sectionTitle("Gem"))
+        col.addView(sectionTitle(getString(R.string.hub_section_gems)))
         val gemCard = card()
-        gemCard.addView(text("Tier gem khi thay", 14f, UiTheme.TEXT_PRIMARY, bold = true))
+        gemCard.addView(text(getString(R.string.section_gem_tier), 14f, UiTheme.TEXT_PRIMARY, bold = true))
         gemCard.addView(text(getString(R.string.note_gem_tier), 11.5f, UiTheme.TEXT_MUTED))
         gemCard.addView(button(getString(R.string.btn_gem_tier)) {
             GemTierDialog.openFromSaved(requireContext(), viewLifecycleOwner.lifecycleScope) { view != null }
@@ -137,7 +137,7 @@ class ConfigFragment : Fragment() {
 
     private fun onMusicToggled(on: Boolean) {
         if (on && !music.hasTrack) {
-            toast("Chọn file nhạc trước đã")
+            toast(getString(R.string.config_pick_first))
             refreshMusicUi()
             return
         }
@@ -164,7 +164,7 @@ class ConfigFragment : Fragment() {
     }
 
     private fun onPreviewClicked() {
-        if (!music.hasTrack) { toast("Chọn file nhạc trước đã"); return }
+        if (!music.hasTrack) { toast(getString(R.string.config_pick_first)); return }
         if (previewing) {
             MusicPlayer.stop()
             previewing = false
@@ -182,7 +182,7 @@ class ConfigFragment : Fragment() {
         } finally {
             updatingUi = false
         }
-        tvTrack.text = if (music.hasTrack) "Bài đã chọn: " + music.name.ifBlank { "(không rõ tên)" } else "Chưa chọn file nhạc."
+        tvTrack.text = if (music.hasTrack) getString(R.string.config_track_selected, music.name.ifBlank { getString(R.string.config_track_unnamed) }) else getString(R.string.config_track_none)
         seekVolume.progress = music.volume
         tvVolume.text = volumeLabel()
         refreshPreviewButton()
@@ -190,11 +190,11 @@ class ConfigFragment : Fragment() {
 
     private fun refreshPreviewButton() {
         if (!::btnPreview.isInitialized) return
-        btnPreview.text = if (previewing) "Dừng nghe thử" else "Nghe thử"
+        btnPreview.text = if (previewing) getString(R.string.config_preview_stop) else getString(R.string.config_preview)
         btnPreview.isEnabled = music.hasTrack
     }
 
-    private fun volumeLabel() = "Âm lượng nhạc nền: ${music.volume}%"
+    private fun volumeLabel() = getString(R.string.config_volume, music.volume)
 
     private fun displayName(uri: Uri): String {
         try {
@@ -207,7 +207,7 @@ class ConfigFragment : Fragment() {
         } catch (e: Exception) {
             // rơi xuống tên mặc định
         }
-        return uri.lastPathSegment?.substringAfterLast('/') ?: "nhạc"
+        return uri.lastPathSegment?.substringAfterLast('/') ?: getString(R.string.config_track_fallback)
     }
 
     // ------------------------------------------------------------------ dựng giao diện nhỏ

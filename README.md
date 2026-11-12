@@ -53,6 +53,9 @@ Android 13+ sẽ hỏi quyền thông báo — hãy bấm Cho phép. Giờ huntb
 Đưa các lệnh của owo-tracker lên app, khỏi phải gõ trong Discord (cần bot bản mới có `/settings`, `/notes`, `/captcha/clear`):
 - **Công tắc bot:** tự chen lệnh check (`,autocheck`), tự chạy lại huntbot (`,hbauto`), nhắc huntbot qua DM (`,hbalert`), chế độ Event (`,eventmode`),
   cho bot giao việc cho app (`,off`). Khi OwO đang đòi captcha hiện khung đỏ + nút **Đã giải captcha xong** (`,captcha clear`).
+- **Nhập tay:** khi bot chưa tự ghi nhận được từ `owo dex` / `owo weapon`, chọn **Pet** / **Loại vũ khí** / **Passive**, điền ô rồi bấm **Lưu vào bot**
+  (như `,petset` `,weapontypeset` `,passiveset`). Pet có rank + 6 chỉ số HP/ATT/PR/WP/MAG/MR (số nguyên 0–100000); hai loại còn lại có tên + mô tả.
+  App kiểm tra ngay trên máy (cùng luật với bot) và nói rõ ô nào sai; nhập lại cùng tên thì ghi đè bản cũ. Cần bot bản mới có đường `/manual/*`.
 - **Tra cứu:** gõ tên (không cần dấu) để tìm trong zoo, dex loài, kho đồ, vũ khí + passive — như `,zoo` `,pets` `,inv` `,myweapons` nhưng ngay trên dữ liệu Hub đã tải.
 - **Ghi chú:** thêm / đánh dấu xong, đồng bộ với `,note` của bot.
 
