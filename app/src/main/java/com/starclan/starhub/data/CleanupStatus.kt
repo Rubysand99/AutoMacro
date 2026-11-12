@@ -51,37 +51,38 @@ object CleanupStatusText {
     fun line(s: CleanupStatus, nowMs: Long): String = when (s.phase) {
         CleanupPhase.OFF -> s.detail
         CleanupPhase.EXPORTING ->
-            "⏳ " + s.detail.ifBlank { "Đang gõ nw inv export vào Discord…" }
+            "⏳ " + s.detail.ifBlank { Texts.get("cleanst_exporting_default") }
         CleanupPhase.WAIT_FILE -> {
             val left = (s.untilMs - nowMs + 999) / 1000
             val base = if (left > 0) {
-                "⏳ Chờ NeonUtil gửi file và Tom lập kế hoạch… còn ${left}s"
+                "⏳ " + Texts.get("cleanst_wait_file_left", left)
             } else {
                 val waited = if (s.sinceMs > 0) ((nowMs - s.sinceMs) / 1000).coerceAtLeast(0) else 0
-                "⏳ Chờ Tom nhận file và lập kế hoạch… đã chờ ${waited}s"
+                "⏳ " + Texts.get("cleanst_wait_file_waited", waited)
             }
             if (s.detail.isBlank()) base else base + "\n   " + s.detail
         }
         CleanupPhase.RUNNING -> {
-            val head = if (s.total > 0) "🧹 Bước ${s.step}/${s.total}: ${s.command}" else "🧹 Đang làm: ${s.command}"
+            val head = "🧹 " + if (s.total > 0) Texts.get("cleanst_running_step", s.step, s.total, s.command)
+            else Texts.get("cleanst_running_nototal", s.command)
             if (s.detail.isBlank()) head else head + "\n   " + s.detail
         }
         CleanupPhase.WAIT_FARM ->
-            "⏸ Đang chờ vì farm đang chạy — bấm Dừng để app dọn kho (đã xong ${s.step}/${s.total} bước)"
+            "⏸ " + Texts.get("cleanst_wait_farm", s.step, s.total)
         CleanupPhase.WAIT_NEXT ->
-            "⏳ Đã xong ${s.step}/${s.total} bước. " + s.detail.ifBlank { "Chờ bước kế…" }
+            "⏳ " + Texts.get("cleanst_wait_next", s.step, s.total) + " " + s.detail.ifBlank { Texts.get("cleanst_wait_next_default") }
         CleanupPhase.DONE ->
-            "✅ Đã dọn xong ${s.total}/${s.total} bước. Gõ nw inv export lần nữa để kiểm tra kho còn lại."
+            "✅ " + Texts.get("cleanst_done", s.total)
         CleanupPhase.NO_PLAN ->
-            "ℹ️ Tom không giao bước dọn nào: " + s.detail.ifBlank { "xem tin của Tom trong Discord." }
+            "ℹ️ " + Texts.get("cleanst_no_plan") + " " + s.detail.ifBlank { Texts.get("cleanst_no_plan_default") }
         CleanupPhase.FAILED -> {
             val where = when {
-                s.total > 0 && s.command.isNotBlank() -> "bước ${s.step}/${s.total} (${s.command})"
-                s.total > 0 -> "bước ${s.step}/${s.total}"
+                s.total > 0 && s.command.isNotBlank() -> Texts.get("cleanst_failed_at_step_cmd", s.step, s.total, s.command)
+                s.total > 0 -> Texts.get("cleanst_failed_at_step", s.step, s.total)
                 s.command.isNotBlank() -> s.command
-                else -> "lúc bắt đầu"
+                else -> Texts.get("cleanst_failed_at_start")
             }
-            "⛔ Dừng ở $where: ${s.detail}"
+            "⛔ " + Texts.get("cleanst_failed", where, s.detail)
         }
     }
 
@@ -103,15 +104,14 @@ object CleanupStatusText {
         }
         if (clean == null) {
             val phase = if (prev.phase == CleanupPhase.WAIT_FILE) CleanupPhase.WAIT_FILE else CleanupPhase.WAIT_NEXT
-            return prev.copy(phase = phase, detail = "Không hỏi được bot, đang thử lại…")
+            return prev.copy(phase = phase, detail = Texts.get("cleanst_bot_unreachable"))
         }
         if (clean.atMs < exportSentMs - CLOCK_SKEW_MS) {
             // Tom chua nhan file moi (phien trong bot van la cua lan truoc)
             if (nowMs - exportSentMs > FILE_WAIT_TIMEOUT_MS) {
                 return CleanupStatus(
                     CleanupPhase.FAILED, 0, 0, "nw inv export",
-                    "Tom không nhận được file từ NeonUtil sau ${FILE_WAIT_TIMEOUT_MS / 60_000} phút. " +
-                        "Xem tin báo của Tom trong Discord (⚠️ nếu Tom bỏ qua file, tin đó nói rõ lý do).",
+                    Texts.get("cleanst_file_timeout", FILE_WAIT_TIMEOUT_MS / 60_000),
                     atMs = nowMs
                 )
             }
@@ -122,15 +122,15 @@ object CleanupStatusText {
         return when {
             clean.total <= 0 -> CleanupStatus(
                 CleanupPhase.NO_PLAN, 0, 0, "",
-                clean.emptyReason.ifBlank { "xem tin của Tom trong Discord." }, atMs = nowMs
+                clean.emptyReason.ifBlank { Texts.get("cleanst_no_plan_default") }, atMs = nowMs
             )
             clean.cursor >= clean.total -> CleanupStatus(CleanupPhase.DONE, clean.total, clean.total, "", "", atMs = nowMs)
             !clean.active -> CleanupStatus(
                 CleanupPhase.FAILED, clean.cursor, clean.total, "",
-                "Tom đã dừng phiên dọn (gõ ,cleanstop hoặc một bước trước đó thất bại).", atMs = nowMs
+                Texts.get("cleanst_stopped"), atMs = nowMs
             )
             else -> CleanupStatus(
-                CleanupPhase.WAIT_NEXT, clean.cursor, clean.total, "", "Chờ Tom giao bước kế…", atMs = nowMs
+                CleanupPhase.WAIT_NEXT, clean.cursor, clean.total, "", Texts.get("cleanst_waiting_tom"), atMs = nowMs
             )
         }
     }
@@ -138,12 +138,12 @@ object CleanupStatusText {
     /** Vi sao tin xac nhan Dismantle khong khop (de ghi vao dong loi). count = so cay doc duoc tu tin (null = khong doc duoc). */
     fun mismatchReason(mode: String, count: Int?, expect: Int?, expectMax: Int?, expectId: String?): String = when (mode) {
         "tier" -> when {
-            count == null -> "không đọc được số cây trong tin xác nhận của OwO (đã bấm Cancel)"
-            expect != null -> "OwO báo $count cây nhưng kế hoạch cần đúng $expect cây (đã bấm Cancel)"
-            expectMax != null -> "OwO báo $count cây, ngoài khoảng 1–$expectMax của kế hoạch (đã bấm Cancel)"
-            else -> "tin xác nhận không khớp kế hoạch (đã bấm Cancel)"
+            count == null -> Texts.get("cleanst_mm_tier_unreadable")
+            expect != null -> Texts.get("cleanst_mm_tier_exact", count, expect)
+            expectMax != null -> Texts.get("cleanst_mm_tier_range", count, expectMax)
+            else -> Texts.get("cleanst_mm_default")
         }
-        "id" -> "tin xác nhận không đúng cây ${expectId.orEmpty()} (đã bấm Cancel)"
-        else -> "tin xác nhận không khớp kế hoạch (đã bấm Cancel)"
+        "id" -> Texts.get("cleanst_mm_id", expectId.orEmpty())
+        else -> Texts.get("cleanst_mm_default")
     }
 }

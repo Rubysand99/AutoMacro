@@ -1,10 +1,13 @@
 package com.starclan.starhub.data
 
 /** Nhom lenh hien tren Hub noi (tab Setting, khung "Lenh trong farm"). */
-enum class FarmCmdGroup(val label: String) {
-    MAIN("Lệnh chính mỗi vòng"),
-    CHORE("Việc vặt chen giữa vòng"),
-    CHECK("Lệnh kiểm tra (cập nhật dữ liệu cho bot)")
+enum class FarmCmdGroup(private val labelKey: String) {
+    MAIN("farmgroup_main"),
+    CHORE("farmgroup_chore"),
+    CHECK("farmgroup_check");
+
+    /** Ten nhom hien tren Hub noi (doc tu strings.xml qua [Texts]). */
+    val label: String get() = Texts.get(labelKey)
 }
 
 /**
@@ -12,24 +15,30 @@ enum class FarmCmdGroup(val label: String) {
  * (them lenh moi thi them id moi; lenh moi mac dinh BAT).
  * `shown` la chu hien duoi ten lenh tren Hub noi.
  */
-enum class FarmCmd(val id: String, val label: String, val shown: String, val group: FarmCmdGroup) {
-    HUNT("hunt", "Hunt", "owo hunt", FarmCmdGroup.MAIN),
-    BATTLE("battle", "Battle", "owo battle", FarmCmdGroup.MAIN),
-    OWO("owo", "Owo", "owo (gõ riêng sau battle)", FarmCmdGroup.MAIN),
+enum class FarmCmd(val id: String, val group: FarmCmdGroup) {
+    HUNT("hunt", FarmCmdGroup.MAIN),
+    BATTLE("battle", FarmCmdGroup.MAIN),
+    OWO("owo", FarmCmdGroup.MAIN),
 
-    DAILY("daily", "Daily", "owo daily (khi đến giờ nhận)", FarmCmdGroup.CHORE),
-    QUEST("quest", "Quest", "owo quest + bấm nhận thưởng", FarmCmdGroup.CHORE),
-    HUNTBOT("hb", "Huntbot", "owo hb (nhận thành quả)", FarmCmdGroup.CHORE),
-    UPGRADE("upgrade", "Nâng cấp huntbot", "owo upg … (kèm owo hb)", FarmCmdGroup.CHORE),
-    OPEN_BOXES("boxes", "Mở hộp", "owo lb / wc / bwc all", FarmCmdGroup.CHORE),
-    SACRIFICE("sacrifice", "Hiến tế", "owo sc all", FarmCmdGroup.CHORE),
-    TEAM("team", "Đội hình", "owo team", FarmCmdGroup.CHORE),
-    WEAPON("weapon", "Chi tiết vũ khí", "owo weapon <ID>", FarmCmdGroup.CHORE),
+    DAILY("daily", FarmCmdGroup.CHORE),
+    QUEST("quest", FarmCmdGroup.CHORE),
+    HUNTBOT("hb", FarmCmdGroup.CHORE),
+    UPGRADE("upgrade", FarmCmdGroup.CHORE),
+    OPEN_BOXES("boxes", FarmCmdGroup.CHORE),
+    SACRIFICE("sacrifice", FarmCmdGroup.CHORE),
+    TEAM("team", FarmCmdGroup.CHORE),
+    WEAPON("weapon", FarmCmdGroup.CHORE),
 
-    ZOO("zoo", "Zoo", "owo zoo (lúc bắt đầu + định kỳ)", FarmCmdGroup.CHECK),
-    INV("inv", "Kho đồ", "owo inv", FarmCmdGroup.CHECK),
-    CASH("cash", "Cowoncy", "owo cash", FarmCmdGroup.CHECK),
-    WS("ws", "Weapon shards", "owo ws", FarmCmdGroup.CHECK);
+    ZOO("zoo", FarmCmdGroup.CHECK),
+    INV("inv", FarmCmdGroup.CHECK),
+    CASH("cash", FarmCmdGroup.CHECK),
+    WS("ws", FarmCmdGroup.CHECK);
+
+    /** Ten lenh hien tren Hub noi (strings.xml: farmcmd_<id>_label). */
+    val label: String get() = Texts.get("farmcmd_${id}_label")
+
+    /** Chu hien duoi ten lenh (strings.xml: farmcmd_<id>_shown). */
+    val shown: String get() = Texts.get("farmcmd_${id}_shown")
 
     companion object {
         fun fromId(id: String): FarmCmd? = values().firstOrNull { it.id == id }

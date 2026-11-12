@@ -8,6 +8,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CleanupStatusTextTest {
+    init { TestTexts.install() }   // chu doc tu strings.xml that, nen van so khop dung chu nguoi dung thay
+
     private val T = 1_000_000_000L   // moc thoi gian tuy y (ms)
 
     // ---------- line(): moi giai doan deu co chu de Ruby biet app dang cho gi / lam gi ----------

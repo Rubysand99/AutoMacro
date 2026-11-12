@@ -8,14 +8,17 @@ package com.starclan.starhub.data
  */
 enum class SpeedMode(
     val id: Int,
-    val label: String,
+    private val labelKey: String,
     val cycleMinMs: Long, val cycleMaxMs: Long,      // do dai 1 vong hunt+battle (toi thieu ~ cooldown cua OwO)
     val restEveryMin: Int, val restEveryMax: Int,    // sau bao nhieu vong thi nghi giai lao
     val restMinMs: Long, val restMaxMs: Long
 ) {
-    FAST(1, "Nhanh", 15_800L, 18_500L, 60, 110, 60_000L, 150_000L),
-    NORMAL(2, "Thường", 16_500L, 21_000L, 45, 80, 90_000L, 240_000L),
-    SLOW(3, "Chậm", 24_000L, 32_000L, 30, 55, 120_000L, 300_000L);
+    FAST(1, "speed_fast", 15_800L, 18_500L, 60, 110, 60_000L, 150_000L),
+    NORMAL(2, "speed_normal", 16_500L, 21_000L, 45, 80, 90_000L, 240_000L),
+    SLOW(3, "speed_slow", 24_000L, 32_000L, 30, 55, 120_000L, 300_000L);
+
+    /** Chu hien tren Hub noi (doc tu strings.xml qua [Texts]). */
+    val label: String get() = Texts.get(labelKey)
 
     companion object {
         /** id luu trong SharedPreferences -> muc; id la/loi -> NORMAL */

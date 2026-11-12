@@ -11,6 +11,19 @@ repo Python/discord.py rieng) de tao 1 he thong tap trung: owo-tracker la
 "bo nao" (biet luc nao can lam gi), AutoMacro la "tay chan" (thuc thi tren
 dien thoai). Xem muc "Ket noi voi owo-tracker" ben duoi.
 
+## v38 — Chuoi cua object thuan Kotlin ra strings.xml qua `Texts` (13/11/2026)
+- Van de cu: nhom object thuan Kotlin (test JVM khong dung duoc `R`) con viet thang chu. Cach moi KHONG doi chu ky ham nen noi goi khong phai sua:
+  `data/Texts.kt` (`TextSource` + `object Texts`) tra chu **theo TEN** chuoi (`Texts.get("cleanst_done", n)`, doi so kieu `%1$d`).
+  App: `Str.init` (StarHubApp.onCreate) gan `Str.ByName` (doc `resources.getIdentifier`; khong thay ten -> tra lai chinh ten, khong sap; chua init -> cung tra ten).
+  Test: `TestTexts.install()` (`app/src/test/.../data/TestTexts.kt`) doc THANG `res/values/strings.xml` (co xu ly escape Android) nen test van so khop dung chu nguoi dung thay.
+- Da chuyen: `SpeedMode.label`, `FarmCmdGroup.label`, `FarmCmd.label/shown` (khoa ghep `farmcmd_<id>_label|shown` — them lenh farm moi thi them 2 chuoi nay), toan bo `CleanupStatusText` (`cleanst_*`).
+  Enum doi tham so constructor tu chu thanh khoa, `label`/`shown` thanh thuoc tinh tinh luc goi (noi goi giu nguyen).
+- Quy uoc: chuoi khong de khoang trang dau/cuoi (Android cat bo) — noi bang code (`Texts.get(..) + " " + detail`); emoji dau dong giu trong code. Tien to hien co: `speed_` `farmgroup_` `farmcmd_` `cleanst_`.
+- `TextsKeysTest`: moi ten co tien to tren trong `data/*.kt` phai co trong strings.xml, khong co chuoi mo coi, nhan enum khong rong, dinh dang doi so giong Android. Them tien to moi thi them vao danh sach `prefixes` cua test.
+- Con viet thang (chua chuyen, lam tiep theo cung cach): `BotToolsText`, `HubFormat`, `HubSummary`, `HubSearch`, `HubIcons`, `HubDexQuery`, `HubParser`, `GemTierConfig`, `FarmStats` (`StatsFormat`).
+- Da kiem tra offline: bien dich phan thuan Kotlin + chay JUnit bang compiler nhung cua Gradle (170 test pass); `Str.kt` bien dich thu voi lop gia `Context`/`Resources`. CHUA BIEN DICH day du tren may (can Android SDK): xem GitHub Actions. Chua thu tren may that (chu Hub noi dung nhu cu).
+- Luu y neu sau nay bat `shrinkResources`: chuoi chi duoc tra theo ten nen phai giu bang `res/raw/keep.xml` (`tools:keep="@string/speed_*,@string/farmgroup_*,@string/farmcmd_*,@string/cleanst_*"`).
+
 ## v36 — Nhap tay pet / loai vu khi / passive + chuoi UI ra strings.xml (12/11/2026)
 - Bot (owo-tracker) them 3 duong `POST /manual/pet|weapontype|passive` (nhu `,petset` `,weapontypeset` `,passiveset`); luat kiem tra thuan o `tools_api.py` (`parse_pet_manual`, `parse_desc_manual`), luu chung ham voi lenh Discord (`save_pet_manual`, `save_weapontype_manual`, `save_passive`). Tra `{"ok":true,"name":...}`; truong sai -> 400 kem `field`. Test: `test_tools_api.py`, `test_tools_handlers.py`.
 - App: `ToolsFragment` them muc "Nhap tay" (3 nut chon loai; pet co rank + 6 o chi so, 2 loai con lai co ten + mo ta). `BotTools.kt` them `ManualKind`, `ManualPet`, `ManualDesc`, `ManualCheck`, `ManualInput` (kiem tra o nhap TRUOC khi gui, cung luat voi bot — **sua luat o bot thi sua ca o day**), `BotToolsJson.petBody/descBody/parseManual`, `BotToolsText.manualFieldError/manualSavedMessage`. `OwoTrackerApi.saveManualPet/saveManualDesc`. Bot cu khong co duong /manual -> app bao "cap nhat bot".
