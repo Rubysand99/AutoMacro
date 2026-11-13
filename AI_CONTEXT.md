@@ -440,3 +440,12 @@ app/src/main/java/com/starclan/starhub/
   token cu o kho thuong. CHUA BIEN DICH tren may: neu Actions bao loi o OwoTrackerPrefs thi gui log de sua.
 - Workflow build: buoc unit test khong con `continue-on-error`.
 
+
+## v39 — Don kho theo BAC (tier), 4 danh sach, doi chieu cuoi phien
+- 4 danh sach vu khi: Giu / Bo / Chua ro (da xem bp nhung khong chac: `bp_la`, hoac Ruby bam "?") / Chua xem (chua co bp). Chua ro + Chua xem deu bi GIU. Bot: `weapon_import.list_of`, `review_bucket`, `review_lists` (key `unseen`). App: tab thu 4 "Chua xem" o khung duyet tay.
+- Ke hoach: SAO moi cay Giu chua khoa (ke ca q cao) -> ra theo ID chi cay Ruby them tay (`,dropadd`) -> `owo dismantle common`, `uncommon` (cum_group low, cum_cap = so cay Bo q<40) -> `rare` (dung so, hoac khoang expect_min..expect_max neu co cay Bo o vung chua ro bac 60.6..61.2) -> epic/mythical/legendary/fabled (cum_group high) -> `nw inv export`.
+- CommandGuard cho phep epic|mythical|legendary|fabled; an toan nho: moi cay Giu da sao + dem cay phai khop (cum_cap cong don qua `CleanupGate.tally`, reset o step_no=1).
+- Buoc sao: chi lam khi tin duoi cung tren man hinh co DUNG ma cay (`**ID:**`), bam xong phai thay nut sao chuyen vang, khong thi that bai.
+- `,cleanstop` dung ngay: app hoi `GET /clean` truoc MOI buoc (mang loi thi tiep tuc; cong tac Hub van la nut dung khan cap).
+- Cuoi phien: bot dat `awaiting_export`; file export cuoi duoc doi chieu (`cleanup_verdict`) -> bao "Kho da sach" hoac liet ke cay Bo con sot / cay Giu chua sao. Qua `CLEAN_EXPORT_WAIT_SECONDS` chua co file thi bao Ruby.
+- CHUA kiem tra tren may that: ten bac cao trong lenh `owo dismantle` (epic/mythical/legendary/fabled). Neu sai, OwO khong tra nut Dismantle -> buoc optional bi bo qua -> doi chieu cuoi phien se bao con sot.

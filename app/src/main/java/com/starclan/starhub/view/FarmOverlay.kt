@@ -549,13 +549,13 @@ object FarmOverlay {
     }
 
     /**
-     * Khung "Duyet vu khi tay" (tab Misc): 3 danh sach ID Giu / Bo / Chua ro. Cham 1 ID -> app go `owo w <ID>`, roi dung
+     * Khung "Duyet vu khi tay" (tab Misc): 4 danh sach ID Giu / Bo / Chua ro / Chua xem. Cham 1 ID -> app go `owo w <ID>`, roi dung
      * nut Giu / Bo / ? tren bong bong de chuyen cay sang danh sach khac. Bam "Tai lai" de cap nhat danh sach tu bot.
      */
     private fun buildWeaponListsCard(service: AutoAccessibilityService): View {
         val pageSize = 30
         var data: com.starclan.starhub.data.WeaponReviewLists? = null
-        var tab = 0          // 0 = Giu, 1 = Bo, 2 = Chua ro
+        var tab = 0          // 0 = Giu, 1 = Bo, 2 = Chua ro (da xem, khong chac), 3 = Chua xem
         var page = 0
         var loading = false
         var msg = Str.get(R.string.overlay_bam_tai_lai_de_xem)
@@ -581,7 +581,7 @@ object FarmOverlay {
         val segRow = LinearLayout(service)
         segRow.orientation = LinearLayout.HORIZONTAL
         segRow.setPadding(0, dp(6), 0, dp(6))
-        val segBtns = listOf(Str.get(R.string.overlay_giu), Str.get(R.string.overlay_bo), Str.get(R.string.overlay_chua_ro)).map { pill(service, it, Btn.SECONDARY, 12f) }
+        val segBtns = listOf(Str.get(R.string.overlay_giu), Str.get(R.string.overlay_bo), Str.get(R.string.overlay_chua_ro), Str.get(R.string.overlay_chua_xem)).map { pill(service, it, Btn.SECONDARY, 12f) }
         for ((i, b) in segBtns.withIndex()) {
             segRow.addView(b, lparams(0, LinearLayout.LayoutParams.WRAP_CONTENT, weight = 1f).also {
                 it.setMargins(if (i == 0) 0 else dp(3), 0, if (i == segBtns.size - 1) 0 else dp(3), 0)
@@ -609,14 +609,15 @@ object FarmOverlay {
         fun listFor(d: com.starclan.starhub.data.WeaponReviewLists?): List<String> = when (tab) {
             0 -> d?.keep.orEmpty()
             1 -> d?.drop.orEmpty()
-            else -> d?.unknown.orEmpty()
+            2 -> d?.unknown.orEmpty()
+            else -> d?.unseen.orEmpty()
         }
 
         fun refresh() {
             val d = data
             for ((i, b) in segBtns.withIndex()) {
-                val n = when (i) { 0 -> d?.keep?.size; 1 -> d?.drop?.size; else -> d?.unknown?.size }
-                b.text = listOf(Str.get(R.string.overlay_giu), Str.get(R.string.overlay_bo), Str.get(R.string.overlay_chua_ro))[i] + (if (n != null) " $n" else "")
+                val n = when (i) { 0 -> d?.keep?.size; 1 -> d?.drop?.size; 2 -> d?.unknown?.size; else -> d?.unseen?.size }
+                b.text = listOf(Str.get(R.string.overlay_giu), Str.get(R.string.overlay_bo), Str.get(R.string.overlay_chua_ro), Str.get(R.string.overlay_chua_xem))[i] + (if (n != null) " $n" else "")
                 styleBtn(b, if (i == tab) Btn.ACTIVE else Btn.SECONDARY)
             }
             val ids = listFor(d)

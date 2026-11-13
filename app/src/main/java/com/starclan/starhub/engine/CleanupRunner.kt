@@ -37,6 +37,9 @@ object CleanupGate {
     @Volatile
     var lastFailure: String = ""
 
+    /** Tong so cay da ra theo nhom ("low" = common+uncommon, "high" = epic tro len) trong phien nay: buoc co `cum_cap` khong duoc vuot tong. */
+    val tally = mutableMapOf<String, Int>()
+
     const val HOLD_AFTER_EXPORT_MS = 45_000L
 
     private val _status = MutableStateFlow(CleanupStatus())
@@ -61,7 +64,7 @@ object CleanupGate {
     }
 
     fun turnOn() {
-        enabled = true; exportPending = true; holdUntilMs = 0L; lastFailure = ""
+        enabled = true; exportPending = true; holdUntilMs = 0L; lastFailure = ""; tally.clear()
         set(CleanupStatus(CleanupPhase.EXPORTING, detail = Str.get(R.string.clean_cho_luot_kiem_tra_ke)))
     }
 
@@ -86,10 +89,11 @@ object CleanupRunner {
 
     suspend fun run(service: AutoAccessibilityService, mode: String, params: Map<String, String>): Boolean {
         CleanupGate.lastFailure = ""
+        if (params["step_no"] == "1") CleanupGate.tally.clear()   // phien moi bat dau tu buoc 1
         CleanupGate.progress(Str.get(R.string.clean_da_go_lenh_cho_owo))
         delay(3_500)   // doi OwO tra loi
         return when (mode) {
-            "star" -> star(service)
+            "star" -> star(service, params)
             "tier", "id" -> dismantle(service, mode, params)
             "export" -> {
                 CleanupGate.progress(Str.get(R.string.clean_da_go_nw_inv_export))
@@ -105,20 +109,39 @@ object CleanupRunner {
         return false
     }
 
-    private suspend fun star(service: AutoAccessibilityService): Boolean {
+    /**
+     * Sao 1 cay GIU. Man hinh con tin cua cay TRUOC (da sao), nen chi lam khi tin hien o duoi cung co DUNG ma cay nay;
+     * bam xong phai thay nut sao chuyen vang. Khong chac -> that bai (khong bao gio coi la xong khi chua chac cay da sao,
+     * vi cay Giu chua sao se bi rã theo bac).
+     */
+    private suspend fun star(service: AutoAccessibilityService, params: Map<String, String>): Boolean {
+        val id = params["command_text"].orEmpty().trim().split(Regex("\\s+")).lastOrNull().orEmpty()
         CleanupGate.progress(Str.get(R.string.clean_tim_nut_sao_tren_tin))
-        if (ButtonClicker.has(service, "star_outline_dim")) {
-            if (!ButtonClicker.clickOnce(service, "star_outline_dim")) return fail(Str.get(R.string.clean_khong_bam_duoc_nut_sao))
-            CleanupGate.progress(Str.get(R.string.clean_da_bam_sao))
-            delay(1_500)
-            return true
+        var label: String? = null
+        var waited = 0
+        while (true) {
+            val l = ButtonClicker.latestStarLabel(service)
+            if (l != null && CommandGuard.textHasId(ButtonClicker.textAbove(service, l, requireEnabled = false), id)) { label = l; break }
+            if (waited >= 8_000) break
+            delay(1_000); waited += 1_000
         }
-        // Khong co nut sao chua danh dau: da sao san thi OK, khong thay gi ca thi that bai
-        if (ButtonClicker.has(service, "star_yellow")) {
+        if (label == null) return fail(Str.get(R.string.clean_khong_thay_tin_cua_cay, id))
+        if (label == "star_yellow") {
             CleanupGate.progress(Str.get(R.string.clean_cay_nay_da_co_sao))
             return true
         }
-        return fail(Str.get(R.string.clean_khong_thay_nut_sao_tren))
+        if (!ButtonClicker.clickOnce(service, "star_outline_dim")) return fail(Str.get(R.string.clean_khong_bam_duoc_nut_sao))
+        CleanupGate.progress(Str.get(R.string.clean_da_bam_sao))
+        waited = 0
+        while (waited < 4_000) {
+            delay(1_000); waited += 1_000
+            val l = ButtonClicker.latestStarLabel(service)
+            if (l == "star_yellow" && CommandGuard.textHasId(ButtonClicker.textAbove(service, l, requireEnabled = false), id)) {
+                delay(500)
+                return true
+            }
+        }
+        return fail(Str.get(R.string.clean_sao_khong_len, id))
     }
 
     private suspend fun dismantle(service: AutoAccessibilityService, mode: String, params: Map<String, String>): Boolean {
@@ -137,16 +160,25 @@ object CleanupRunner {
         val count = CommandGuard.parseWeaponCount(text)
         CleanupGate.progress(if (count != null) Str.get(R.string.clean_owo_bao_cay_dang_doi, count) else Str.get(R.string.clean_dang_doc_tin_xac_nhan))
         val expect = params["expect"]?.toIntOrNull()
-        val expectMax = params["expect_max"]?.toIntOrNull()
+        val expectMin = params["expect_min"]?.toIntOrNull()
+        var expectMax = params["expect_max"]?.toIntOrNull()
         val expectId = params["expect_id"]
-        if (!CommandGuard.confirmMatches(mode, text, expect, expectMax, expectId)) {
+        // Nhom cong don (vd common + uncommon): tong cay da ra trong nhom + lan nay khong duoc vuot cum_cap
+        val cumGroup = params["cum_group"]
+        val cumCap = params["cum_cap"]?.toIntOrNull()
+        if (cumGroup != null && cumCap != null) {
+            val left = cumCap - (CleanupGate.tally[cumGroup] ?: 0)
+            expectMax = minOf(expectMax ?: left, left)
+        }
+        if (!CommandGuard.confirmMatches(mode, text, expect, expectMax, expectId, expectMin)) {
             Log.w(TAG, "Tin xac nhan khong khop (mode=$mode) - bam Cancel")
             CleanupGate.progress(Str.get(R.string.clean_khong_khop_ke_hoach_bam))
             ButtonClicker.clickOnce(service, "cancel")
-            return fail(CleanupStatusText.mismatchReason(mode, count, expect, expectMax, expectId))
+            return fail(CleanupStatusText.mismatchReason(mode, count, expect, expectMax, expectId, expectMin))
         }
         CleanupGate.progress(Str.get(R.string.clean_khop_ke_hoach_bam_dismantle))
         if (!ButtonClicker.clickOnce(service, "dismantle")) return fail(Str.get(R.string.clean_khong_bam_duoc_nut_dismantle))
+        if (cumGroup != null && count != null) CleanupGate.tally[cumGroup] = (CleanupGate.tally[cumGroup] ?: 0) + count
         delay(2_500)
         return true
     }

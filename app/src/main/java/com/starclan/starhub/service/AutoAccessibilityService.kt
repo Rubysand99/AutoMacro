@@ -250,6 +250,12 @@ class AutoAccessibilityService : AccessibilityService() {
             if (isClean && (!CleanupGate.enabled || FarmController.isRunning() || System.currentTimeMillis() < CleanupGate.holdUntilMs)) continue
             val stepNo = cmd.params["step_no"]?.toIntOrNull() ?: 0
             val stepTotal = cmd.params["step_total"]?.toIntOrNull() ?: 0
+            // `,cleanstop` / ke hoach doi: bot da huy cac buoc nhung danh sach nay lay tu truoc -> hoi lai bot truoc MOI buoc, het hieu luc thi dung ngay.
+            // (khong hoi duoc bot, vd mang chap chon, thi tiep tuc: cong tac Hub van la nut dung khan cap)
+            if (isClean && (OwoTrackerApi.fetchClean(apiUrl, token) ?: OwoTrackerApi.fetchClean(apiUrl, token))?.active == false) {
+                CleanupGate.finish(CleanupStatus(CleanupPhase.FAILED, stepNo, stepTotal, commandText.orEmpty().trim(), Str.get(R.string.svc_bot_da_dung_phien)))
+                break
+            }
             if (isClean) {
                 CleanupGate.set(CleanupStatus(CleanupPhase.RUNNING, stepNo, stepTotal, commandText.orEmpty().trim(), Str.get(R.string.svc_dang_go_lenh_vao_discord)))
             }

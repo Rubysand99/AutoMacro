@@ -72,11 +72,25 @@ class CommandGuardTest {
     }
 
     @Test fun cleanup_commands() {
-        for (c in listOf("owo dismantle common", "owo dismantle uncommon", "owo dismantle rare", "owo dismantle AYJILS", "owo dismantle G4K3P9"))
+        for (c in listOf("owo dismantle common", "owo dismantle uncommon", "owo dismantle rare", "owo dismantle AYJILS", "owo dismantle G4K3P9",
+            "owo dismantle epic", "owo dismantle mythical", "owo dismantle legendary", "owo dismantle fabled"))
             assertTrue(c, CommandGuard.isSafeCommand(c))
-        for (c in listOf("owo dismantle epic", "owo dismantle mythic", "owo dismantle legendary", "owo dismantle all", "owo dismantle AB",
+        for (c in listOf("owo dismantle mythic", "owo dismantle legend", "owo dismantle hidden", "owo dismantle all", "owo dismantle AB",
             "owo dismantle rare common", "owo dismantle A1B2C3 D4E5F6", "owo dismantle"))
             assertFalse(c, CommandGuard.isSafeCommand(c))
+    }
+    @Test fun confirm_range_and_id_text() {
+        val t = "Are you sure you want to dismantle 5 rare weapons?"
+        assertTrue(CommandGuard.confirmMatches("tier", t, null, 6, null, 4))
+        assertTrue(CommandGuard.confirmMatches("tier", t, null, 5, null, 5))
+        assertFalse(CommandGuard.confirmMatches("tier", t, null, 6, null, 6))
+        assertFalse(CommandGuard.confirmMatches("tier", t, null, 4, null, 1))
+        assertFalse(CommandGuard.confirmMatches("tier", t, null, 0, null))
+        assertTrue(CommandGuard.confirmMatches("tier", t, null, 5, null))
+        assertTrue(CommandGuard.textHasId("**ID:** `AYJILS` sword", "ayjils"))
+        assertFalse(CommandGuard.textHasId("**ID:** `XAYJILSX`", "AYJILS"))
+        assertFalse(CommandGuard.textHasId(null, "AYJILS"))
+        assertFalse(CommandGuard.textHasId("AYJILS", ""))
     }
     @Test fun parse_weapon_count() {
         assertEquals(49, CommandGuard.parseWeaponCount("Are you sure you want to dismantle 49 rare weapons?"))

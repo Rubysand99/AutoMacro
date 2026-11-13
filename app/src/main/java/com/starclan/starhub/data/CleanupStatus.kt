@@ -136,10 +136,11 @@ object CleanupStatusText {
     }
 
     /** Vi sao tin xac nhan Dismantle khong khop (de ghi vao dong loi). count = so cay doc duoc tu tin (null = khong doc duoc). */
-    fun mismatchReason(mode: String, count: Int?, expect: Int?, expectMax: Int?, expectId: String?): String = when (mode) {
+    fun mismatchReason(mode: String, count: Int?, expect: Int?, expectMax: Int?, expectId: String?, expectMin: Int? = null): String = when (mode) {
         "tier" -> when {
             count == null -> Texts.get("cleanst_mm_tier_unreadable")
             expect != null -> Texts.get("cleanst_mm_tier_exact", count, expect)
+            expectMin != null && expectMax != null -> Texts.get("cleanst_mm_tier_between", count, expectMin, expectMax)
             expectMax != null -> Texts.get("cleanst_mm_tier_range", count, expectMax)
             else -> Texts.get("cleanst_mm_default")
         }

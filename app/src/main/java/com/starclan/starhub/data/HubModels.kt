@@ -328,15 +328,17 @@ data class HubWeaponReview(
     val remaining: Int? = null,
     val kept: Int? = null,
     val dropped: Int? = null,
-    val unknown: Int? = null
+    val unknown: Int? = null,
+    val unseen: Int? = null
 )
 
-/** 3 danh sach ID vu khi (tab Misc): Giu / Bo / Khong xac dinh */
+/** 4 danh sach ID vu khi (tab Misc): Giu / Bo / Chua ro (da xem nhung khong chac) / Chua xem (chua co chi so). */
 data class WeaponReviewLists(
     val keep: List<String>,
     val drop: List<String>,
     val unknown: List<String>,
-    val currentId: String?
+    val currentId: String?,
+    val unseen: List<String> = emptyList()
 ) {
     companion object {
         fun parse(json: String): WeaponReviewLists? = try {
@@ -347,7 +349,8 @@ data class WeaponReviewLists(
                 }.orEmpty()
             WeaponReviewLists(
                 ids("keep"), ids("drop"), ids("unknown"),
-                o.get("current_id")?.takeIf { it.isJsonPrimitive }?.asString?.takeIf { it.isNotBlank() }
+                o.get("current_id")?.takeIf { it.isJsonPrimitive }?.asString?.takeIf { it.isNotBlank() },
+                ids("unseen")
             )
         } catch (e: Exception) {
             null

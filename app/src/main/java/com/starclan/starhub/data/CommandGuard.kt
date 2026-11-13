@@ -30,7 +30,7 @@ object CommandGuard {
             "|use(?: \\d{1,4}){1,12}" +                                        // owo use 051 052
             "|dex [A-Za-z0-9_]{1,32}" +                                        // owo dex <ten pet>
             "|w(?: [A-Za-z0-9]{4,8})?" +                                     // owo w (danh sach kho) hoac owo w <ID vu khi>
-            "|dismantle (?:common|uncommon|rare|(?!(?:epic|mythic|mythical|legend|legendary|fabled|hidden|special|gem|all)(?![A-Za-z0-9]))[A-Za-z0-9]{4,8})" +          // don kho tu dong: ra theo bac hoac 1 ID (xem CleanupRunner)
+            "|dismantle (?:common|uncommon|rare|epic|mythical|legendary|fabled|(?!(?:epic|mythic|mythical|legend|legendary|fabled|hidden|special|gem|all)(?![A-Za-z0-9]))[A-Za-z0-9]{4,8})" +          // don kho tu dong: ra theo bac hoac 1 ID (xem CleanupRunner)
             ")$",
         RegexOption.IGNORE_CASE
     )
@@ -62,6 +62,12 @@ object CommandGuard {
 
     // ----------------- DON KHO TU DONG (CleanupRunner) -----------------
 
+    /** Chu co dung ma vu khi `id` (khong phai doan giua cua chuoi dai hon). Dung de chac tin tren man hinh la cua dung cay. */
+    fun textHasId(text: String?, id: String?): Boolean {
+        if (text.isNullOrBlank() || id.isNullOrBlank()) return false
+        return Regex("(?<![A-Za-z0-9])" + Regex.escape(id) + "(?![A-Za-z0-9])", RegexOption.IGNORE_CASE).containsMatchIn(text)
+    }
+
     fun isCleanAction(action: String?): Boolean = action != null && action.startsWith("clean_")
 
     private val COUNT_RE = Regex("(\\d[\\d,.]*)\\s+(?:[A-Za-z]+\\s+){0,2}weapons?", RegexOption.IGNORE_CASE)
@@ -77,16 +83,17 @@ object CommandGuard {
      * Co duoc bam Dismantle khong? tier: so cay doc duoc phai bang `expect` (hoac 1..expectMax); id: tin xac nhan phai co dung ID
      * (neu doc duoc so cay thi phai la 1). Khong doc duoc -> false (se bam Cancel).
      */
-    fun confirmMatches(mode: String, text: String?, expect: Int?, expectMax: Int?, expectId: String?): Boolean {
+    fun confirmMatches(mode: String, text: String?, expect: Int?, expectMax: Int?, expectId: String?, expectMin: Int? = null): Boolean {
         if (text.isNullOrBlank()) return false
         return when (mode) {
             "tier" -> {
                 val n = parseWeaponCount(text) ?: return false
-                if (expect != null) n == expect else expectMax != null && n in 1..expectMax
+                // expect = dung so; expectMin..expectMax = khoang (cay Bo o vung chua ro bac); chi expectMax = 1..expectMax
+                if (expect != null) n == expect else expectMax != null && n in maxOf(1, expectMin ?: 1)..expectMax
             }
             "id" -> {
                 if (expectId.isNullOrBlank()) return false
-                if (!Regex("(?<![A-Za-z0-9])" + Regex.escape(expectId) + "(?![A-Za-z0-9])", RegexOption.IGNORE_CASE).containsMatchIn(text)) return false
+                if (!textHasId(text, expectId)) return false
                 val n = parseWeaponCount(text)
                 n == null || n == 1
             }

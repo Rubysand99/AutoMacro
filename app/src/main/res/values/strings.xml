@@ -177,10 +177,11 @@
     <string name="overlay_bam_tai_lai_de_xem">Bấm Tải lại để xem danh sách từ bot</string>
     <string name="overlay_duyet_vu_khi_tay">Duyệt vũ khí tay</string>
     <string name="overlay_tai_lai">Tải lại</string>
-    <string name="overlay_tu_duyet_cac_cay_chua">Tự duyệt các cây Chưa rõ (đọc NeonUtil)</string>
+    <string name="overlay_tu_duyet_cac_cay_chua">Tự duyệt các cây Chưa xem / Chưa rõ (đọc NeonUtil)</string>
     <string name="overlay_giu">Giữ</string>
     <string name="overlay_bo">Bỏ</string>
     <string name="overlay_chua_ro">Chưa rõ</string>
+    <string name="overlay_chua_xem">Chưa xem</string>
     <string name="overlay_cham_1_id_de_app">Chạm 1 ID để app gõ owo w &lt;ID&gt; (dừng farm trước), rồi bấm Giữ / Bỏ / ? trên bong bóng để chuyển cây sang danh sách khác. Chọn tay sẽ không bị file export ghi đè; kế hoạch dọn kho cũ bị hủy, cần xuất lại nw inv export.</string>
     <string name="overlay_danh_sach_trong">Danh sách trống</string>
     <string name="overlay_khong_tai_duoc_danh_sach">Không tải được danh sách (mất kết nối bot, hoặc bot chưa cập nhật bản mới)</string>
@@ -353,6 +354,8 @@
     <string name="clean_buoc_khong_ro_mode">bước không rõ (mode=%1$s)</string>
     <string name="clean_tim_nut_sao_tren_tin">Tìm nút sao trên tin của OwO…</string>
     <string name="clean_khong_bam_duoc_nut_sao">không bấm được nút sao</string>
+    <string name="clean_khong_thay_tin_cua_cay">không thấy tin OwO của cây %1$s sau 8 giây (cây đã bán/rã, OwO chưa trả lời, hoặc Discord không ở kênh chat)</string>
+    <string name="clean_sao_khong_len">đã bấm sao cây %1$s nhưng không thấy nút sao chuyển vàng, nên không chắc cây đã được sao</string>
     <string name="clean_da_bam_sao">Đã bấm sao</string>
     <string name="clean_cay_nay_da_co_sao">Cây này đã có sao sẵn</string>
     <string name="clean_khong_thay_nut_sao_tren">không thấy nút sao trên màn hình (OwO chưa trả lời, hoặc Discord không đang ở kênh chat)</string>
@@ -382,6 +385,7 @@
     <string name="svc_khong_go_duoc_nw_inv">Không gõ được nw inv export vào Discord (kiểm tra Discord đang mở đúng kênh chat).</string>
     <string name="svc_dang_go_lenh_vao_discord">Đang gõ lệnh vào Discord…</string>
     <string name="svc_khong_go_duoc_lenh_vao">Không gõ được lệnh vào Discord.</string>
+    <string name="svc_bot_da_dung_phien">Bot đã dừng phiên dọn kho (lệnh ,cleanstop hoặc kế hoạch đổi).</string>
     <string name="svc_buoc_khong_hoan_thanh">Bước không hoàn thành.</string>
     <string name="svc_nghi_vai_giay_cho_tom">Nghỉ vài giây, chờ Tom giao bước kế…</string>
     <string name="hubfrag_dang_lay_du_lieu">Đang lấy dữ liệu</string>
@@ -483,6 +487,7 @@
     <string name="cleanst_waiting_tom">Chờ Tom giao bước kế…</string>
     <string name="cleanst_mm_tier_unreadable">không đọc được số cây trong tin xác nhận của OwO (đã bấm Cancel)</string>
     <string name="cleanst_mm_tier_exact">OwO báo %1$d cây nhưng kế hoạch cần đúng %2$d cây (đã bấm Cancel)</string>
+    <string name="cleanst_mm_tier_between">OwO báo %1$d cây, ngoài khoảng %2$d–%3$d của kế hoạch (đã bấm Cancel)</string>
     <string name="cleanst_mm_tier_range">OwO báo %1$d cây, ngoài khoảng 1–%2$d của kế hoạch (đã bấm Cancel)</string>
     <string name="cleanst_mm_default">tin xác nhận không khớp kế hoạch (đã bấm Cancel)</string>
     <string name="cleanst_mm_id">tin xác nhận không đúng cây %1$s (đã bấm Cancel)</string>
