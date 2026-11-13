@@ -181,6 +181,14 @@ class AutoAccessibilityService : AccessibilityService() {
         if (ok) { syncedDisabled = encoded; syncedAtMs = now }
     }
 
+    /** Them chan doan (thay nut Gui / bam / cham / chu con trong o) vao dong loi khi gui that bai vi bam Gui khong ra. */
+    private fun withDiag(r: SendResult, base: String): String {
+        val d = DiscordSender.lastDiag
+        if (r != SendResult.SEND_FAILED || d == null) return base
+        fun yn(b: Boolean?) = Str.get(if (b == null) R.string.svc_chua_thu else if (b) R.string.svc_co else R.string.svc_khong)
+        return base + " " + Str.get(R.string.svc_chan_doan_gui, yn(d.foundButton), yn(d.clicked), yn(d.tapped), yn(d.textStillInBox))
+    }
+
     private suspend fun pollOwoTrackerOnce(apiUrl: String, token: String) {
         // App chi tu hanh dong khi Hub noi dang BAT. Hub tat -> khong dong vao lenh nao (lenh cua bot cu nam cho,
         // het han sau 10 phut)
@@ -216,7 +224,7 @@ class AutoAccessibilityService : AccessibilityService() {
                         SendResult.SEND_FAILED -> Str.get(R.string.svc_nw_inv_chua_gui_duoc)
                         SendResult.NO_INPUT -> Str.get(R.string.svc_nw_inv_khong_thay_o_nhap)
                         else -> Str.get(R.string.svc_khong_go_duoc_nw_inv)
-                    }
+                    }.let { withDiag(r, it) }
                     CleanupGate.finish(CleanupStatus(CleanupPhase.FAILED, command = CommandGuard.EXPORT_COMMAND, detail = why))
                     if (r == SendResult.CAPTCHA) {
                         alertCaptcha()
@@ -322,6 +330,7 @@ class AutoAccessibilityService : AccessibilityService() {
                 if (!cleaned) {
                     val why = when {
                         result == SendResult.CAPTCHA -> Str.get(R.string.svc_owo_dang_doi_captcha_giai)
+                        result == SendResult.SEND_FAILED -> withDiag(result, Str.get(R.string.svc_lenh_chua_gui_duoc))
                         result != SendResult.OK -> Str.get(R.string.svc_khong_go_duoc_lenh_vao)
                         else -> CleanupGate.lastFailure.ifBlank { Str.get(R.string.svc_buoc_khong_hoan_thanh) }
                     }

@@ -388,6 +388,11 @@
     <string name="svc_bot_da_dung_phien">Bot đã dừng phiên dọn kho (lệnh ,cleanstop hoặc kế hoạch đổi).</string>
     <string name="svc_nw_inv_chua_gui_duoc">Đã gõ nw inv export nhưng bấm Gửi không được: chữ vẫn nằm trong ô nhập sau vài giây (kiểm tra nút Gửi của Discord, hoặc đặt lại vị trí nút Gửi trong cài đặt)</string>
     <string name="svc_nw_inv_khong_thay_o_nhap">Không thấy ô nhập tin nhắn của Discord (mở đúng kênh chat chưa, bàn phím có đang chặn không)</string>
+    <string name="svc_lenh_chua_gui_duoc">Đã gõ lệnh nhưng Discord không gửi đi (chữ còn trong ô nhập).</string>
+    <string name="svc_chan_doan_gui">[Chẩn đoán: thấy nút Gửi: %1$s · bấm thường: %2$s · chạm thật: %3$s · chữ còn trong ô: %4$s]</string>
+    <string name="svc_co">có</string>
+    <string name="svc_khong">không</string>
+    <string name="svc_chua_thu">chưa thử</string>
     <string name="svc_buoc_khong_hoan_thanh">Bước không hoàn thành.</string>
     <string name="svc_nghi_vai_giay_cho_tom">Nghỉ vài giây, chờ Tom giao bước kế…</string>
     <string name="hubfrag_dang_lay_du_lieu">Đang lấy dữ liệu</string>

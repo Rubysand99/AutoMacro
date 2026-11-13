@@ -21,6 +21,9 @@ enum class SendResult {
     CAPTCHA             // OwO dang doi giai captcha -> DUNG, de Ruby tu giai
 }
 
+/** Vi sao gui that bai: hien o dong loi cua Hub de Ruby chup gui lai khi can. */
+data class SendDiag(val foundButton: Boolean, val clicked: Boolean, val tapped: Boolean?, val textStillInBox: Boolean)
+
 /** Ket qua 1 lan MO Discord (dung cho nut "Thu mo Discord" va cho buoc mo truoc khi gui lenh) */
 enum class OpenResult {
     OK_CHANNEL,          // da mo Discord va vao kenh theo link
@@ -49,6 +52,9 @@ class DiscordSender(private val service: AutoAccessibilityService) {
 
         /** Chi 1 lenh duoc go vao Discord tai 1 thoi diem (farm va lenh thay gem khong go chong cheo) */
         val sendMutex = Mutex()
+
+        /** Chan doan lan gui that bai gan nhat: (thay nut Gui, ACTION_CLICK bam duoc, cham that bam duoc (null = chua thu), chu con trong o). */
+        @Volatile var lastDiag: SendDiag? = null
     }
 
     private fun foregroundPackage(): String? = service.rootInActiveWindow?.packageName?.toString()
@@ -158,11 +164,16 @@ class DiscordSender(private val service: AutoAccessibilityService) {
         // --- Bam Gui ---
         var clicked = false
         val sendButton = NodeTools.findSendButton(service.rootInActiveWindow)
+        val found = sendButton != null
         if (sendButton != null) clicked = NodeTools.clickNode(service, sendButton)
         if (!clicked && settings.hasDiscordTargets) {
             clicked = service.performClickAwait(settings.sendButtonX, settings.sendButtonY)
         }
-        if (!clicked) return SendResult.SEND_FAILED
+        if (!clicked) {
+            lastDiag = SendDiag(found, false, null, true)
+            return SendResult.SEND_FAILED
+        }
+        var tapped: Boolean? = null
 
         // --- Kiem tra lai: chu da roi khoi o nhap chua (Discord co luc xoa o cham, nen doi toi da ~4 giay) ---
         // Sau ~2 giay chu van nam do thi bam Gui them 1 lan (chi khi chu con trong o ngay luc do, nen khong gui doi)
@@ -177,9 +188,11 @@ class DiscordSender(private val service: AutoAccessibilityService) {
                 // ACTION_CLICK da tra "da bam" ma chu van con -> cham that vao giua nut Gui
                 var again = btn != null && NodeTools.tapNode(service, btn)
                 if (!again && settings.hasDiscordTargets) again = service.performClickAwait(settings.sendButtonX, settings.sendButtonY)
+                tapped = again
                 Log.w(TAG, "Chu van nam trong o sau 2 giay - bam Gui them 1 lan (bam duoc: $again)")
             }
         }
+        lastDiag = SendDiag(found, clicked, tapped, true)
         return SendResult.SEND_FAILED
     }
 }
