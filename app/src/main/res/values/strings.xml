@@ -628,4 +628,5 @@
     <string name="hf_inv_tap">Chạm để xem toàn bộ</string>
     <string name="hf_w_head">Đã ghi nhận %1$s cây (chỉ tính cây bạn từng xem)</string>
     <string name="hf_w_more">Chạm để xem hết %1$d cây</string>
+    <string name="picker_hint_start">Chạm vào điểm bắt đầu</string>
 </resources>
