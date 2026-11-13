@@ -13,7 +13,7 @@ object NodeDump {
     private const val MAX_LINES = 700
 
     fun dump(service: AutoAccessibilityService): String {
-        val root = service.rootInActiveWindow ?: return "Khong doc duoc man hinh (rootInActiveWindow = null)"
+        val root = service.discordRoot() ?: service.rootInActiveWindow ?: return "Khong doc duoc man hinh (rootInActiveWindow = null)"
         // Chi chup man hinh Discord: ket qua duoc chep vao clipboard nen khong duoc chua noi dung app khac
         if (root.packageName?.toString() != DiscordSender.DISCORD_PACKAGE) {
             return "Chi chup duoc man hinh Discord. Dang o app: ${root.packageName} - hay mo Discord len roi bam lai."

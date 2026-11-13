@@ -43,7 +43,7 @@ object ButtonClicker {
     }
 
     private fun findBottomMost(service: AutoAccessibilityService, target: String): AccessibilityNodeInfo? {
-        val root = service.rootInActiveWindow ?: return null
+        val root = service.discordRoot() ?: return null
         // Chi bam trong Discord: nguoi dung chuyen sang app khac giua chung thi DUNG, khong bam nham nut app do
         if (root.packageName?.toString() != DiscordSender.DISCORD_PACKAGE) return null
         val nodes = NodeTools.collect(root, maxNodes = 1500) { it.isVisibleToUser && exactLabel(it, target) }
@@ -112,7 +112,7 @@ object ButtonClicker {
     fun textAbove(service: AutoAccessibilityService, label: String, requireEnabled: Boolean = true): String? {
         val btn = (if (requireEnabled) enabledBottomMost(service, label) else findBottomMost(service, normalize(label))) ?: return null
         val br = Rect(); btn.getBoundsInScreen(br)
-        val root = service.rootInActiveWindow ?: return null
+        val root = service.discordRoot() ?: return null
         val nodes = NodeTools.collect(root, maxNodes = 1500) {
             val t = it.text?.toString()
             if (t.isNullOrBlank() || !it.isVisibleToUser) false else {

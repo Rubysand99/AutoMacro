@@ -48,7 +48,7 @@ object QuestClaimer {
 
     /** Tim node khop nhan, lay cai nam THAP NHAT tren man hinh (= tin Quest Log moi nhat o cuoi kenh). */
     private fun findBottomMost(service: AutoAccessibilityService, target: String): AccessibilityNodeInfo? {
-        val root = service.rootInActiveWindow ?: return null
+        val root = service.discordRoot() ?: return null
         val nodes = NodeTools.collect(root, maxNodes = 1500) { it.isVisibleToUser && labelMatches(it, target) }
         // Discord dat ten nut o mo ta (desc) cua chinh nut va lap lai bang 1 o chu con: uu tien nut bam duoc
         val clickable = nodes.filter { it.isClickable }

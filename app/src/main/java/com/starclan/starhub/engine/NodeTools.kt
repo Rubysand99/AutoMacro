@@ -57,7 +57,7 @@ object NodeTools {
     fun findInput(service: AutoAccessibilityService): AccessibilityNodeInfo? {
         val focused = service.findFocus(AccessibilityNodeInfo.FOCUS_INPUT)
         if (focused != null && focused.isEditable) return focused
-        val editors = collect(service.rootInActiveWindow) { it.isEditable && it.isVisibleToUser }
+        val editors = collect(service.discordRoot()) { it.isEditable && it.isVisibleToUser }
         return editors.maxByOrNull { boundsOf(it).top }
     }
 

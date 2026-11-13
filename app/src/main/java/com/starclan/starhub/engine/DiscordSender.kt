@@ -57,7 +57,7 @@ class DiscordSender(private val service: AutoAccessibilityService) {
         @Volatile var lastDiag: SendDiag? = null
     }
 
-    private fun foregroundPackage(): String? = service.rootInActiveWindow?.packageName?.toString()
+    private fun foregroundPackage(): String? = (service.discordRoot() ?: service.rootInActiveWindow)?.packageName?.toString()
 
     private suspend fun humanPause(minMs: Long, maxMs: Long) = delay(Random.nextLong(minMs, maxMs))
 
@@ -144,7 +144,7 @@ class DiscordSender(private val service: AutoAccessibilityService) {
             if (!openDiscord(settings.discordLink)) return SendResult.DISCORD_NOT_OPEN
         }
 
-        if (NodeTools.looksLikeCaptcha(service.rootInActiveWindow)) return SendResult.CAPTCHA
+        if (NodeTools.looksLikeCaptcha(service.discordRoot())) return SendResult.CAPTCHA
 
         // --- O nhap ---
         var input = NodeTools.findInput(service)
@@ -163,7 +163,7 @@ class DiscordSender(private val service: AutoAccessibilityService) {
 
         // --- Bam Gui ---
         var clicked = false
-        val sendButton = NodeTools.findSendButton(service.rootInActiveWindow)
+        val sendButton = NodeTools.findSendButton(service.discordRoot())
         val found = sendButton != null
         if (sendButton != null) clicked = NodeTools.clickNode(service, sendButton)
         if (!clicked && settings.hasDiscordTargets) {
@@ -184,7 +184,7 @@ class DiscordSender(private val service: AutoAccessibilityService) {
             if (after == null || !NodeTools.inputContains(after, text)) return SendResult.OK
             if ((i == 4 || i == 7) && (!retried || i == 7)) {
                 retried = true
-                val btn = NodeTools.findSendButton(service.rootInActiveWindow)
+                val btn = NodeTools.findSendButton(service.discordRoot())
                 // ACTION_CLICK da tra "da bam" ma chu van con -> cham that vao giua nut Gui
                 var again = btn != null && NodeTools.tapNode(service, btn)
                 if (!again && settings.hasDiscordTargets) again = service.performClickAwait(settings.sendButtonX, settings.sendButtonY)

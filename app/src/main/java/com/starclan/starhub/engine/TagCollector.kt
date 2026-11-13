@@ -145,7 +145,7 @@ object TagCollector {
 
     /** Chu cua cac nut dang hien tren man hinh, theo thu tu tren xuong duoi (khong cat bot, bo o nhap va nut bam) */
     private fun readLines(service: AutoAccessibilityService): List<String> {
-        val root = service.rootInActiveWindow ?: return emptyList()
+        val root = service.discordRoot() ?: return emptyList()
         // Chi doc man hinh Discord: dang o app khac (ngan hang, tin nhan...) thi KHONG doc chu cua ho
         if (root.packageName?.toString() != DiscordSender.DISCORD_PACKAGE) return emptyList()
         class Item(val top: Int, val left: Int, val text: String)

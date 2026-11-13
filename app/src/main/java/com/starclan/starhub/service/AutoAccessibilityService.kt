@@ -181,6 +181,20 @@ class AutoAccessibilityService : AccessibilityService() {
         if (ok) { syncedDisabled = encoded; syncedAtMs = now }
     }
 
+    /**
+     * Cay giao dien cua cua so DISCORD, ke ca khi cua so "dang hoat dong" khong phai Discord (vd vua cham vao Hub noi:
+     * rootInActiveWindow luc do la cua so Hub, khong co nut Gui cua Discord). null = khong co cua so Discord nao dang hien.
+     */
+    fun discordRoot(): android.view.accessibility.AccessibilityNodeInfo? {
+        val active = rootInActiveWindow
+        if (active?.packageName?.toString() == DiscordSender.DISCORD_PACKAGE) return active
+        return try {
+            windows.asSequence().mapNotNull { it.root }.firstOrNull { it.packageName?.toString() == DiscordSender.DISCORD_PACKAGE }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
     /** Them chan doan (thay nut Gui / bam / cham / chu con trong o) vao dong loi khi gui that bai vi bam Gui khong ra. */
     private fun withDiag(r: SendResult, base: String): String {
         val d = DiscordSender.lastDiag
