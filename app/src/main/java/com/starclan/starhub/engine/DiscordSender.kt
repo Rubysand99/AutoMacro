@@ -171,10 +171,11 @@ class DiscordSender(private val service: AutoAccessibilityService) {
             delay(500)
             val after = NodeTools.findInput(service)
             if (after == null || !NodeTools.inputContains(after, text)) return SendResult.OK
-            if (i == 4 && !retried) {
+            if ((i == 4 || i == 7) && (!retried || i == 7)) {
                 retried = true
                 val btn = NodeTools.findSendButton(service.rootInActiveWindow)
-                var again = btn != null && NodeTools.clickNode(service, btn)
+                // ACTION_CLICK da tra "da bam" ma chu van con -> cham that vao giua nut Gui
+                var again = btn != null && NodeTools.tapNode(service, btn)
                 if (!again && settings.hasDiscordTargets) again = service.performClickAwait(settings.sendButtonX, settings.sendButtonY)
                 Log.w(TAG, "Chu van nam trong o sau 2 giay - bam Gui them 1 lan (bam duoc: $again)")
             }

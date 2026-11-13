@@ -140,6 +140,13 @@ object NodeTools {
         return service.performClickAwait(r.exactCenterX(), r.exactCenterY())
     }
 
+    /** Cham that (cu chi) vao giua node, bo qua ACTION_CLICK: mot so nut cua Discord (React Native) tra ve "da bam" nhung khong gui gi. */
+    suspend fun tapNode(service: AutoAccessibilityService, node: AccessibilityNodeInfo): Boolean {
+        val r = boundsOf(node)
+        if (r.isEmpty) return false
+        return service.performClickAwait(r.exactCenterX(), r.exactCenterY())
+    }
+
     private fun isSendLabel(node: AccessibilityNodeInfo): Boolean {
         val d = node.contentDescription?.toString()?.trim()?.lowercase() ?: return false
         return d in sendLabels
