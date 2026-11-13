@@ -114,6 +114,11 @@ object CleanupRunner {
      * bam xong phai thay nut sao chuyen vang. Khong chac -> that bai (khong bao gio coi la xong khi chua chac cay da sao,
      * vi cay Giu chua sao se bi rã theo bac).
      */
+    /** Tin co nut sao `label` o duoi cung la cua DUNG cay `id`: ma cay hien tren tin, hoac tin nam duoi tin lenh ta vua go. */
+    private fun isThisWeapon(service: AutoAccessibilityService, label: String, id: String, params: Map<String, String>): Boolean =
+        CommandGuard.textHasId(ButtonClicker.textAbove(service, label, requireEnabled = false), id) ||
+            ButtonClicker.starIsBelowCommand(service, label, params["command_text"].orEmpty().trim())
+
     private suspend fun star(service: AutoAccessibilityService, params: Map<String, String>): Boolean {
         val id = params["command_text"].orEmpty().trim().split(Regex("\\s+")).lastOrNull().orEmpty()
         CleanupGate.progress(Str.get(R.string.clean_tim_nut_sao_tren_tin))
@@ -121,7 +126,7 @@ object CleanupRunner {
         var waited = 0
         while (true) {
             val l = ButtonClicker.latestStarLabel(service)
-            if (l != null && CommandGuard.textHasId(ButtonClicker.textAbove(service, l, requireEnabled = false), id)) { label = l; break }
+            if (l != null && isThisWeapon(service, l, id, params)) { label = l; break }
             if (waited >= 8_000) break
             delay(1_000); waited += 1_000
         }
@@ -136,7 +141,7 @@ object CleanupRunner {
         while (waited < 4_000) {
             delay(1_000); waited += 1_000
             val l = ButtonClicker.latestStarLabel(service)
-            if (l == "star_yellow" && CommandGuard.textHasId(ButtonClicker.textAbove(service, l, requireEnabled = false), id)) {
+            if (l == "star_yellow" && isThisWeapon(service, l, id, params)) {
                 delay(500)
                 return true
             }

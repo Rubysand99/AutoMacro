@@ -134,4 +134,26 @@ object ButtonClicker {
         val ro = Rect(); o.getBoundsInScreen(ro)
         return if (ry.top >= ro.top) "star_yellow" else "star_outline_dim"
     }
+
+    /**
+     * Nut sao `label` thap nhat co nam DUOI tin lenh ta vua go (vd "owo w AL57PC") khong? Co = day la tin tra loi cua OwO cho DUNG lenh nay
+     * (tin cua cay truoc nam o TREN tin lenh). Khong can ma cay hien trong embed (embed OwO khong luon in ma).
+     */
+    fun starIsBelowCommand(service: AutoAccessibilityService, label: String, commandText: String): Boolean {
+        val btn = findBottomMost(service, normalize(label)) ?: return false
+        val br = Rect(); btn.getBoundsInScreen(br)
+        val root = service.discordRoot() ?: return false
+        val want = normalize(commandText)
+        if (want.isEmpty()) return false
+        var cmdBottom = Int.MIN_VALUE
+        var cmdTop = Int.MIN_VALUE
+        NodeTools.collect(root, maxNodes = 1500) {
+            val t = it.text?.toString()
+            !t.isNullOrBlank() && it.isVisibleToUser && !it.isEditable && normalize(t).contains(want)
+        }.forEach {
+            val r = Rect(); it.getBoundsInScreen(r)
+            if (r.top > cmdTop) { cmdTop = r.top; cmdBottom = r.bottom }
+        }
+        return cmdBottom != Int.MIN_VALUE && br.top >= cmdBottom
+    }
 }
