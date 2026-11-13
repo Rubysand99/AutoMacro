@@ -156,6 +156,21 @@ object NodeTools {
     fun findSendButton(root: AccessibilityNodeInfo?): AccessibilityNodeInfo? =
         collect(root) { it.isVisibleToUser && isSendLabel(it) }.firstOrNull()
 
+    /**
+     * Du phong khi khong thay nut theo nhan "Gui": nut bam duoc nam NGAY BEN PHAI o nhap, cung hang, ngoai cung ben phai.
+     * (Discord hien nut Gui o day khi o nhap co chu.)
+     */
+    fun findSendByLayout(root: AccessibilityNodeInfo?, input: AccessibilityNodeInfo?): AccessibilityNodeInfo? {
+        if (root == null || input == null) return null
+        val inRect = boundsOf(input)
+        if (inRect.isEmpty) return null
+        return collect(root) {
+            val r = boundsOf(it)
+            it.isVisibleToUser && it.isClickable && !it.isEditable && !r.isEmpty &&
+                r.left >= inRect.right && r.centerY() in inRect.top..inRect.bottom
+        }.maxByOrNull { boundsOf(it).right }
+    }
+
     // ----------------- CAPTCHA -----------------
 
     /**

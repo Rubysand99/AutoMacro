@@ -163,7 +163,14 @@ class DiscordSender(private val service: AutoAccessibilityService) {
 
         // --- Bam Gui ---
         var clicked = false
-        val sendButton = NodeTools.findSendButton(service.discordRoot())
+        // Nut Gui co the hien cham sau khi go chu (Discord ve lai giao dien): doi toi da ~3 giay, khong thay theo nhan thi tim theo vi tri canh o nhap
+        var sendButton: android.view.accessibility.AccessibilityNodeInfo? = null
+        for (i in 0 until 10) {
+            val root = service.discordRoot()
+            sendButton = NodeTools.findSendButton(root) ?: NodeTools.findSendByLayout(root, NodeTools.findInput(service))
+            if (sendButton != null) break
+            delay(300)
+        }
         val found = sendButton != null
         if (sendButton != null) clicked = NodeTools.clickNode(service, sendButton)
         if (!clicked && settings.hasDiscordTargets) {
@@ -184,7 +191,7 @@ class DiscordSender(private val service: AutoAccessibilityService) {
             if (after == null || !NodeTools.inputContains(after, text)) return SendResult.OK
             if ((i == 4 || i == 7) && (!retried || i == 7)) {
                 retried = true
-                val btn = NodeTools.findSendButton(service.discordRoot())
+                val btn = NodeTools.findSendButton(service.discordRoot()) ?: NodeTools.findSendByLayout(service.discordRoot(), NodeTools.findInput(service))
                 // ACTION_CLICK da tra "da bam" ma chu van con -> cham that vao giua nut Gui
                 var again = btn != null && NodeTools.tapNode(service, btn)
                 if (!again && settings.hasDiscordTargets) again = service.performClickAwait(settings.sendButtonX, settings.sendButtonY)
