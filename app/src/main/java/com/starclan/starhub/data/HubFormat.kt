@@ -40,14 +40,14 @@ object HubFormat {
         if (seconds == null) return ""
         val s = maxOf(seconds, 0L)
         return when {
-            s < 60 -> "vừa xong"
-            s < 3600 -> "${s / 60} phút trước"
+            s < 60 -> Texts.get("hf_age_now")
+            s < 3600 -> Texts.get("hf_age_min", s / 60)
             s < 86400 -> {
                 val h = s / 3600
                 val m = (s % 3600) / 60
-                if (m == 0L) "$h giờ trước" else "$h giờ $m phút trước"
+                if (m == 0L) Texts.get("hf_age_h", h) else Texts.get("hf_age_hm", h, m)
             }
-            else -> "${s / 86400} ngày trước"
+            else -> Texts.get("hf_age_day", s / 86400)
         }
     }
 
@@ -58,9 +58,9 @@ object HubFormat {
         val m = (s % 3600) / 60
         val sec = s % 60
         return when {
-            h > 0 -> String.format(Locale.US, "%d giờ %02d phút %02d giây", h, m, sec)
-            m > 0 -> String.format(Locale.US, "%d phút %02d giây", m, sec)
-            else -> "$sec giây"
+            h > 0 -> Texts.get("hf_dur_hms", h, m, sec)
+            m > 0 -> Texts.get("hf_dur_ms", m, sec)
+            else -> Texts.get("hf_dur_s", sec)
         }
     }
 
@@ -71,9 +71,9 @@ object HubFormat {
         val m = (s % 3600) / 60
         val sec = s % 60
         return when {
-            h > 0 -> String.format(Locale.US, "%dg %02dp", h, m)
-            m > 0 -> String.format(Locale.US, "%dp %02ds", m, sec)
-            else -> "${sec}s"
+            h > 0 -> Texts.get("hf_short_hm", h, m)
+            m > 0 -> Texts.get("hf_short_ms", m, sec)
+            else -> Texts.get("hf_short_s", sec)
         }
     }
 
@@ -85,10 +85,10 @@ object HubFormat {
     }
 
     /** Hien thay cho noi dung 1 muc khi muc do khong doc duoc (cac muc khac van binh thuong). */
-    fun sectionError(reason: String): String = "Không đọc được mục này:\n$reason"
+    fun sectionError(reason: String): String = Texts.get("hf_section_error") + "\n" + reason
 
     private fun noData(hint: String?): String =
-        "Chưa có dữ liệu — bot chưa thấy tin nhắn nào cho mục này." +
+        Texts.get("hf_nodata") +
             (if (hint.isNullOrBlank()) "" else "\n$hint")
 
     // ---------- Tuoi du lieu cua tung muc ----------
@@ -100,49 +100,49 @@ object HubFormat {
 
     /** elapsedSec = so giay tu luc app lay du lieu (de dem nguoc chay muot giua 2 lan lam moi). */
     fun daily(d: HubDaily?, elapsedSec: Long): String {
-        if (d == null) return noData("Gõ owo daily 1 lần để bot ghi nhận.")
+        if (d == null) return noData(Texts.get("hf_hint_daily"))
         val sb = StringBuilder()
         val left = d.secondsLeft
         if (left == null) {
-            sb.append("Chưa rõ giờ nhận kế tiếp")
+            sb.append(Texts.get("hf_daily_unknown"))
         } else {
             val remain = left - elapsedSec
             if (remain > 0) {
-                sb.append("Còn ${duration(remain)} nữa mới nhận được")
+                sb.append(Texts.get("hf_daily_remain", duration(remain)))
             } else {
-                sb.append("Daily đã sẵn sàng — gõ owo daily để nhận")
+                sb.append(Texts.get("hf_daily_ready"))
             }
         }
         val extras = mutableListOf<String>()
-        if (d.streak != null) extras.add("Streak: ${num(d.streak)} ngày")
-        if (d.lastReward != null) extras.add("Lần nhận gần nhất: ${num(d.lastReward)} cowoncy")
+        if (d.streak != null) extras.add(Texts.get("hf_streak", num(d.streak)))
+        if (d.lastReward != null) extras.add(Texts.get("hf_last_reward", num(d.lastReward)))
         if (extras.isNotEmpty()) sb.append("\n").append(extras.joinToString(" · "))
         return sb.toString()
     }
 
     fun cowoncy(c: HubCowoncy?): String {
-        if (c == null || c.amount == null) return noData("Gõ owo money để bot ghi nhận.")
-        return "${num(c.amount)} cowoncy"
+        if (c == null || c.amount == null) return noData(Texts.get("hf_hint_money"))
+        return Texts.get("hf_cowoncy", num(c.amount))
     }
 
     fun gems(g: HubGems?): String {
-        if (g == null) return noData("Gõ owo hunt để ghi nhận gem đang dùng, owo inventory để ghi nhận kho.")
+        if (g == null) return noData(Texts.get("hf_hint_gems"))
         val sb = StringBuilder()
         val equipped = g.equipped.orEmpty()
         if (equipped.isEmpty()) {
-            sb.append("Chưa thấy gem đang trang bị — gõ owo hunt 1 lần để bot ghi nhận.")
+            sb.append(Texts.get("hf_gems_none"))
         } else {
-            sb.append("Đang dùng:")
+            sb.append(Texts.get("hf_gems_using"))
             for (e in equipped) {
-                val warn = if ((e.percent ?: 100) <= LOW_GEM_PERCENT) " sắp hết" else ""
+                val warn = if ((e.percent ?: 100) <= LOW_GEM_PERCENT) " " + Texts.get("hf_gem_low") else ""
                 sb.append("\n• ${gemType(e.slot)} — ${e.tier ?: "?"}$warn")
                 sb.append("\n   ${bar(e.percent)} ${e.current ?: "?"}/${e.max ?: "?"} (${pct(e.percent)}%)")
             }
         }
-        sb.append("\n\nDự phòng trong kho:")
+        sb.append("\n\n" + Texts.get("hf_gems_spare"))
         val spare = g.spare.orEmpty()
         if (spare.isEmpty()) {
-            sb.append("\n(không có, hoặc bot chưa thấy kho)")
+            sb.append("\n" + Texts.get("hf_gems_spare_none"))
         } else {
             for ((slot, list) in spare.groupBy { it.slot ?: "?" }) {
                 sb.append("\n• ${gemType(slot)}: ")
@@ -154,29 +154,29 @@ object HubFormat {
 
     /** elapsedSec = so giay tu luc app lay du lieu, de dem nguoc chay muot giua 2 lan lam moi. */
     fun huntbot(h: HubHuntbot?, elapsedSec: Long): String {
-        if (h == null) return noData("Gõ lệnh HuntBot 1 lần để bot ghi nhận.")
+        if (h == null) return noData(Texts.get("hf_hint_hb"))
         val sb = StringBuilder()
         if (h.hunting == true) {
-            sb.append("Đang đi săn")
+            sb.append(Texts.get("hf_hb_hunting"))
             if (h.progressPct != null) sb.append(" · ${trimNum(h.progressPct)}%")
             val left = h.secondsLeft
             if (left != null) {
                 val remain = left - elapsedSec
                 if (remain > 0) {
-                    sb.append("\nCòn ${duration(remain)}")
+                    sb.append("\n" + Texts.get("hf_hb_remain", duration(remain)))
                 } else {
-                    sb.append("\nĐã tới giờ xong — HuntBot có thể đã về (tính theo lần bot thấy gần nhất)")
+                    sb.append("\n" + Texts.get("hf_hb_due"))
                 }
             } else if (!h.timeRemainingText.isNullOrBlank()) {
-                sb.append("\nCòn khoảng ${h.timeRemainingText}")
+                sb.append("\n" + Texts.get("hf_hb_about", h.timeRemainingText))
             } else {
-                sb.append("\nChưa rõ giờ xong")
+                sb.append("\n" + Texts.get("hf_hb_unknown"))
             }
         } else {
-            sb.append("Không đang đi săn (theo lần bot thấy gần nhất)")
+            sb.append(Texts.get("hf_hb_idle"))
         }
         val extras = mutableListOf<String>()
-        if (h.animalsCaptured != null) extras.add("Đã bắt: ${num(h.animalsCaptured)} pet")
+        if (h.animalsCaptured != null) extras.add(Texts.get("hf_hb_captured", num(h.animalsCaptured)))
         if (h.essence != null) extras.add("Essence: ${num(h.essence)}")
         if (extras.isNotEmpty()) sb.append("\n").append(extras.joinToString(" · "))
         return sb.toString()
@@ -186,9 +186,9 @@ object HubFormat {
         if (q == null) return noData(null)
         val items = q.quests.orEmpty()
         val header = when {
-            q.allDone == true -> "Đã xong hết quest"
-            items.isNotEmpty() -> "Còn ${items.count { it.done != true }}/${items.size} quest chưa xong"
-            else -> "Còn quest chưa xong"
+            q.allDone == true -> Texts.get("hf_q_all_done")
+            items.isNotEmpty() -> Texts.get("hf_q_left", items.count { it.done != true }, items.size)
+            else -> Texts.get("hf_q_left_some")
         }
         val sb = StringBuilder(header)
         if (q.seals != null) sb.append(" · Seals: ${num(q.seals)}")
@@ -196,15 +196,15 @@ object HubFormat {
         if (nextSec != null) {
             val remain = nextSec - elapsedSec
             if (remain > 0) {
-                sb.append("\n⏰ Quest mới sau ${duration(remain)}")
+                sb.append("\n⏰ " + Texts.get("hf_q_new_in", duration(remain)))
             } else {
-                sb.append("\n⏰ Đã có quest mới (theo mốc bot ghi nhận)")
+                sb.append("\n⏰ " + Texts.get("hf_q_new"))
             }
         } else if (!q.nextQuest.isNullOrBlank()) {
-            sb.append("\nKế tiếp: ${q.nextQuest}")
+            sb.append("\n" + Texts.get("hf_q_next", q.nextQuest))
         }
         for (qi in items) {
-            val mark = if (qi.done == true) "Xong:" else "•"
+            val mark = if (qi.done == true) Texts.get("hf_q_done_mark") else "•"
             val rarity = if (qi.rarity.isNullOrBlank()) "" else " (${qi.rarity})"
             sb.append("\n\n$mark ${qi.index ?: "?"}. ${qi.title ?: "?"}$rarity")
             if (qi.current != null && qi.max != null && qi.max > 0) {
@@ -214,7 +214,7 @@ object HubFormat {
             if (!qi.description.isNullOrBlank()) sb.append("\n   ${qi.description}")
             val rewards = qi.rewards.orEmpty()
             if (rewards.isNotEmpty()) {
-                sb.append("\n   Thưởng: ").append(rewards.joinToString(" · ") { r -> "${r.item ?: "?"} +${num(r.amount)}" })
+                sb.append("\n   " + Texts.get("hf_q_reward") + " ").append(rewards.joinToString(" · ") { r -> "${r.item ?: "?"} +${num(r.amount)}" })
             }
         }
         return sb.toString()
@@ -231,29 +231,29 @@ object HubFormat {
     }
 
     fun zoo(z: HubZoo?, expanded: Boolean): String {
-        if (z == null) return noData("Gõ owo zoo để bot ghi nhận pet.")
+        if (z == null) return noData(Texts.get("hf_hint_zoo"))
         val sb = StringBuilder()
-        sb.append("Zoo Points: ${num(z.zooPoints)} · Đang có ${num(z.totalPets)} pet")
+        sb.append(Texts.get("hf_zoo_head", num(z.zooPoints), num(z.totalPets)))
         // Dong cuoi bang zoo cua OwO = so pet DA BAT tu truoc toi nay (ban di khong giam), khac voi so DANG CO
-        if (z.caughtTotal != null) sb.append("\nĐã bắt từ trước tới nay: ${num(z.caughtTotal)}")
+        if (z.caughtTotal != null) sb.append("\n" + Texts.get("hf_zoo_caught", num(z.caughtTotal)))
         for ((tier, t) in z.byTier.orEmpty()) {
-            if ((t.total ?: 0L) > 0L) sb.append("\n• $tier: ${num(t.total)} con · ${num(t.species)} loài")
+            if ((t.total ?: 0L) > 0L) sb.append("\n• " + Texts.get("hf_zoo_tier", tier, num(t.total), num(t.species)))
         }
         if (expanded) {
-            if (!z.breakdownRaw.isNullOrBlank()) sb.append("\n\nĐã bắt theo hạng: ${z.breakdownRaw}")
+            if (!z.breakdownRaw.isNullOrBlank()) sb.append("\n\n" + Texts.get("hf_zoo_breakdown", z.breakdownRaw))
             sb.append("\n")
             for ((tier, list) in z.pets.orEmpty().groupBy { it.tier ?: "?" }) {
                 sb.append("\n$tier: ")
                 sb.append(list.joinToString(", ") { "${it.name ?: "?"} ×${num(it.count)}" })
             }
         } else if (z.pets.orEmpty().isNotEmpty()) {
-            sb.append("\n\nChạm để xem từng loài")
+            sb.append("\n\n" + Texts.get("hf_zoo_tap"))
         }
         return sb.toString()
     }
 
     fun inventory(inv: HubInventory?, expanded: Boolean): String {
-        if (inv == null) return noData("Gõ owo inventory để bot ghi nhận kho đồ.")
+        if (inv == null) return noData(Texts.get("hf_hint_inv"))
         val items = inv.items.orEmpty()
         if (expanded) {
             // Dong "N loai · M mon" da hien o dau the (HubSummary.inventoryLine) -> khong in lai o day.
@@ -261,22 +261,22 @@ object HubFormat {
                 "${i.code ?: "?"}  ${i.name ?: "?"} ×${num(i.count)}"
             }
         }
-        val sb = StringBuilder("${num(inv.kinds)} loại · ${num(inv.totalItems)} món")
-        if (items.isNotEmpty()) sb.append("\n\nChạm để xem toàn bộ")
+        val sb = StringBuilder(Texts.get("hf_inv_head", num(inv.kinds), num(inv.totalItems)))
+        if (items.isNotEmpty()) sb.append("\n\n" + Texts.get("hf_inv_tap"))
         return sb.toString()
     }
 
     fun weapons(w: HubWeapons?, expanded: Boolean): String {
         val list = w?.weapons.orEmpty()
-        if (w == null || list.isEmpty()) return noData("Chỉ ghi nhận những cây bạn từng xem bằng owo weapon <ID>.")
-        val sb = StringBuilder("Đã ghi nhận ${num(w.count ?: list.size)} cây (chỉ tính cây bạn từng xem)")
+        if (w == null || list.isEmpty()) return noData(Texts.get("hf_hint_weapons"))
+        val sb = StringBuilder(Texts.get("hf_w_head", num(w.count ?: list.size)))
         val shown = if (expanded) list else list.take(5)
         for (x in shown) {
             sb.append("\n• ${x.id ?: "?"} · ${x.typeName ?: "?"} ${trimNum(x.quality)}%")
             if (!x.passiveName.isNullOrBlank()) sb.append(" · ${x.passiveName}")
             if (expanded && !x.passiveDesc.isNullOrBlank()) sb.append("\n   ${x.passiveDesc}")
         }
-        if (!expanded && list.size > shown.size) sb.append("\n\nChạm để xem hết ${list.size} cây")
+        if (!expanded && list.size > shown.size) sb.append("\n\n" + Texts.get("hf_w_more", list.size))
         return sb.toString()
     }
 }

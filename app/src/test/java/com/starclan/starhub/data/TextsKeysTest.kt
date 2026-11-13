@@ -10,7 +10,7 @@ import org.junit.Test
 class TextsKeysTest {
     init { TestTexts.install() }
 
-    private val prefixes = listOf("speed_", "farmgroup_", "farmcmd_", "cleanst_", "bt_", "dexsort_", "dexfilter_", "dexquery_", "search_", "hubparser_", "gemtier_", "fstats_", "hs_")
+    private val prefixes = listOf("speed_", "farmgroup_", "farmcmd_", "cleanst_", "bt_", "dexsort_", "dexfilter_", "dexquery_", "search_", "hubparser_", "gemtier_", "fstats_", "hs_", "hf_")
 
     private fun dataSources(): List<File> {
         val dir = listOf("src/main/java/com/starclan/starhub/data", "app/src/main/java/com/starclan/starhub/data")
