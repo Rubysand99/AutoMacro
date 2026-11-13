@@ -211,8 +211,12 @@ class AutoAccessibilityService : AccessibilityService() {
                     CleanupGate.set(CleanupStatus(CleanupPhase.WAIT_FILE, command = CommandGuard.EXPORT_COMMAND,
                         untilMs = CleanupGate.holdUntilMs, sinceMs = now))
                 } else {
-                    val why = if (r == SendResult.CAPTCHA) Str.get(R.string.svc_owo_dang_doi_captcha_giai)
-                        else Str.get(R.string.svc_khong_go_duoc_nw_inv)
+                    val why = when (r) {
+                        SendResult.CAPTCHA -> Str.get(R.string.svc_owo_dang_doi_captcha_giai)
+                        SendResult.SEND_FAILED -> Str.get(R.string.svc_nw_inv_chua_gui_duoc)
+                        SendResult.NO_INPUT -> Str.get(R.string.svc_nw_inv_khong_thay_o_nhap)
+                        else -> Str.get(R.string.svc_khong_go_duoc_nw_inv)
+                    }
                     CleanupGate.finish(CleanupStatus(CleanupPhase.FAILED, command = CommandGuard.EXPORT_COMMAND, detail = why))
                     if (r == SendResult.CAPTCHA) {
                         alertCaptcha()

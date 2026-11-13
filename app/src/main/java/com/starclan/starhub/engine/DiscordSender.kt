@@ -164,10 +164,21 @@ class DiscordSender(private val service: AutoAccessibilityService) {
         }
         if (!clicked) return SendResult.SEND_FAILED
 
-        // --- Kiem tra lai: chu da roi khoi o nhap chua ---
-        delay(1000)
-        val after = NodeTools.findInput(service)
-        if (after != null && NodeTools.inputContains(after, text)) return SendResult.SEND_FAILED
-        return SendResult.OK
+        // --- Kiem tra lai: chu da roi khoi o nhap chua (Discord co luc xoa o cham, nen doi toi da ~4 giay) ---
+        // Sau ~2 giay chu van nam do thi bam Gui them 1 lan (chi khi chu con trong o ngay luc do, nen khong gui doi)
+        var retried = false
+        for (i in 1..8) {
+            delay(500)
+            val after = NodeTools.findInput(service)
+            if (after == null || !NodeTools.inputContains(after, text)) return SendResult.OK
+            if (i == 4 && !retried) {
+                retried = true
+                val btn = NodeTools.findSendButton(service.rootInActiveWindow)
+                var again = btn != null && NodeTools.clickNode(service, btn)
+                if (!again && settings.hasDiscordTargets) again = service.performClickAwait(settings.sendButtonX, settings.sendButtonY)
+                Log.w(TAG, "Chu van nam trong o sau 2 giay - bam Gui them 1 lan (bam duoc: $again)")
+            }
+        }
+        return SendResult.SEND_FAILED
     }
 }
