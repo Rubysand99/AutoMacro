@@ -1,4 +1,9 @@
-# AI_CONTEXT.md — Star Hub (truoc day: AutoMacro / TuyTam)
+# AI_CONTEXT.md — Star Hub (trước đây: AutoMacro / TuyTam)
+
+> File này chỉ giữ **trạng thái hiện tại + quy ước bắt buộc**. Nhật ký từng phiên bản (v15 → v39, kèm chi tiết thiết kế và
+> các ghi chú đã lỗi thời) nằm ở [`docs/LICH_SU.md`](docs/LICH_SU.md). Bot nằm ở repo riêng `Rubysand99/owo-tracker`
+> (có `README.md` mô tả API đầy đủ). Tài liệu viết tiếng Việt không dấu ở các mục cũ là do lịch sử, mục mới nên viết có dấu.
+
 
 ## Du an la gi
 App Android tu dong hoa thao tac tren may (bam, vuot, go chu, mo app) - kieu
@@ -11,360 +16,37 @@ repo Python/discord.py rieng) de tao 1 he thong tap trung: owo-tracker la
 "bo nao" (biet luc nao can lam gi), AutoMacro la "tay chan" (thuc thi tren
 dien thoai). Xem muc "Ket noi voi owo-tracker" ben duoi.
 
-## v38 — Chuoi cua object thuan Kotlin ra strings.xml qua `Texts` (13/11/2026)
-- Van de cu: nhom object thuan Kotlin (test JVM khong dung duoc `R`) con viet thang chu. Cach moi KHONG doi chu ky ham nen noi goi khong phai sua:
-  `data/Texts.kt` (`TextSource` + `object Texts`) tra chu **theo TEN** chuoi (`Texts.get("cleanst_done", n)`, doi so kieu `%1$d`).
-  App: `Str.init` (StarHubApp.onCreate) gan `Str.ByName` (doc `resources.getIdentifier`; khong thay ten -> tra lai chinh ten, khong sap; chua init -> cung tra ten).
-  Test: `TestTexts.install()` (`app/src/test/.../data/TestTexts.kt`) doc THANG `res/values/strings.xml` (co xu ly escape Android) nen test van so khop dung chu nguoi dung thay.
-- Da chuyen HET chu tieng Viet viet thang trong `data/*.kt`: `SpeedMode`, `FarmCmdGroup`, `FarmCmd` (khoa ghep `farmcmd_<id>_label|shown` — them lenh farm moi thi them 2 chuoi nay), `CleanupStatusText` (`cleanst_*`), `BotToolsText` (`bt_*`), `DexSort`/`DexFilter`/`statsLine` (`dexsort_*`, `dexfilter_*`, `dexquery_*`), `HubSearch` (`search_*`, `KIND_*` nay la `val` chu khong con `const`), loi `HubParser`/`GemTierJson` (`hubparser_*`, `gemtier_*`), `StatsFormat.duration` (`fstats_*`), `HubSummary` (`hs_*`), `HubFormat` (`hf_*`).
-- Con lai: chu trong `view/` va `service/` (dung `Str`/`R.string` nhu cu). Cac cum ky thuat khong phai tieng Viet (Hunting/Empowering/Lucky ten gem, "Essence:", "Seals:") van de trong code.
-  Enum doi tham so constructor tu chu thanh khoa, `label`/`shown` thanh thuoc tinh tinh luc goi (noi goi giu nguyen).
-- Quy uoc: chuoi khong de khoang trang dau/cuoi (Android cat bo) — noi bang code (`Texts.get(..) + " " + detail`); emoji dau dong giu trong code. Tien to hien co: `speed_` `farmgroup_` `farmcmd_` `cleanst_` `bt_` `dexsort_` `dexfilter_` `dexquery_` `search_` `hubparser_` `gemtier_` `fstats_` `hs_` `hf_`.
-- `TextsKeysTest`: moi ten co tien to tren trong `data/*.kt` phai co trong strings.xml, khong co chuoi mo coi, nhan enum khong rong, dinh dang doi so giong Android. Them tien to moi thi them vao danh sach `prefixes` cua test.
-- Cach kiem tra khi doi chuoi: so DAU RA voi ban cu (harness goi moi ham tao chu tren nhieu bo du lieu Hub / moc thoi gian, 832 dong, phai GIONG HET); test JVM chi so khop chu o cac lop co test. Bien dich phan thuan Kotlin + chay JUnit bang compiler nhung cua Gradle (170 test pass); `Str.kt` bien dich thu voi lop gia `Context`/`Resources`. CHUA BIEN DICH day du tren may (can Android SDK): xem GitHub Actions. Chua thu tren may that (chu Hub noi dung nhu cu).
-- Luu y neu sau nay bat `shrinkResources`: chuoi chi duoc tra theo ten nen phai giu bang `res/raw/keep.xml` (`tools:keep="@string/speed_*,@string/farmgroup_*,@string/farmcmd_*,@string/cleanst_*"`).
+## Quy ước BẮT BUỘC khi sửa code (rút từ lịch sử)
+**Hai phía bot ↔ app phải đi cùng nhau**
+- Bot (owo-tracker) thêm lệnh mới cho app gõ → thêm 1 dòng vào danh sách cho phép của `data/CommandGuard.kt` + 1 test ở `CommandGuardTest`,
+  nếu không app từ chối lệnh (ack `failed`). `CommandGuard` luôn chặn epic/mythic/legendary/fabled/`all` khi dismantle.
+- Luật kiểm tra nhập tay pet / loại vũ khí / passive có **2 bản**: `tools_api.py` (bot) và `ManualInput` trong `data/BotTools.kt` (app). Sửa 1 nơi thì sửa nơi kia.
+- Đổi API bot → cập nhật README của bot; thêm/đổi lệnh Discord → cập nhật `HELP_GROUPS` (`test_help.py` sẽ báo nếu quên).
+- Bot cũ chưa có đường API mới → app phải hiện thông báo "cập nhật bot", không báo lỗi khó hiểu.
 
-## v36 — Nhap tay pet / loai vu khi / passive + chuoi UI ra strings.xml (12/11/2026)
-- Bot (owo-tracker) them 3 duong `POST /manual/pet|weapontype|passive` (nhu `,petset` `,weapontypeset` `,passiveset`); luat kiem tra thuan o `tools_api.py` (`parse_pet_manual`, `parse_desc_manual`), luu chung ham voi lenh Discord (`save_pet_manual`, `save_weapontype_manual`, `save_passive`). Tra `{"ok":true,"name":...}`; truong sai -> 400 kem `field`. Test: `test_tools_api.py`, `test_tools_handlers.py`.
-- App: `ToolsFragment` them muc "Nhap tay" (3 nut chon loai; pet co rank + 6 o chi so, 2 loai con lai co ten + mo ta). `BotTools.kt` them `ManualKind`, `ManualPet`, `ManualDesc`, `ManualCheck`, `ManualInput` (kiem tra o nhap TRUOC khi gui, cung luat voi bot — **sua luat o bot thi sua ca o day**), `BotToolsJson.petBody/descBody/parseManual`, `BotToolsText.manualFieldError/manualSavedMessage`. `OwoTrackerApi.saveManualPet/saveManualDesc`. Bot cu khong co duong /manual -> app bao "cap nhat bot".
-- Test thuan Kotlin moi: `ManualInputTest` (16 test). Da bien dich + chay JUnit offline bang compiler Kotlin nhung cua Gradle (`kotlin-compiler-embeddable` + junit + gson trong `/opt/gradle/lib`): 35 test pass (BotToolsJsonTest, BotToolsTextTest, ManualInputTest). `ToolsFragment` / `ConfigFragment` / `OwoTrackerApi` can Android SDK nen **CHUA BIEN DICH o may nay**: da kiem tra cu phap + doi chieu loai loi voi ban cu, va kiem tra moi `R.string.*` deu co trong strings.xml / dung so tham so dinh dang — nhung van phai xem ket qua GitHub Actions.
-- Chuoi tieng Viet viet thang: da chuyen het o `ToolsFragment` + `ConfigFragment` sang `res/values/strings.xml` (ten `tools_*`, `config_*`; dung lai `tab_tools`, `tab_config`, `btn_save`, `hub_section_gems`, `section_gem_tier`). Code UI moi nen dung `getString(R.string.x)`.
-- Chuoi viet thang (tiep, v37): da chuyen sang strings.xml them `FarmOverlay`, `WaitCountdownView`, `FarmController`, `CleanupRunner`, `TagCollector`, `MusicPlayer`, `AutoAccessibilityService`, `HubFragment`, `OwoTrackerApi` (~250 chuoi, ten co tien to `overlay_` `farm_` `clean_` `tag_` `svc_` `hubfrag_` `api_` `wait_` `music_`). Truy cap bang `Str.get(R.string.x, arg...)` (`Str.kt`, khoi tao trong `StarHubApp.onCreate`; tham so dang `%1$s`; chuoi co khoang trang dau/cuoi boc trong `"..."`). **Khong dung `Str.get` trong `const val`** (loi bien dich; dung `val x get() = ...`). Van con viet thang (co y): cac doi tuong Kotlin thuan co test so khop dung chu (`BotToolsText`, `HubFormat`, `HubSummary`, `CleanupStatus`, `FarmCommandConfig`, `HubSearch`, `HubIcons`, `HubDexQuery`, `SpeedMode`, `HubParser`, `GemTierConfig`, `FarmStats`) vi test JVM khong dung duoc `R`; `NodeTools.sendLabels` (chu de khop nut Discord); vai ky hieu `·` `×` trong FarmOverlay. Muon chuyen not nhom tren phai truyen `Resources`/interface vao.
-- Chua thu tren may that: muc Nhap tay (go ban phim so cho o chi so, o mo ta nhieu dong, nut chon loai doi mau).
+**Chuỗi chữ**
+- Chữ hiển thị đặt ở `res/values/strings.xml`. Code Android dùng `Str.get(R.string.x, ...)` hoặc `getString`; object thuần Kotlin (test JVM không dùng được `R`) dùng `Texts.get("ten", ...)` theo TÊN chuỗi.
+- Không dùng `Str.get` trong `const val` (lỗi biên dịch). Chuỗi không để khoảng trắng đầu/cuối (Android cắt bỏ) — nối bằng code.
+- Tiền tố tên chuỗi của `data/*.kt` phải có trong danh sách `prefixes` của `TextsKeysTest`. Thêm lệnh farm mới thì thêm 2 chuỗi `farmcmd_<id>_label` và `farmcmd_<id>_shown`.
+- Nếu sau này bật `shrinkResources`: giữ chuỗi truy cập theo tên bằng `res/raw/keep.xml`. Nếu bật R8/minify: giữ lớp `data.Hub*` (Gson).
 
-## v35 — Hien thi trang thai "Don kho tu dong" (9/11/2026)
-- Bot: `GET /clean` (active/cursor/total/at_epoch/empty_reason/pending); phien khong co buoc ghi `empty_reason`; moi buoc gui kem `step_no`/`step_total`.
-- App: `data/CleanupStatus.kt` (CleanupPhase, CleanupStatusText.line/headerLine/idleStatus/mismatchReason, thuan Kotlin, co test); `CleanupGate.status` (StateFlow) do service + CleanupRunner cap nhat; FarmOverlay hien dong trang thai duoi nut "Don kho tu dong" (tab Misc) + dong dau Hub, dem nguoc 45s cho file.
-- Cac giai doan: EXPORTING -> WAIT_FILE (45s) -> (hoi /clean) NO_PLAN / WAIT_NEXT / RUNNING n/total / WAIT_FARM -> DONE hoac FAILED (kem ly do).
+**Dữ liệu & giao diện**
+- Không đổi `id` của `FarmCmd` đã dùng (cấu hình lưu theo id, chỉ lưu tập lệnh đang TẮT nên lệnh mới mặc định BẬT).
+- Đổi màu thì sửa CẢ `res/values/colors.xml` và `view/UiTheme.kt` (`UiThemeColorsTest` đối chiếu + kiểm tra tương phản 4.5:1). Nhãn vàng `accent` chỉ cho nút chính (1 nút/màn hình).
+- Icon cho overlay (Service không có theme) KHÔNG dùng `?attr/...`.
+- Số có thể rất lớn (essence...) → dùng `Long`, không dùng `Int`.
 
-## v34 — Tab Cong cu: acc phu + doi hinh & zoo (8/11/2026)
-- Bot (owo-tracker) them 6 duong API (README cua bot co mo ta chi tiet): `GET /teamcheck`, `GET /zoodiff?kind=d|now`, `GET /unlocked`, `GET|POST /alt`, `POST /alt/test`. Logic thuan o `tools_api.py`; `,zoodiff` tach ra `zoodiff_report()` de lenh Discord va API dung chung. Chu bot tra ve da bo ky hieu Discord (`**`, backtick, `<:emoji:id>`).
-- App: `ToolsFragment` them 2 muc. "Acc phu nhan DM nhac huntbot" = xem trang thai / o nhap ID (chi nhan 15-25 chu so) / Luu / Tat DM / Thu gui DM. "Doi hinh & zoo" = 4 nut (Cham doi hinh, Pet da mo khoa, So zoo dang giu, So zoo so da bat), ket qua hien trong khung chu co the boi den chep. Co co `busy` chan bam lien tiep (tranh DM thu nhieu lan).
-- Thuan Kotlin + test: `BotTools.kt` them 5 data class + parser (`parseTeamCheck/ZooDiff/Unlocked/Alt/AltTest`, `altBody`) va `BotToolsText` (chu hien thi, `isValidAltId`). Test: `BotToolsJsonTest` (them), `BotToolsTextTest` (moi). Da bien dich + chay JUnit offline bang compiler Kotlin nhung cua Gradle: 18 test pass. `ToolsFragment` / `OwoTrackerApi` can Android SDK nen CHUA bien dich o may nay — kiem tra qua GitHub Actions.
-- Neu bot cu chua cap nhat (khong co duong moi) thi app hien thong bao "cap nhat bot" thay vi bao loi kho hieu.
-- (Da lam o v36: `,petset`, `,weapontypeset`, `,passiveset` — muc "Nhap tay" tab Cong cu.)
+**Build, phiên bản, ký APK**
+- Môi trường làm việc của AI thường KHÔNG có Android SDK: chỉ biên dịch + chạy JUnit được phần thuần Kotlin (`data/*`). Phần còn lại phải xem kết quả GitHub Actions (`build.yml`; bước unit test không còn `continue-on-error`).
+- `VERSION` do workflow tự tăng bằng commit `chore(version)` sau mỗi push lên `main` → **luôn `git pull` trước khi push**. Muốn lên số lớn thì sửa tay `VERSION`.
+- APK ký bằng keystore riêng qua GitHub Secrets (`STARHUB_KEYSTORE_BASE64`, `STARHUB_KEYSTORE_PASSWORD`; xem README). Không bao giờ commit `.jks`. Đổi khóa = Android coi là app khác.
+- Quy ước làm việc của chủ repo: commit và push thẳng vào `main`, không cần nhánh phụ.
 
-## v33 — Don kho tu dong (8/11/2026)
-- Bot (owo-tracker): Neon tra loi dung lenh `nw inv export` cua OWNER (reply truc tiep + file .json) -> `import_weapon_export(auto_session=True)`
-  ghi Giu/Bo + lap phien `clean_session` (COL_CONFIG) gom cac buoc `clean_star` / `clean_tier` / `clean_id` (weapon_import.cleanup_steps).
-  Tat bang `,neonauto off`; dung bang `,cleanstop`. Xep toi da 8 buoc, xong het moi xep tiep; buoc that bai -> huy phan con lai + bao Ruby.
-- App: cong tac "Don kho tu dong" (Hub, tab Misc; CleanupGate, mac dinh TAT, tu tat khi dong Hub / loi). Service chi lam lenh clean_* khi bat va khong farm.
-  CleanupRunner: star = bam `star_outline_dim`; tier/id = doi tin xac nhan, CHI bam Dismantle khi CommandGuard.confirmMatches (dung so cay / ID), lech -> Cancel + failed.
-  CommandGuard cho phep `owo dismantle common|uncommon|rare|<ID>` (chan epic/mythic/legendary/all).
-- Bat cong tac = app go `nw inv export` TRUOC (CleanupGate.exportPending, giu 45s cho Tom nhan file + doi ke hoach), sau do moi lam cac buoc clean_*. Ruby chap nhan rui ro vi Neon cam tu dong hoa. Phien moi huy cac buoc clean_ cu dang cho.
-- Chua kiem tra tren may that: dinh dang chu tin xac nhan dismantle cua OwO (parseWeaponCount tim "<so> ... weapon(s)"); khong doc duoc -> luon Cancel (an toan).
+**An toàn khi chạy**
+- Dịch vụ Accessibility chỉ nhận sự kiện của `com.discord`. Lệnh từ bot chỉ được gõ nếu qua `CommandGuard` (1 dòng `owo ...` ≤ 200 ký tự, danh sách cho phép theo động từ).
+- Rủi ro cần nhớ: OwO có hệ thống chống macro (captcha/nghi ngờ) và tự động hóa có thể vi phạm điều khoản Discord → giữ độ trễ ngẫu nhiên (jitter) khi làm phần hunt/battle; giữ nguyên giới hạn burst (3 lệnh/12 giây) và `CommandGuard`.
+- Việc chưa kiểm chứng trên máy thật được ghi ở từng mục trong `docs/LICH_SU.md` (tìm "CHUA BIEN DICH" / "Chua thu tren may that").
 
-## v32 — Tab Config, nhac nen, luu lua chon tab Cong cu (7/11/2026)
-- Bottom nav co 4 tab: Hub / Cong cu / Config / Cai dat. `ConfigFragment.kt` (dung bang code, luu ngay khong can nut Luu):
-  - **Nhac nen**: cong tac + chon file nhac (`OpenDocument`, giu quyen doc lau dai) + am luong + Nghe thu. `engine/MusicPlayer.kt` (MediaPlayer lap lai, kenh MEDIA, tu tam dung khi mat audio focus). `FarmController.start` goi `MusicPlayer.startIfEnabled`, khoi `finally` cua job farm goi `MusicPlayer.stop()` (moi cach ket thuc deu tat nhac; captcha thi chuong bao thuc AlarmPlayer van keu rieng). Bat/tat cong tac luc dang farm co hieu luc ngay.
-  - **Gem**: nut "Chinh tier gem" da CHUYEN tu tab Cai dat sang Config (`GemTierDialog.openFromSaved`); tab Cai dat go khoi gem.
-- **Tab Cong cu nho lua chon**: 5 cong tac bot + chu da tim duoc luu o prefs `star_config` (`data/ConfigPrefs.kt`). Mo tab la hien ngay ban da luu, roi hoi bot cap nhat; khong hoi duoc bot thi giu ban da luu. Cong tac van la cua BOT (nguon su that), ban luu chi de hien nhanh. Khong luu `captchaActive`.
-- Thuan Kotlin + test: `data/AppConfig.kt` (`MusicConfig`, `ToolsCache`), `MusicConfigTest`.
-- CHUA BIEN DICH tren may: Kotlin chi kiem tra qua GitHub Actions. Chua thu tren may that (chon file, nhac, quyen audio focus).
-
-## v31 — ,weaponreview quet lai kho truoc khi duyet (6/11/2026)
-- Loi goc: bot lay ID tu danh sach cu trong DB nen go `owo w <ID>` cho cay da ban/ra ("could not find a weapon...").
-- Nay `,weaponreview` (bot) xoa danh sach kho cu, nho app go **`owo w`** (khong ID) + bam "forward" toi da 100 lan (15 cay/trang ~ 1500 cay), action `weapon_review_scan`. `CommandGuard` da cho phep `owo w` tran (them test). Phai DUNG farm (app tu choi click_label khi dang farm -> ack failed -> bot bao).
-- Bot chi nhan trang co tieu de `<@ID cua ban>'s Weapons` luc quet (`weapon_list_accepted`); xong thi loc quyet dinh Giu/Bo cu khong con trong kho roi go `owo w <ID dau>` (`_after_review_scan`). ID bao "could not find a weapon" -> `review_skip_missing`: bo qua, ghi `missing` (hien o embed), go cay ke. Test `test_v31.py`. App khong doi ngoai CommandGuard.
-
-## v30 — Bot khong xin lenh check da tat (6/11/2026)
-- App bao danh sach lenh dang TAT len bot: `POST /app-config {"disabled":[id...]}` (`OwoTrackerApi.pushDisabledCommands`, goi tu `AutoAccessibilityService.syncDisabledCommands` moi lan poll khi doi cau hinh, va moi 15 phut cho chac; chi khi Hub noi dang bat). Bot luu config `app_disabled_cmds`, `auto_check_tick` truyen `skip` vao `auto_refresh.pick_check` nen khong xep lenh do nua (ban v29 chan phia app van la lop du phong).
-- id bot hieu: hb, cash, inv, quest, ws, zoo (`auto_refresh.APP_CMD_TO_CHECK_KEY`); id la bi bo. Test: `test_auto_refresh.py` (skip), `test_v30.py` (app-config).
-
-## v29 — Ra soat (6/11/2026)
-- Sua: lenh check ma BOT nho app go xen (action `auto_check`: owo cash/inv/quest/ws/zoo/hb) nay cung bi cong tac "Lenh trong farm" chan (truoc do tat Zoo van bi bot nho go owo zoo). App ack `failed`, khong go gi (`FarmCmd.forCheckCommand`). Lenh khac (hbstart, thay gem, quet vu khi...) KHONG bi chan.
-- Don: bo 4 string + 2 drawable khong con ai dung (btn_owo_tracker_settings, hub_section_daily/cowoncy/huntbot, bg_hub_root, ic_daily).
-
-## v28 — Tab "Cong cu" dua lenh owo-tracker len app (6/11/2026)
-- Bottom nav co 3 tab: Hub / Cong cu / Cai dat. `ToolsFragment.kt` dung UI hoan toan bang code (khong XML), moi lan mo tab la Fragment moi nen tu tai lai.
-- Cong tac bot -> `GET/POST /settings` (khoa auto_check, hb_auto, hb_alert; event_mode dung `/event-mode`, app_on dung `/power` nhu truoc), ghi chu -> `/notes`, bao giai captcha -> `POST /captcha/clear`. Ben bot them o owo-tracker (handler `handle_*_settings/notes/captcha_clear`, test `test_v30.py`).
-- Tra cuu: `data/HubSearch.kt` (thuan Kotlin, bo dau tieng Viet, toi da 15 ket qua/nhom) tim tren du lieu `/hub` da tai: zoo, dex, kho, vu khi. Parse JSON cong cu o `data/BotTools.kt`. Test: `HubSearchTest`, `BotToolsJsonTest`.
-- Chua lam (da xong o v34 / v36): `,petset`, `,weapontypeset`/`,passiveset` (nhap tay, v36). (`,setalt`/`,testalt`/`,teamcheck`/`,zoodiff`/`,unlocked` da lam o v34.)
-
-## v26 — Bat / tat tung lenh farm + cau hinh (6/11/2026)
-- Tab Setting cua Hub noi co khung "Lenh trong farm": moi lenh 1 nut BAT/TAT (15 lenh, 3 nhom: chinh / viec vat / kiem tra) + 2 cau hinh nhanh "Bat tat ca" va "Chi hunt + battle".
-- Du lieu: `data/FarmCommandConfig.kt` (thuan Kotlin, co test). Chi luu tap lenh DANG TAT (prefs `star_farm`, key `cmd_disabled`) nen lenh moi them sau mac dinh BAT. KHONG doi `id` cua FarmCmd da dung.
-- `FarmController`: `FarmState.commands`, `changeCommands` / `setCommandEnabled`; `runLoop` doc cau hinh MOI VONG (doi giua chung co hieu luc tu vong ke tiep); `runOneChore` bo viec bi tat khoi danh sach random.
-- Khong co lenh nao bat -> farm tu choi chay (bao ro ly do).
-- ZOO tat = bo ca buoc check zoo luc bat dau lan zoo filler. UPGRADE van gui them `owo hb`. Lenh bot tu go: swap_gem KHONG nam trong cau hinh nay; auto_check (cash/inv/quest/ws/zoo/hb) thi CO bi chan (v29).
-
-## v27 — Bo keystore debug cong khai (6/11/2026)
-- Run Actions sau khi Ruby dat 2 secret log "Dung keystore RIENG de ky APK", khong canh bao -> xoa `keystore/debug.keystore`, bo nhanh du phong trong `app/build.gradle`.
-- Thieu / sai secret: workflow `exit 1` voi `::error`; `build.gradle` nem GradleException neu khong co STARHUB_KEYSTORE_FILE/PASSWORD (CI luon co du, build local can tu dat env).
-
-## v25 — Keystore RIENG de ky APK (5/11/2026)
-- `app/build.gradle`: signingConfig `starhub` (dung cho buildType debug). Co env `STARHUB_KEYSTORE_FILE` + `STARHUB_KEYSTORE_PASSWORD` thi ky bang khoa rieng
-  (alias mac dinh `starhub`, `STARHUB_KEY_ALIAS` / `STARHUB_KEY_PASSWORD` tuy chon); khong co thi build BAO LOI (da bo keystore debug du phong o v27).
-- `.github/workflows/build.yml`: buoc "Chuan bi keystore rieng" giai ma secret `STARHUB_KEYSTORE_BASE64` ra `$RUNNER_TEMP/starhub.jks`; mat khau lay tu secret `STARHUB_KEYSTORE_PASSWORD`.
-  Thieu secret -> `::error`, build dung (v27).
-- Khoa duoc sinh 1 lan tren phien lam viec (RSA 2048, hieu luc ~27 nam, PKCS12, CN=Star Hub). Claude KHONG dat duoc GitHub Secrets (proxy chan) nen Ruby tu dan 2 secret
-  (xem README muc "Ky APK"). File .jks + mat khau da gui rieng cho Ruby; KHONG nam trong repo (`.gitignore` chan `*.jks`).
-- Chu ky SHA-256 cua khoa moi: `FF:E1:69:27:81:B4:B9:0B:3E:C1:A5:A8:77:1A:FB:B8:15:DC:F4:D9:9B:72:EC:89:2D:DC:2F:21:6F:B2:A6:4A` (de doi chieu APK dung khoa nao).
-- DOI KHOA = Android coi la app khac: lan dau phai GO ban cu roi cai lai (mat cai dat trong app).
-- Da xong o v27: Actions xac nhan dung keystore rieng -> da xoa `keystore/debug.keystore` + nhanh du phong.
-
-## v24 — GO BO han che do kich ban cu (5/11/2026)
-- Ruby xac nhan khong dung kich ban nua -> da xoa: `ScriptEditorActivity`, `engine/ScriptEngine`, Room (`AppDatabase`, `ScriptDao`, `ScriptEntity`,
-  `ScriptRepository`, `ScriptWithSteps`), `ScriptStep`/`StepType`, `ScriptJson`, `SampleScripts`, `StepSummary`; 13 layout (`activity_script_editor`,
-  `dialog_step_*`, `dialog_on_fail_section`, `item_step_row`, `overlay_recording`), 5 drawable chi dung cho chung, 45 chuoi.
-- `AutoAccessibilityService` chi con: dong bo owo-tracker (poll 15 giay), go lenh vao Discord, nhac huntbot, wizard cai vi tri o nhap + nut Gui
-  (`setupDiscordTargets`, giu `overlay_point_picker` + 2 cham `bg_marker_*`) va `performClickAwait`. Da bo che do ghi, `runScript`, bong bong ghi,
-  `performClick`/`performSwipe`. `onAccessibilityEvent` de trong (app doc man hinh chu dong, khong theo su kien).
-- `app/build.gradle`: bo plugin `kotlin-kapt`, Room, `recyclerview` (Gson, coroutines giu nguyen). Manifest bo `ScriptEditorActivity`.
-- 3 chuoi nguoi dung doi noi dung cho khop (khong con nhac "kich ban"): `accessibility_service_description` (hien trong Cai dat Android),
-  `note_owo_sync`, `status_service_disabled`.
-- Muon khoi phuc: `git log --diff-filter=D --name-only` roi `git checkout <commit>^ -- <file>` (lich su git con day du).
-- Ghi chu cu ben duoi (v16..v22, "Chua co", "Cong nghe", "Cau truc") nhac kich ban/Room la LICH SU, khong con dung voi code hien tai.
-
-## v23 — Don ton dong: giam quyen + test HubDexQuery (5/11/2026)
-- `accessibility_service_config.xml`: them `android:packageNames="com.discord"` -> dich vu chi nhan su kien / doc noi dung man hinh cua Discord
-  (truoc day nhan tu MOI app). Cac cho doc man hinh van tu kiem tra goi `com.discord` (ButtonClicker, TagCollector, NodeDump) nhu cu.
-- `AndroidManifest.xml`: bo quyen `QUERY_ALL_PACKAGES` (nhay cam, khong can), thay bang `<queries><package com.discord/>` de
-  `DiscordSender` van goi duoc `getPackageInfo` / `getLaunchIntentForPackage` cho Discord tren Android 11+.
-  **CAN THU TREN MAY:** mo Hub noi -> "Thu mo Discord" -> bat farm. Neu bao "Khong tim thay Discord" hoac khong doc duoc man hinh,
-  hoan lai 2 thay doi tren (1 dong moi cho).
-- He qua: che do ghi (record) + `ScriptEngine.openApp` cho app KHAC khong con dung duoc nua (da khong co loi vao tu giao dien tu v16).
-- Bo 2 truong khong dung `hubVersion` / `serverTime` khoi `HubResponse` (Gson bo qua truong la nen khong anh huong bot cu/moi).
-- Them `HubDexQueryTest` (loc / sap xep / dong chi so cua Pet Dex).
-- DA XONG tu truoc (ghi chu cu o duoi con ghi "chua lam" la loi thoi): token dung EncryptedSharedPreferences (`OwoTrackerPrefs`);
-  `FarmController` cap nhat state bang `_state.update` (nguyen tu); TagCollector va Dump man hinh chi doc Discord;
-  TagCollector va Farm khong chay chong nhau (`start()` tu choi neu ben kia dang chay).
-- (Da xu ly o v24/v25: don code kich ban cu; keystore rieng — xem muc v25 ve viec con lai.) VAN CON: chuoi tieng Viet viet thang trong Kotlin.
-
-## v22 — Duyet vu khi Giu / Bo bang 2 nut tren Hub noi
-- Tracker: `,weaponreview` (start|stop|undo|export|reset) -> embed danh sach (dang kiem tra / con lai / ID Giu / ID Bo), queue `owo w <id>` dau tien;
-  `POST /weapon-review {decision}` ghi quyet dinh, XOA tin lenh + tin tra loi OwO cua cay do (chua embed danh sach), tra `next_id`; `/hub` co `weapon_review`.
-  Duyet tay 3 danh sach (tab Misc, khung "Duyệt vũ khí tay"): `GET /weapon-review/lists` -> {keep,drop,unknown,current_id}; `POST /weapon-review/select {id}` chon cay (app go `owo w <ID>`); `decision` nhan them `unknown` (nut "?"). Quyet dinh tay co `manual` nen `,weaponimport` khong ghi de; doi tay thi bot huy ke hoach don kho (can `nw inv export` lai).
-  Cay co SAO hoac dang trang bi = GIU mac dinh, khong dua vao hang doi. CHI GHI DANH SACH, khong tu dismantle/ban.
-- App: `FarmController.reviewDecision` (POST roi go `owo w <next>` neu KHONG farm), 2 nut Giu/Bo canh bong bong (chi hien khi phien duyet dang chay).
-  Bot can quyen Manage Messages trong kenh de xoa tin. CHUA BIEN DICH tren may.
-
-## v21 — 3 che do toc do farm: Nhanh / Thuong / Cham
-- `data/SpeedMode.kt` (thuan Kotlin, co test): KHONG nghi giua lenh khac nhau (hunt->battle go luon; chi cooldown cung lenh hunt->hunt phai cho); moi muc co do dai vong (>=15,5s = cooldown OwO), tan suat + do dai nghi giai lao.
-  Thuong = nhip cu. Gioi han burst (3 lenh/12s) va CommandGuard KHONG doi. `FarmState.speed`, luu o prefs "star_farm"/"speed_mode",
-  `FarmController.setSpeed`. Vong farm doc `speed` moi vong nen doi giua chung co hieu luc ngay. UI: 3 nut o tab Setting cua Hub noi.
-- Moi vong farm go them 1 lan "owo" ngay sau battle (4.6b); da bo "say_owo" khoi danh sach lenh chen.
-- Nhanh = rui ro bi OwO nghi ngo cao hon (da ghi chu tren giao dien). CHUA BIEN DICH tren may.
-
-## v20 — Giao dien moi: toi, gon, kieu dashboard (4/11/2026) — DOT 1/3: he mau + style chung
-- Chi con giao dien TOI (da xoa values-night/drawable-night/color-night). Token mau o `res/values/colors.xml`;
-  ban sao cho code ve tay o `view/UiTheme.kt`; `UiThemeColorsTest` doi chieu 2 noi + kiem tra tuong phan WCAG 4.5:1. Doi mau thi sua CA HAI.
-- Quy tac: nhan vang `accent` CHI cho nut chinh (1 nut/man hinh); tim `selected` cho tab dang chon/cot hom nay; xanh/xanh duong/vang/do
-  chi la trang thai va luon kem chu hoac icon. Co chu: so 26, tieu de man 20, tieu de the 14, chu thuong 13, chu phu 11.5. Bo goc the 16, o con/nut 12.
-- Style: `Widget.AutoMacro.Card/Button(.Tonal=nut vang/.Outlined/.Danger)`, `TextAppearance.StarHub.*`.
-- Icon net 1.8dp (`ic_gem, ic_huntbot, ic_quest, ic_daily, ic_coin, ic_chart, ic_alert, ic_pets, ic_sliders, ic_bolt, ic_star, ic_refresh, ic_play, ic_stop...`)
-  thay emoji; mau lay tu tint cua view.
-- Dot 2 (xong): FarmOverlay dung UiTheme; tab co icon (ic_bolt/ic_sliders/ic_grid/ic_star), nut theo `Btn` (PRIMARY vang/DANGER/ACTIVE/SECONDARY) qua `styleBtn`,
-  o so lon Hunt/Battle (tab Farm), thanh do ben gem 4dp, vong % Huntbot (RingView), thong ke 3 so lon + `DayBarsView` 7 ngay,
-  bong bong 3 trang thai (vang / tim khi cho / do khi captcha). Row co `build` de chen view tuy y. Icon cho overlay KHONG duoc dung ?attr/theme (Service khong co theme).
-- Dot 3 (xong): man Hub (thanh tren "Star Hub" + dong trang thai + nut lam moi icon; o tom tat vien trung tinh, so 26 trang, dong phu mang mau trang thai,
-  o icon nen nhat bo goc 10; the chi tiet khong con vach mau, chevron icon), man Cai dat (4 the: Quyen truy cap voi huy hieu, Ket noi owo-tracker voi Switch,
-  Hub noi & farm, Tier gem; 1 nut vang Luu o cuoi). Da bo emoji trong strings.xml (icon that do IconView/Vector). CHUA BIEN DICH tren may.
-
-## v19 — Siet an toan lenh tu server sau ra soat bao mat (3/11/2026)
-- `CommandGuard.isSafeCommand` doi tu "bat dau bang `owo `" sang DANH SACH CHO PHEP theo dong tu: `owo hb [<so>[h|m|d] [<ma>]]`,
-  `owo use <ma>...` (toi 12 ma 1-4 chu so), `owo dex <ten>`, `owo w <ID 4-8 ky tu>`, `owo weapon|cash|inv|quest|ws|zoo`.
-  `owo give/sell/pay/sacrifice/...` bi chan. **Them lenh moi o bot (owo-tracker) thi PHAI them 1 dong o CommandGuard + 1 test**,
-  neu khong app tu choi lenh do (ack `failed`). Test: `CommandGuardTest`.
-- `click_label` tu server chi nhan `forward` (`CommandGuard.isAllowedClickLabel`); `ButtonClicker` chi bam khi cua so dang
-  hien la Discord (`com.discord`), nguoi dung chuyen app giua chung thi dung.
-- `AutoAccessibilityService.onDestroy` goi `FarmOverlay.hide()` (dung farm + tu hoc tag, go Hub noi) — truoc day service chet
-  ma farm van chay tiep.
-- `OwoTrackerApi.ack` tra `Boolean`, thu toi 3 lan (0s/1s/3s) khi loi mang/5xx, dong ket noi. Service nho 200 lenh gan nhat
-  (`handledCommands`, trong bo nho, kem chu ky action+command_text): lenh da lam ma ack that bai thi lan poll sau CHI bao lai ket qua,
-  KHONG go lai. Lenh gui di la ban da `trim()`.
-- `FarmController`: ID vu khi tu /hub phai khop `^[A-Za-z0-9]{4,8}$` moi duoc ghep vao `owo weapon <ID>`.
-- CHUA BIEN DICH tren may (khong co Android SDK): chi kiem tra regex bang Python + doc lai diff. Xem ket qua GitHub Actions.
-- Hub noi (FarmOverlay): sua loi "bam ➖ thu gon xong menu tu bat lai" — `render()` truoc day ep mo menu MOI LAN chay khi con canh bao;
-  nay chi tu mo 1 LAN cho moi canh bao moi (`lastExpandedAlert`). Them tu thu gon menu sau 8 giay khong cham (`AUTO_COLLAPSE_MS`,
-  `TouchAwareLinearLayout` tinh lai gio moi lan cham); dang co canh bao (vd captcha) thi KHONG tu thu gon. CHUA BIEN DICH tren may.
-- Hub noi chia 4 TAB (Farm / Setting / Misc / Event) trong `FarmOverlay`: phan dau (trang thai, dem nguoc, canh bao, Bat dau/Dung, ➖, ✖)
-  co dinh o moi tab. Farm = nhom farm+gem+hb; Setting = nut Hunt mode + bat/tat tu thu gon menu; Misc = hoc tag + res+quest+zoo;
-  Event = nut Event + nhom event (luon hien, chua co du lieu thi bao "Chua thay tin su kien"). Tab dang chon + che do tu thu gon luu o
-  SharedPreferences `starhub_overlay` (khong chua token). Them muc vao tab nao thi dung `addTo/addGroupTo(TAB_x, ...)` trong `show()`.
-  CHUA BIEN DICH tren may.
-- Thong ke farm theo ngay (Hub noi, tab Misc, nhom "📊 Thong ke"): `data/FarmStats.kt` (thuan Kotlin, co `FarmStatsTest`: `StatsBook`, `DayStats`,
-  `StatsFormat`) + `data/FarmStatsStore.kt` (SharedPreferences `starhub_stats`, giu 14 ngay, khong gui len bot). `FarmController` ghi: so phien + gio chay
-  (`startSession` sau khi qua buoc kiem tra dau vao, `endSession` o `finally` cua job farm), hunt, battle, captcha (1 lan/dot), pet moi, Slow down
-  cao nhat, cowoncy lan doc dau/cuoi ngay (tinh theo NGAY DOC = bay gio - `age_seconds`, nen so lieu cu hom truoc khong bi tinh nham).
-  Hub noi hien hom nay + 6 ngay truoc + tong; nut "🗑 Xoa thong ke" o tab Setting (bam 2 lan). Phien chay qua nua dem: gio chay tinh sang ngay moi.
-  CHUA BIEN DICH tren may.
-- (Ghi chu cu, da cap nhat o v23) Ton dong tu ra soat: phan lon da xong; xem muc v23 de biet cai nao con lai.
-
-## v18 — Chon tier gem duoc phep trong app (2/11/2026)
-- Tab Cai dat co khoi "Tier gem khi thay" + nut "Chinh tier gem" -> `GemTierDialog` (dung code, khong layout XML): moi loai gem (Hunting /
-  Empowering / Lucky / Special) la 1 nhom chip bat/tat tung tier, kem so gem con trong kho. Bam Luu chi gui cac loai DA DOI.
-- API bot: `GET /gemtier` -> {tiers, slots:[{slot,name,allowed,pref,stock}]}; `POST /gemtier` body {"allowed":{"1":["Common",...]}}
-  (danh sach rong = tat het; tier/loai la -> 400 va khong doi gi). Cung nguon voi lenh Discord `,gemtier tat|bat`.
-- Hop thoai con o chon "Uu tien khi thay" (Spinner: cao nhat / thap nhat / tung tier); POST them khoa `"pref":{"1":"highest|lowest|<tier>"}`.
-  `GemTierChanges(allowed, pref)` gom cac loai DA DOI; `GemPref` (thuan Kotlin) doi giua gia tri bot va vi tri o chon.
-- Code: `data/GemTierConfig.kt` (model + `GemTierJson`, thuan Kotlin, co `GemTierJsonTest`), `OwoTrackerApi.fetchGemTier/saveGemTier`,
-  `GemTierDialog.kt`, `SettingsFragment.openGemTierDialog`. Can bot >= ban co /gemtier, neu khong app bao "can cap nhat bot".
-- CHUA BIEN DICH tren may: Kotlin chi kiem tra qua GitHub Actions.
-
-## v17 — So phien ban tu tang (2/11/2026)
-- File `VERSION` o goc repo (dang `1.12`). Workflow `Build APK` TU TANG so cuoi TRUOC khi build (push len main, bo qua commit
-  `chore(version)`), build + test xanh moi commit lai `chore(version): v1.13` len main. APK mang dung so moi. Chay tay (workflow_dispatch)
-  thi giu nguyen so. Muon len so lon: sua tay VERSION thanh `2.0` roi push.
-- `app/build.gradle` doc VERSION: `versionName` = so do, `versionCode` = major*10000 + minor (hong/thieu file -> 1.0).
-- Hien thi: tab Cai dat co dong "Star Hub v1.x" o cuoi; tab Hub hien them "bot v1.x" canh dong "Cap nhat luc" (bot gui `bot_version`
-  trong /hub; `HubParser` doc rieng, bot cu khong gui thi bo qua). Test: `HubParserBotVersionTest`.
-- Khi push tay nho `git pull` truoc vi workflow vua them 1 commit.
-
-## v16 — Go tab "Tu dong", thong bao huntbot co dong ho dem nguoc (1/11/2026)
-- **Da go tab "Tu dong"** (navAutomatic): xoa AutomaticFragment, ScriptListAdapter, fragment_automatic.xml, item_script.xml,
-  ic_tab_automatic.xml, bg_icon_button_tonal.xml + 6 chuoi chi dung cho tab do. App con **2 tab**: Hub, Cai dat. Muc "3 TAB" ben
-  duoi la lich su (tab thu 3 khong con).
-- **Con lai (chua xoa):** ScriptEditorActivity, Room (ScriptEntity/Dao/Database/Repository), che do ghi (record) + `runScript` trong
-  AutoAccessibilityService, SampleScripts. Cac man hinh/che do nay KHONG con loi vao tu giao dien (truoc day chi bam tu tab "Tu dong")
-  -> co the don tiep neu Ruby chac chan khong dung kich ban nua. KHONG xoa AutoAccessibilityService, DiscordSender, FarmController,
-  NodeTools, ScriptEngine: Hub noi + farm + gui lenh Discord van dung chung.
-- **Thong bao huntbot chinh xac hon:** `HuntbotNotifier` them `setWhen(gio ve)` + dong ho dem nguoc he thong
-  (`setUsesChronometer` + `setChronometerCountDown`) + chu "Huntbot ve luc HH:mm, con khoang N phut" (gio ve = gio may + `seconds_left`
-  do BOT bao, khong so dong ho bot voi may) + `setTimeoutAfter` (tu go sau khi ve 2 phut). Logic thuan o `HuntbotAlertLogic.readyAtMillis`
-  / `timeoutAfterMillis` (co test). Chuoi `huntbot_alert_text` doi thanh 2 tham so: `%1$d` phut, `%2$s` gio.
-- Phia bot (owo-tracker): tin BAT DAU chuyen moi ("I WILL BE BACK IN 24H ...", khong co chu STILL HUNTING) gio duoc tinh la dang san
-  (`parse_huntbot_status`), nen /alerts va /hub co gio ve ngay, khong phai cho Ruby go `owo hb`.
-- CHUA BIEN DICH tren may: Kotlin chi duoc kiem tra qua GitHub Actions. Neu Actions bao loi o HuntbotNotifier/MainActivity thi gui log de sua.
-
-## v15 — Doi ten thanh STAR HUB (Ruby chon, 4/10/2026)
-- Ten app: **Star Hub**. Ten goi: `com.starclan.starhub` (truoc: `com.tuytam.automacro`). Day la app MOI
-  tren Android -> phai nhap lai dia chi API/token, cap lai quyen Accessibility; go ban cu bang tay.
-- Icon: mau A — ngoi sao vang (#FAC775) tren nen tim (#3C3489), adaptive icon (mipmap-anydpi-v26).
-- Ten style/theme (Theme.AutoMacro, Widget.AutoMacro.*) GIU NGUYEN, chi la ten noi bo.
-- Bien moi truong cua bot `AUTOMACRO_API_TOKEN` GIU NGUYEN (khong lien quan ten goi).
-- Hub: bo dong "N loai · M mon" in 2 lan o the Kho; the Gem hien gio cap nhat RIENG cho "Du phong trong kho"
-  (bot v16 gui `gems.spare_age_seconds`, lay tu owo inv; gem dang dung lay tu owo hunt).
-- Tu dong gui lenh Discord viet lai (engine/DiscordSender.kt + engine/NodeTools.kt):
-  * Nguyen nhan loi cu (de xuat, chua kiem chung tren may): cu cham chi "bat" roi chay buoc go chu NGAY
-    (o nhap chua kip duoc chon); khong mo Discord truoc; SET_TEXT khong doc lai de xac nhan.
-  * Moi lenh: mo Discord (dung kenh neu co link trong Cai dat) -> dung neu thay captcha OwO -> tim o nhap
-    -> go (SET_TEXT, khong vao thi dan clipboard) va DOC LAI -> bam nut Gui (theo nhan Send/Gui, khong co thi
-    toa do) -> doc lai xem chu da roi o nhap chua. Nghi ngau nhien 0.4-1.1s giua buoc, 2.5-5.5s giua lenh.
-  * Gap captcha: rung + chuong, tam dung gui lenh 10 phut, lenh do ack "failed".
-  * Cai dat them o "Link kenh Discord" (khong bat buoc). Toa do o nhap/nut Gui chi con la phuong an DU PHONG.
-  * accessibility_service_config them flagReportViewIds + flagIncludeNotImportantViews (Discord la React Native).
-  * ScriptEngine: buoc Bam gio CHO cu cham xong (performClickAwait) + nghi 0.4s; buoc Go chu dung NodeTools.typeInto.
-- (Lich su v15) Code Kotlin tung viet khong co Android SDK nen chua bien dich tren may; luon xem ket qua GitHub Actions.
-
-## Trang thai hien tai (da lam duoc)
-- Khung project: Gradle, AndroidManifest, build qua GitHub Actions (khong dung gradlew,
-  Gradle 8.6 duoc cai truc tiep tren runner). Ky bang debug.keystore CO DINH (commit
-  trong repo o keystore/) de cac ban build khong xung dot chu ky khi cai de.
-- Bo may chay kich ban (ScriptEngine): doc tung buoc, tim phan tu theo chu/ID (uu tien)
-  hoac toa do du phong, ho tro re nhanh "neu loi thi nhay toi buoc X". run() tra ve
-  true/false bao co chay het kich ban khong (dung de bao ket qua ve owo-tracker).
-- 7 loai buoc: OPEN_APP, WAIT, TAP, SWIPE, TYPE_TEXT (go vao o dang focus, ho tro
-  placeholder {{ten}}), CHECK_TEXT, CHECK_EXISTS, NOTIFY.
-- Man hinh chinh: danh sach kich ban da luu (Room), nut Chay/Xoa moi kich ban,
-  nut chay kich ban mau de test, nut Cai dat ket noi owo-tracker.
-- Man hinh tao kich ban (ScriptEditorActivity): dat ten, "+ Them buoc" mo hop thoai
-  theo tung loai, bam lai vao 1 buoc da them de SUA (ke ca chon "neu loi" tro toi
-  1 buoc them SAU). Luu kich ban serialize sang JSON (Gson) vao Room.
-- CHE DO GHI (record): bam nut "Ghi kich ban moi" -> bong bong noi co bang danh sach
-  hanh dong danh so, cap nhat ngay khi ghi duoc (TYPE_ACCESSIBILITY_OVERLAY). Tu dong
-  bat TAP (theo chu/ID) va OPEN_APP (loc bo ban phim/systemui). 2 nut thu cong tren
-  bong bong: 👆 (danh dau 1 diem de Bam) va ➕ (cham 2 diem dau/cuoi de tao buoc Vuot
-  chinh xac) - ca 2 co hien cham mau xac nhan vi tri vua cham.
-  GIOI HAN: van CHUA tu ghi duoc go chu (phai dung TYPE_TEXT thu cong + 👆 cho nut Gui).
-- Ket noi owo-tracker: man hinh Cai dat (nut ⚙️) luu URL API + token (SharedPreferences),
-  va vi tri (toa do) O NHAP TIN NHAN + NUT GUI tren Discord - cai 1 LAN DUY NHAT qua
-  wizard cham 2 diem. Khi bat, service cu 15 giay goi GET /commands/pending 1 lan;
-  MOI lenh nhan duoc (bat ky "action" nao, khong can khop ten kich ban) deu chay dung
-  3 buoc: bam o nhap -> go params.command_text -> bam Gui, roi POST /commands/{id}/ack
-  bao done/failed. Don gian hoa tu ban dau (bo phan tao kich ban rieng + khop ten,
-  vi Ruby thay qua phuc tap) - gio KHONG can Room/kich ban cho phan nay nua.
-
-- Man hinh HUB (tab "OwO Hub" -> HubFragment, xem phan "3 TAB" ben duoi): hien du lieu moi
-  nhat owo-tracker da doc duoc tu tin nhan OwO (HuntBot co dong ho dem nguoc, gem dang
-  dung + gem du phong, quest, doi hinh, tran dau, pet/zoo, vu khi, kho do). Goi
-  GET /hub (cung token voi /commands/pending), tu lam moi moi 30 giay khi dang mo, moi
-  giay chi cap nhat dong ho + chu "X phut truoc".
-  GIAO DIEN: 6 o tom tat o tren (Daily, HuntBot, Cowoncy, Quest, Gem, Pet) - moi o 1 so to + 1 mau
-  trang thai (xanh la=xong/san sang, xanh duong=dem nguoc, cam=de y, do=can lam ngay, xam=chua co
-  du lieu; logic o data/HubSummary.kt). Ben duoi la 6 the chi tiet (Gem, Quest, Doi hinh, Pet, Vu khi, Kho) moi the 1 mau rieng, luon co 1 dong
-  tom tat, cham de mo/dong (Gem + Quest mo san). Gem/Quest dung ProgressBar that. Mau o res/values
-  (+ values-night). Layout: activity_hub, item_hub_tile, item_hub_card.
-  Muc nao bot chua tung thay thi hien "Chua co du lieu". HubFormat.kt la ham thuan (khong
-  dung Android) chuyen JSON thanh chu; HubModels.kt la cac lop Gson khop JSON cua /hub;
-  HubParser.kt doc TUNG MUC rieng (1 muc hong chi bao loi o muc do, khong lam trang ca man hinh).
-  So co the rat lon (vd essence) nen dung Long, khong dung Int.
-  Co them the Daily (dem nguoc gio nhan + streak), Cowoncy, va Quest (dem nguoc quest ke tiep
-  + tung quest: ten, tien do, mo ta, thuong).
-  Khong con doc/hien battle (Ruby khong can) - owo-tracker cung da bo phan doc battle.
-  Them the Pet Dex (owodex): so lieu GOC tung loai pet (HP/ATT/PR/WP/MAG/MR, gia ban/hien te,
-  hang), KE CA loai chua co - chi can Ruby tung go `owo dex <ten>`/`odex <ten>` 1 lan. Khac Zoo
-  (chi liet ke dang co), Pet Dex liet ke moi loai da tra, dang co xep truoc. Model: HubPetDex/
-  HubPetDexEntry trong HubModels.kt.
-## 3 TAB (BottomNavigationView) - thay doi cau truc man hinh chinh  [LICH SU: tab 3 "Tu dong" da go o v16, chi con Hub + Cai dat]
-MainActivity gio CHI la khung chua, dieu khien 3 tab qua supportFragmentManager.replace():
-  1. navHub       -> HubFragment       (xem GIAO DIEN v2 ben duoi)
-  2. navSettings  -> SettingsFragment  (quyen Accessibility + form ket noi owo-tracker, KHONG
-                                        con la dialog popup - nam thang trong tab, co nut Luu rieng)
-  3. navAutomatic -> AutomaticFragment (danh sach kich ban AutoMacro - chuc nang goc cua app)
-Moi lan doi tab la 1 lenh replace() -> Fragment cu bi huy hoan toan, Fragment moi tao lai tu dau.
-Vi vay Hub CHI polling du lieu (30s/lan) khi dang o tab do (gan voi viewLifecycleOwner.lifecycleScope,
-khong phai lifecycleScope cua Activity nua). File lien quan: res/layout/activity_main.xml (goc, chi co
-FrameLayout fragmentContainer + BottomNavigationView), res/layout/fragment_hub.xml, fragment_settings.xml,
-fragment_automatic.xml, res/menu/bottom_nav_menu.xml, res/color/bottom_nav_item_color.xml,
-res/drawable/ic_tab_hub.xml + ic_tab_settings.xml + ic_tab_automatic.xml.
-DA XOA (khong con dung, XOA TAY tren may): HubActivity.kt, res/layout/activity_hub.xml,
-res/layout/dialog_owo_tracker_settings.xml, khai bao <activity HubActivity> trong AndroidManifest.xml.
-
-## THIET KE (thong nhat ca 3 tab, lam qua /ui-designer)
-He mau: brand_violet (#6C5CE7, mau chinh) + brand_amber (#F5A623, DUY NHAT 1 diem nhan - dung
-cho nut quan trong nhat moi man hinh: Ghi kich ban / Luu cai dat) + surface_card_light (nen the).
-Dinh nghia o colors.xml + values-night (co ban toi rieng). ShapeAppearance trong themes.xml lam
-MOI nut/the trong app tu dong bo goc 12-14dp, khong can khai bao tung noi. styles.xml co san:
-Widget.AutoMacro.Card (the vien mau, KHONG do bong - dung cho item_script + 2 khoi trong Cai dat),
-Widget.AutoMacro.Button/.Tonal/.Outlined, Widget.AutoMacro.TextInputLayout, TextAppearance.AutoMacro.SectionTitle.
-Nen gradient dung chung ca 3 tab: drawable/bg_app_root.xml (doi ten tu bg_hub_root).
-Chu so to trong Hub (tvTileValue) dung sans-serif-black ("so lieu la nhan vat chinh").
-item_script.xml: the co vach mau ben trai + 2 nut icon tron (bg_icon_button_tonal.xml).
-fragment_automatic.xml: co dong trang thai rong (tvEmptyScripts, AutomaticFragment.kt tu bat/tat).
-fragment_settings.xml: 2 khoi the rieng (Quyen truy cap / Ket noi owo-tracker), o nhap dang
-TextInputLayout bo goc, trang thai quyen doi mau theo bat/tat (SettingsFragment.kt).
-
-## SAU CODE-AUDIT (4 muc da sua)
-- view/AsyncLoadCache.kt (thuan Kotlin, khong dinh Android): gop nhieu yeu cau cung link thanh 1 lan tai;
-  loi thi nho lai va cho thu lai sau 90s (truoc day loi 1 lan la hong het phien); nguoi xin bi huy thi viec tai
-  van chay tiep. EmojiImageLoader chi con la lop mong dung no (+ Log + disconnect). Bam "Lam moi" goi
-  EmojiImageLoader.retryFailed() de thu lai icon loi ngay.
-- HubFragment: cham 1 the chi ve lai the do (rerenderCard); moi giay chi doi CHU khi chu khac
-  (setTextIfChanged), nen/vien/vong %/icon cua 6 o chi ve lai khi AppliedTile doi hoac sau moi lan lay du lieu
-  (tileGeneration). Pet Dex hien 30 loai/lan (DEX_PAGE_SIZE), bam "Hien them" de xem tiep.
-- Mau: res/color-night/bottom_nav_item_color.xml (tab chua chon trang mo o che do toi); vien/duong ke dung
-  @color/border_subtle (co ban sang + toi) thay vi hardcode #22000000/#1E000000.
-- AndroidManifest: allowBackup=false (token nam trong SharedPreferences, khong de Google sao luu). Danh
-  doi: kich ban AutoMacro (Room) cung khong con tu sao luu. (Da lam sau do: token luu bang EncryptedSharedPreferences.)
-- v12 DA SUA them 4 muc xanh: OwoTrackerApi dong ket noi (finally conn?.disconnect()); HubFragment.loadHub
-  co co loadingHub nen bam Lam moi nhieu lan khong sinh request chong; zooTileIcon chon theo HANG hiem nhat
-  (ZOO_RARITY_ORDER trong HubIcons.kt), cung hang thi lay loai it con nhat; HubFormat.pct() ep % vao 0..100,
-  HubFormat.num() hien "?" cho so am (so qua 64-bit bi Gson doi thanh am).
-- v13 (theo owo_raw.json that): zoo — so nho trong bang = pet DANG CO; dong cuoi (F-6, CP-16... C-478489) = DA BAT
-  tu truoc toi nay. Hub: total_pets = dang co, them caught_total (HubZoo) va caught (HubTier). Bot v14 cung sua parse_team,
-  kho chia 2 tin, loc tin OwO cua nguoi khac.
-- v14 Pet Dex: the Pet Dex co 3 hang nut loc/sap xep (Sap xep: Mac dinh/Tong/HP/ATT/MAG/PR/MR/WP/Ten; Loc: Tat ca/Dang co/Chua co;
-  Hang). Logic thuan Kotlin o data/HubDexQuery.kt; trang thai dexSort/dexFilter/dexRank nam trong HubFragment. Chua co JUnit.
-- CON TON DONG (muc xanh): neu bat R8 phai giu lop data.Hub* (hien `minifyEnabled false`); chuoi tieng Viet viet thang trong Kotlin.
-  (hubVersion/serverTime khong dung: da bo o v23.)
-
-  GIAO DIEN v2 (icon that + bieu do): moi pet/gem/tier/thanh vien doi hinh/phan thuong quest
-  co the mang emoji_id/emoji_animated (ID that cua Discord, xem view/EmojiImageLoader.kt tai
-  qua CDN https://cdn.discordapp.com/emojis/<id>.png) hoac emoji (ky tu Unicode co san, cho
-  con vat OwO hien bang emoji chuan nhu :bee:). data/HubIcons.kt chon icon phu hop (uu tien
-  anh that > Unicode > chu cai dau). view/IconView.kt la 1 o hien icon dung chung (FrameLayout:
-  ImageView + TextView), can 1 CoroutineScope (lifecycleScope cua Activity) truyen vao bind().
-  view/RingView.kt ve vong tron % bang Canvas (dung cho gem/quest/huntbot/daily). view/
-  BarChartView.kt ve cot ngang so sanh so pet theo tier (trong the Zoo, khi mo rong). Nen man
-  hinh Hub co gradient nhe (drawable/bg_hub_root.xml + drawable-night). Icon tai qua mang duoc
-  cache trong bo nho (EmojiImageLoader), mat khi dong app - khong ghi the nho.
-  KHONG co profile: `owo profile` cua OwO la 1 tam ANH (khong co chu) nen bot khong doc duoc.
-
-## Chua co (con thieu)
-- (Muc kich ban cu: sua kich ban da luu, keo-tha doi thu tu buoc, tu ghi go chu — KHONG con y nghia, da go bo o v24.)
-- Hunt/battle tu dong DA co o `FarmController` (xem v21 - 3 che do toc do). Ve mat AutoMacro khong can lam gi them de ho tro action moi:
-  owo-tracker gui "command_text" dung thi AutoMacro tu chay (sau khi them 1 dong o `CommandGuard` + 1 test).
 
 ## Ket noi voi owo-tracker (repo rieng)
 - owo-tracker (Python, chay Railway) co API rieng: GET /commands/pending,
@@ -390,17 +72,16 @@ TextInputLayout bo goc, trang thai quyen doi mau theo bat/tat (SettingsFragment.
 - HttpURLConnection (co san trong Android, khong them thu vien) de goi API owo-tracker
 - Build qua GitHub Actions (.github/workflows/build.yml) — chay `gradle assembleDebug`
 
-## Cau truc thu muc chinh
-app/src/main/java/com/starclan/starhub/
-  MainActivity.kt                         - CHI dieu khien 3 tab duoi (BottomNavigationView),
-                                              khong con chua logic gi khac. Mac dinh mo tab Hub.
-  HubFragment.kt                          - tab "OwO Hub" (truoc la HubActivity, gio la Fragment)
-  SettingsFragment.kt                     - tab "Cai dat": quyen Accessibility + ket noi owo-tracker
-                                              (truoc la dialog_owo_tracker_settings, gio nam thang trong tab)
-  service/AutoAccessibilityService.kt      - dong bo owo-tracker, go lenh vao Discord, nhac huntbot, wizard cai vi tri
-  engine/                                  - FarmController, DiscordSender, NodeTools, ButtonClicker, TagCollector, QuestClaimer, HuntbotNotifier...
-  data/                                    - OwoTrackerApi, OwoTrackerPrefs, CommandGuard, Hub* (model/parser/format/query), SpeedMode, FarmStats...
-  view/                                    - FarmOverlay (Hub noi), UiTheme, RingView, DayBarsView, IconView...
+## Cấu trúc thư mục chính
+`app/src/main/java/com/starclan/starhub/`
+- `MainActivity.kt` — khung chứa, 4 tab dưới (BottomNavigationView, mỗi lần đổi tab là `replace()` Fragment mới): **Hub** (`HubFragment`) · **Công cụ** (`ToolsFragment`) · **Config** (`ConfigFragment`) · **Cài đặt** (`SettingsFragment`). Mặc định mở Hub.
+- `StarHubApp.kt` (khởi tạo `Str`), `Str.kt`, `GemTierDialog.kt`.
+- `service/AutoAccessibilityService.kt` — đồng bộ owo-tracker (poll 15 giây), gõ lệnh vào Discord, nhắc huntbot, wizard cài vị trí ô nhập + nút Gửi.
+- `engine/` — `FarmController`, `CleanupRunner`, `DiscordSender`, `NodeTools`, `ButtonClicker`, `TagCollector`, `QuestClaimer`, `HuntbotNotifier`, `MusicPlayer`, `AlarmPlayer`, `NodeDump`.
+- `data/` — `OwoTrackerApi`, `OwoTrackerPrefs`, `CommandGuard`, `Hub*` (model/parser/format/query/search/summary/icons), `BotTools`, `GemTierConfig`, `SpeedMode`, `FarmCommandConfig`, `FarmStats(+Store)`, `CleanupStatus`, `AppConfig`, `ConfigPrefs`, `Texts`, `CountdownFormat`, `HuntbotAlertLogic`, `ApiUrlCheck`. **Các file này thuần Kotlin, có test JVM.**
+- `view/` — `FarmOverlay` (Hub nổi, 4 tab Farm/Setting/Misc/Event), `UiTheme`, `RingView`, `DayBarsView`, `BarChartView`, `WaitCountdownView`, `IconView`, `EmojiImageLoader`, `AsyncLoadCache`.
+- Chức năng đã gỡ (không còn trong code): kịch bản + Room + chế độ ghi (v24), tab "Tự động" (v16), keystore debug công khai (v27).
+
 
 ## Ghi chu quan trong
 - Nguoi dung phai tu vao Cai dat may bat quyen Accessibility (khong the tu bat bang code)
@@ -439,12 +120,3 @@ app/src/main/java/com/starclan/starhub/
 - Token API luu bang EncryptedSharedPreferences (`OwoTrackerPrefs`, dependency `androidx.security:security-crypto`), tu chuyen
   token cu o kho thuong. CHUA BIEN DICH tren may: neu Actions bao loi o OwoTrackerPrefs thi gui log de sua.
 - Workflow build: buoc unit test khong con `continue-on-error`.
-
-
-## v39 — Don kho theo BAC (tier), 4 danh sach, doi chieu cuoi phien
-- 4 danh sach vu khi: Giu / Bo / Chua ro (da xem bp nhung khong chac: `bp_la`, hoac Ruby bam "?") / Chua xem (chua co bp). Chua ro + Chua xem deu bi GIU. Bot: `weapon_import.list_of`, `review_bucket`, `review_lists` (key `unseen`). App: tab thu 4 "Chua xem" o khung duyet tay.
-- Ke hoach (cach LAI, v39b): SAO cay Giu chua khoa co q < 61.2 (bac thap, co the la Rare) -> ra THEO ID cac cay Bo q > 60.6 (bac cao, ke ca vung chua ro bac) va cay Ruby them tay (`,dropadd`) -> `owo dismantle common`, `uncommon` (cum_group low, cum_cap = so cay Bo q<40) -> `rare` (dung so cay Bo 40<=q<=60.6) -> `nw inv export`. Cay Giu bac cao KHONG sao (it buoc hon nhieu). CommandGuard van chan epic/mythic/legendary/fabled/all.
-- Buoc sao: nut sao la Button desc `star_outline_dim` (chua sao) / `star_yellow` (da sao). Chi lam khi tin co nut sao o duoi cung la cua DUNG cay (ma cay `ID:` trong embed hoac nam duoi tin lenh); bam xong phai doi nhan. OwO tra "could not find a weapon" (so node chua chu nay tang so voi truoc khi go lenh, `CleanupGate.notFoundBefore`) -> bo qua cay, ghi `CleanupGate.notFound`.
-- `,cleanstop` dung ngay: app hoi `GET /clean` truoc MOI buoc (mang loi thi tiep tuc; cong tac Hub van la nut dung khan cap).
-- Cuoi phien: bot dat `awaiting_export`; file export cuoi duoc doi chieu (`cleanup_verdict`) -> bao "Kho da sach" hoac liet ke cay Bo con sot / cay Giu chua sao. Qua `CLEAN_EXPORT_WAIT_SECONDS` chua co file thi bao Ruby.
-- Doc man hinh Discord qua `service.discordRoot()` (quet `windows`), khong dung rootInActiveWindow (cua so Hub co the dang hoat dong).

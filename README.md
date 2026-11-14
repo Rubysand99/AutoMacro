@@ -5,12 +5,12 @@ bot [owo-tracker](https://github.com/Rubysand99/owo-tracker): owo-tracker là "b
 Star Hub là "tay chân" (thực thi trên điện thoại) và có màn hình **Hub** hiển thị dữ liệu bot đọc được.
 
 > Tên app: **Star Hub** — tên gói `com.starclan.starhub` (trước đây là `com.tuytam.automacro`).
-> Chi tiết trạng thái, thiết kế và lịch sử thay đổi nằm trong `AI_CONTEXT.md`.
+> Trạng thái hiện tại + quy ước khi sửa code: `AI_CONTEXT.md`. Lịch sử thay đổi từng phiên bản: `docs/LICH_SU.md`.
 
 ## Build APK
 Push lên nhánh `main` trên GitHub, tab **Actions** tự build và cho tải APK debug ở phần **Artifacts** của workflow
 `Build APK` (artifact `starhub-debug-apk`). Không cần gradlew, không cần PC.
-Sau bước build, workflow chạy thêm unit test JVM (`gradle testDebugUnitTest`); bước này chưa chặn build.
+Sau bước build, workflow chạy thêm unit test JVM (`gradle testDebugUnitTest`); test đỏ thì workflow dừng và không tăng số phiên bản.
 
 ## Chọn tier gem được phép dùng
 Tab **Config** → khối "Gem" → **Chỉnh tier gem**: mỗi loại gem (Hunting / Empowering / Lucky / Special) có các chip
