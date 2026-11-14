@@ -38,14 +38,14 @@ object CleanupGate {
     var lastFailure: String = ""
 
     /** Tong so cay da ra theo nhom ("low" = common+uncommon, "high" = epic tro len) trong phien nay: buoc co `cum_cap` khong duoc vuot tong. */
-    val tally = mutableMapOf<String, Int>()
+    val tally = java.util.concurrent.ConcurrentHashMap<String, Int>()
 
     /** So tin "could not find a weapon" tren man hinh TRUOC khi go lenh cua buoc nay (service ghi): tang len = OwO vua bao khong tim thay cay. */
     @Volatile
     var notFoundBefore: Int = 0
 
     /** Cay bi bo qua vi OwO bao khong tim thay (da ban/ra hoac sai ID): bao o cuoi phien, doi chieu bang export. */
-    val notFound = mutableListOf<String>()
+    val notFound = java.util.concurrent.CopyOnWriteArrayList<String>()
 
     const val HOLD_AFTER_EXPORT_MS = 45_000L
 
@@ -116,16 +116,16 @@ object CleanupRunner {
         return false
     }
 
-    /**
-     * Sao 1 cay GIU. Man hinh con tin cua cay TRUOC (da sao), nen chi lam khi tin hien o duoi cung co DUNG ma cay nay;
-     * bam xong phai thay nut sao chuyen vang. Khong chac -> that bai (khong bao gio coi la xong khi chua chac cay da sao,
-     * vi cay Giu chua sao se bi rã theo bac).
-     */
     /** Tin co nut sao `node` o duoi cung la cua DUNG cay `id`: ma cay hien tren tin, hoac tin nam duoi tin lenh ta vua go. */
     private fun isThisWeapon(service: AutoAccessibilityService, node: android.view.accessibility.AccessibilityNodeInfo, id: String, params: Map<String, String>): Boolean =
         CommandGuard.textHasId(ButtonClicker.textAboveNode(service, node), id) ||
             ButtonClicker.starIsBelowCommand(service, node, params["command_text"].orEmpty().trim())
 
+    /**
+     * Sao 1 cay GIU. Man hinh con tin cua cay TRUOC (da sao), nen chi lam khi tin hien o duoi cung co DUNG ma cay nay;
+     * bam xong phai thay nut sao chuyen vang. Khong chac -> that bai (khong bao gio coi la xong khi chua chac cay da sao,
+     * vi cay Giu chua sao se bi rã theo bac).
+     */
     private suspend fun star(service: AutoAccessibilityService, params: Map<String, String>): Boolean {
         val id = params["command_text"].orEmpty().trim().split(Regex("\\s+")).lastOrNull().orEmpty()
         CleanupGate.progress(Str.get(R.string.clean_tim_nut_sao_tren_tin))
