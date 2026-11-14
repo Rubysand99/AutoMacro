@@ -26,7 +26,7 @@ object NodeDump {
             if (count >= MAX_LINES) return
             val text = n.text?.toString()?.replace("\n", " ")?.take(120).orEmpty()
             val desc = n.contentDescription?.toString()?.replace("\n", " ")?.take(120).orEmpty()
-            if (n.isVisibleToUser && (text.isNotEmpty() || desc.isNotEmpty() || n.isClickable)) {
+            if (NodeTools.onScreen(n) && (text.isNotEmpty() || desc.isNotEmpty() || n.isClickable)) {
                 val r = Rect()
                 n.getBoundsInScreen(r)
                 sb.append("  ".repeat(minOf(depth, 12)))

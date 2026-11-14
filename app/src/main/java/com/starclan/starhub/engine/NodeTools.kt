@@ -45,6 +45,18 @@ object NodeTools {
         return result
     }
 
+    /**
+     * Node dang nam trong man hinh. `isVisibleToUser` do Discord/Android bao co luc sai (false khi menu Hub dang mo du node van hien ro),
+     * nen nhan them node co toa do nam trong man hinh.
+     */
+    fun onScreen(node: AccessibilityNodeInfo): Boolean {
+        if (node.isVisibleToUser) return true
+        val r = Rect()
+        node.getBoundsInScreen(r)
+        val dm = android.content.res.Resources.getSystem().displayMetrics
+        return !r.isEmpty && r.right > 0 && r.left < dm.widthPixels && r.bottom > 0 && r.top < dm.heightPixels
+    }
+
     private fun boundsOf(node: AccessibilityNodeInfo): Rect {
         val r = Rect()
         node.getBoundsInScreen(r)
@@ -57,7 +69,7 @@ object NodeTools {
     fun findInput(service: AutoAccessibilityService): AccessibilityNodeInfo? {
         val focused = service.findFocus(AccessibilityNodeInfo.FOCUS_INPUT)
         if (focused != null && focused.isEditable) return focused
-        val editors = collect(service.discordRoot()) { it.isEditable && it.isVisibleToUser }
+        val editors = collect(service.discordRoot()) { it.isEditable && onScreen(it) }
         return editors.maxByOrNull { boundsOf(it).top }
     }
 
@@ -154,7 +166,7 @@ object NodeTools {
 
     /** Tim nut Gui (theo nhan "Send"/"Gửi") dang hien tren man hinh. */
     fun findSendButton(root: AccessibilityNodeInfo?): AccessibilityNodeInfo? =
-        collect(root) { it.isVisibleToUser && isSendLabel(it) }.firstOrNull()
+        collect(root) { onScreen(it) && isSendLabel(it) }.firstOrNull()
 
     /**
      * Du phong khi khong thay nut theo nhan "Gui": nut bam duoc nam NGAY BEN PHAI o nhap, cung hang, ngoai cung ben phai.
@@ -166,7 +178,7 @@ object NodeTools {
         if (inRect.isEmpty) return null
         return collect(root) {
             val r = boundsOf(it)
-            it.isVisibleToUser && it.isClickable && !it.isEditable && !r.isEmpty &&
+            onScreen(it) && it.isClickable && !it.isEditable && !r.isEmpty &&
                 r.left >= inRect.right && r.centerY() in inRect.top..inRect.bottom
         }.maxByOrNull { boundsOf(it).right }
     }

@@ -46,7 +46,7 @@ object ButtonClicker {
         val root = service.discordRoot() ?: return null
         // Chi bam trong Discord: nguoi dung chuyen sang app khac giua chung thi DUNG, khong bam nham nut app do
         if (root.packageName?.toString() != DiscordSender.DISCORD_PACKAGE) return null
-        val nodes = NodeTools.collect(root, maxNodes = 1500) { it.isVisibleToUser && exactLabel(it, target) }
+        val nodes = NodeTools.collect(root, maxNodes = 1500) { NodeTools.onScreen(it) && exactLabel(it, target) }
         val clickable = nodes.filter { it.isClickable }
         val pool = if (clickable.isNotEmpty()) clickable else nodes
         return pool.maxByOrNull { n ->
@@ -119,7 +119,7 @@ object ButtonClicker {
         val root = service.discordRoot() ?: return null
         val nodes = NodeTools.collect(root, maxNodes = 1500) {
             val t = it.text?.toString()
-            if (t.isNullOrBlank() || !it.isVisibleToUser) false else {
+            if (t.isNullOrBlank() || !NodeTools.onScreen(it)) false else {
                 val r = Rect(); it.getBoundsInScreen(r)
                 r.bottom <= br.top + 8 && r.top >= br.top - 900
             }
@@ -143,7 +143,7 @@ object ButtonClicker {
     /** Nut sao cua tin MOI NHAT (nut sao thap nhat tren man hinh Discord); null = khong thay. */
     fun latestStarNode(service: AutoAccessibilityService): AccessibilityNodeInfo? {
         val root = service.discordRoot() ?: return null
-        val nodes = NodeTools.collect(root, maxNodes = 1500) { it.isVisibleToUser && isStarLabel(it) }
+        val nodes = NodeTools.collect(root, maxNodes = 1500) { NodeTools.onScreen(it) && isStarLabel(it) }
         val clickable = nodes.filter { it.isClickable }
         return (if (clickable.isNotEmpty()) clickable else nodes).maxByOrNull { n -> val r = Rect(); n.getBoundsInScreen(r); r.top }
     }
@@ -161,7 +161,7 @@ object ButtonClicker {
         var cmdTop = Int.MIN_VALUE
         NodeTools.collect(root, maxNodes = 1500) {
             val t = it.text?.toString()
-            !t.isNullOrBlank() && it.isVisibleToUser && !it.isEditable && normalize(t).contains(want)
+            !t.isNullOrBlank() && NodeTools.onScreen(it) && !it.isEditable && normalize(t).contains(want)
         }.forEach {
             val r = Rect(); it.getBoundsInScreen(r)
             if (r.top > cmdTop) { cmdTop = r.top; cmdBottom = r.bottom }
