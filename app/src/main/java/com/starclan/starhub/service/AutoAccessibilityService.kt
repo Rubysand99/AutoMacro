@@ -7,7 +7,6 @@ import android.graphics.Path
 import android.graphics.PixelFormat
 import android.media.RingtoneManager
 import android.os.VibrationEffect
-import android.os.Vibrator
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.MotionEvent
@@ -31,6 +30,7 @@ import com.starclan.starhub.engine.DiscordSender
 import com.starclan.starhub.engine.FarmController
 import com.starclan.starhub.engine.HuntbotNotifier
 import com.starclan.starhub.engine.SendResult
+import com.starclan.starhub.engine.VibratorCompat
 import com.starclan.starhub.view.FarmOverlay
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -413,7 +413,7 @@ class AutoAccessibilityService : AccessibilityService() {
     /** Rung + chuong de Ruby biet OwO dang doi giai captcha. */
     private fun alertCaptcha() {
         Log.w(TAG, "OwO dang yeu cau captcha - dung gui lenh tu dong 10 phut")
-        val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+        val vibrator = VibratorCompat.get(this)
         vibrator?.vibrate(VibrationEffect.createOneShot(1500, VibrationEffect.DEFAULT_AMPLITUDE))
         try {
             val uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)

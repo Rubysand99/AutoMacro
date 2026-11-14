@@ -4,6 +4,13 @@ Nhật ký từng phiên bản, mới nhất ở trên. **Đây là lịch sử,
 (kịch bản, Room, keystore debug, tab "Tự động", 3 tab) đã bị gỡ hoặc đổi. Trạng thái hiện tại + quy ước bắt buộc nằm ở `AI_CONTEXT.md`.
 Khi thêm tính năng mới: ghi 1 mục `## vNN` ở ĐẦU danh sách bên dưới, rồi nếu có quy ước mới thì cập nhật mục "Quy ước bắt buộc" trong `AI_CONTEXT.md`.
 
+## v40 — Rà soát & dọn dẹp (tài liệu, an toàn luồng, bộ đếm lỗi, CI)
+- Tài liệu: tách `AI_CONTEXT.md` (trạng thái hiện tại + quy ước bắt buộc) khỏi `docs/LICH_SU.md` (nhật ký).
+- `CleanupGate.tally` / `notFound` đổi sang tập an toàn luồng (UI thread + coroutine cùng dùng).
+- `data/FailStreak`: đếm lỗi liên tiếp theo VÒNG (thứ tự hunt/battle/owo ngẫu nhiên nên không xóa bộ đếm ngay khi 1 lệnh OK); mở lại kênh thất bại ở bước "OwO im lặng" giờ tính là lỗi. Có `FailStreakTest`.
+- `engine/VibratorCompat`: dùng `VibratorManager` trên Android 12+ (hết cảnh báo deprecated `VIBRATOR_SERVICE`). CHUA thu tren may that (rung khi captcha / chuong bao thuc).
+- CI: nâng checkout v7, setup-java v6, setup-gradle v6, upload-artifact v7.
+
 ## v39 — Don kho theo BAC (tier), 4 danh sach, doi chieu cuoi phien
 - 4 danh sach vu khi: Giu / Bo / Chua ro (da xem bp nhung khong chac: `bp_la`, hoac Ruby bam "?") / Chua xem (chua co bp). Chua ro + Chua xem deu bi GIU. Bot: `weapon_import.list_of`, `review_bucket`, `review_lists` (key `unseen`). App: tab thu 4 "Chua xem" o khung duyet tay.
 - Ke hoach (cach LAI, v39b): SAO cay Giu chua khoa co q < 61.2 (bac thap, co the la Rare) -> ra THEO ID cac cay Bo q > 60.6 (bac cao, ke ca vung chua ro bac) va cay Ruby them tay (`,dropadd`) -> `owo dismantle common`, `uncommon` (cum_group low, cum_cap = so cay Bo q<40) -> `rare` (dung so cay Bo 40<=q<=60.6) -> `nw inv export`. Cay Giu bac cao KHONG sao (it buoc hon nhieu). CommandGuard van chan epic/mythic/legendary/fabled/all.

@@ -59,7 +59,7 @@ object AlarmPlayer {
                 }
                 ringtone = r
 
-                val v = app.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+                val v = VibratorCompat.get(app)
                 vibrator = v
                 if (v != null && v.hasVibrator()) {
                     v.vibrate(VibrationEffect.createWaveform(longArrayOf(0, 700, 400), 0))
