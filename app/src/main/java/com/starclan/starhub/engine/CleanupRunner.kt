@@ -130,7 +130,12 @@ object CleanupRunner {
             if (waited >= 8_000) break
             delay(1_000); waited += 1_000
         }
-        if (label == null) return fail(Str.get(R.string.clean_khong_thay_tin_cua_cay, id))
+        if (label == null) {
+            val pr = ButtonClicker.probeStar(service, params["command_text"].orEmpty().trim(), id)
+            fun yn(b: Boolean) = Str.get(if (b) R.string.svc_co else R.string.svc_khong)
+            return fail(Str.get(R.string.clean_khong_thay_tin_cua_cay, id) + " " +
+                Str.get(R.string.clean_chan_doan_sao, yn(pr.discordWindow), pr.starNodes, pr.latest ?: "-", yn(pr.idInText), pr.textLen, yn(pr.commandFound), yn(pr.belowCommand)))
+        }
         if (label == "star_yellow") {
             CleanupGate.progress(Str.get(R.string.clean_cay_nay_da_co_sao))
             return true

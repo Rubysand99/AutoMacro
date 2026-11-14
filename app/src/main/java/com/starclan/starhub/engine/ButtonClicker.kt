@@ -156,4 +156,26 @@ object ButtonClicker {
         }
         return cmdBottom != Int.MIN_VALUE && br.top >= cmdBottom
     }
+
+    /** Anh chup de chan doan khi buoc sao khong nhan ra tin cua cay (hien o dong loi cua Hub). */
+    data class StarProbe(
+        val discordWindow: Boolean, val starNodes: Int, val latest: String?,
+        val idInText: Boolean, val textLen: Int, val commandFound: Boolean, val belowCommand: Boolean
+    )
+
+    fun probeStar(service: AutoAccessibilityService, commandText: String, id: String): StarProbe {
+        val root = service.discordRoot()
+        val stars = NodeTools.collect(root, maxNodes = 1500) {
+            exactLabel(it, normalize("star_outline_dim")) || exactLabel(it, normalize("star_yellow"))
+        }.size
+        val latest = if (root != null) latestStarLabel(service) else null
+        val text = if (latest != null) textAbove(service, latest, requireEnabled = false) else null
+        val want = normalize(commandText)
+        val cmdFound = root != null && want.isNotEmpty() && NodeTools.collect(root, maxNodes = 1500) {
+            val t = it.text?.toString()
+            !t.isNullOrBlank() && !it.isEditable && normalize(t).contains(want)
+        }.isNotEmpty()
+        val below = latest != null && starIsBelowCommand(service, latest, commandText)
+        return StarProbe(root != null, stars, latest, com.starclan.starhub.data.CommandGuard.textHasId(text, id), text?.length ?: 0, cmdFound, below)
+    }
 }
