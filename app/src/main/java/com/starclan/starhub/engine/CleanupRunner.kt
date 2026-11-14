@@ -153,6 +153,7 @@ object CleanupRunner {
             CleanupGate.progress(Str.get(R.string.clean_cay_nay_da_co_sao))
             return true
         }
+        val clickedTop = android.graphics.Rect().also { node.getBoundsInScreen(it) }.top
         if (!NodeTools.clickNode(service, node)) return fail(Str.get(R.string.clean_khong_bam_duoc_nut_sao))
         CleanupGate.progress(Str.get(R.string.clean_da_bam_sao))
         waited = 0
@@ -161,7 +162,9 @@ object CleanupRunner {
             delay(1_000); waited += 1_000
             val n = ButtonClicker.latestStarNode(service) ?: continue
             last = ButtonClicker.starLabelText(n)
-            if (!ButtonClicker.isOutlineStar(n) && isThisWeapon(service, n, id, params)) {   // nut sao doi nhan = sao that su len
+            val top = android.graphics.Rect().also { n.getBoundsInScreen(it) }.top
+            // Sau khi bam, embed ve lai nen khong con khop ma cay: kiem tra DUNG nut vua bam (cung vi tri) da doi nhan khoi "outline"
+            if (!ButtonClicker.isOutlineStar(n) && (kotlin.math.abs(top - clickedTop) <= 200 || isThisWeapon(service, n, id, params))) {
                 delay(500)
                 return true
             }
