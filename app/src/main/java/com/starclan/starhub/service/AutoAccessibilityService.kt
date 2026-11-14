@@ -328,6 +328,7 @@ class AutoAccessibilityService : AccessibilityService() {
             }
 
             var result = try {
+                if (isClean) CleanupGate.notFoundBefore = ButtonClicker.countTextContaining(this, "could not find a weapon")
                 sender.send(commandText.trim(), settings, reopenChannel = first)
             } catch (e: Exception) {
                 Log.e(TAG, "Loi khi chay lenh '${cmd.action}': ${e.message}")

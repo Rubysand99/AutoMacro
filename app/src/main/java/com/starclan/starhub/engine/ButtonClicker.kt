@@ -189,4 +189,14 @@ object ButtonClicker {
         return StarProbe(root != null, stars, starLabelText(node).ifEmpty { "-" },
             com.starclan.starhub.data.CommandGuard.textHasId(text, id), text?.length ?: 0, cmdFound, below)
     }
+
+    /** So node tren man hinh Discord co chu chua `needle` (khong phan biet hoa thuong). Dung de nhan ra tin MOI: so luong tang len. */
+    fun countTextContaining(service: AutoAccessibilityService, needle: String): Int {
+        val root = service.discordRoot() ?: return 0
+        val want = normalize(needle)
+        return NodeTools.collect(root, maxNodes = 1500) {
+            val t = it.text?.toString()
+            !t.isNullOrBlank() && !it.isEditable && normalize(t).contains(want)
+        }.size
+    }
 }

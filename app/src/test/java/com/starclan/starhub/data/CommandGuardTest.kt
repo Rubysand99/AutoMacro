@@ -72,10 +72,9 @@ class CommandGuardTest {
     }
 
     @Test fun cleanup_commands() {
-        for (c in listOf("owo dismantle common", "owo dismantle uncommon", "owo dismantle rare", "owo dismantle AYJILS", "owo dismantle G4K3P9",
-            "owo dismantle epic", "owo dismantle mythical", "owo dismantle legendary", "owo dismantle fabled"))
+        for (c in listOf("owo dismantle common", "owo dismantle uncommon", "owo dismantle rare", "owo dismantle AYJILS", "owo dismantle G4K3P9"))
             assertTrue(c, CommandGuard.isSafeCommand(c))
-        for (c in listOf("owo dismantle mythic", "owo dismantle legend", "owo dismantle hidden", "owo dismantle all", "owo dismantle AB",
+        for (c in listOf("owo dismantle epic", "owo dismantle mythical", "owo dismantle legendary", "owo dismantle fabled", "owo dismantle mythic", "owo dismantle legend", "owo dismantle hidden", "owo dismantle all", "owo dismantle AB",
             "owo dismantle rare common", "owo dismantle A1B2C3 D4E5F6", "owo dismantle"))
             assertFalse(c, CommandGuard.isSafeCommand(c))
     }

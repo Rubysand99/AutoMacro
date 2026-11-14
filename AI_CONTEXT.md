@@ -443,9 +443,8 @@ app/src/main/java/com/starclan/starhub/
 
 ## v39 — Don kho theo BAC (tier), 4 danh sach, doi chieu cuoi phien
 - 4 danh sach vu khi: Giu / Bo / Chua ro (da xem bp nhung khong chac: `bp_la`, hoac Ruby bam "?") / Chua xem (chua co bp). Chua ro + Chua xem deu bi GIU. Bot: `weapon_import.list_of`, `review_bucket`, `review_lists` (key `unseen`). App: tab thu 4 "Chua xem" o khung duyet tay.
-- Ke hoach: SAO moi cay Giu chua khoa (ke ca q cao) -> ra theo ID chi cay Ruby them tay (`,dropadd`) -> `owo dismantle common`, `uncommon` (cum_group low, cum_cap = so cay Bo q<40) -> `rare` (dung so, hoac khoang expect_min..expect_max neu co cay Bo o vung chua ro bac 60.6..61.2) -> epic/mythical/legendary/fabled (cum_group high) -> `nw inv export`.
-- CommandGuard cho phep epic|mythical|legendary|fabled; an toan nho: moi cay Giu da sao + dem cay phai khop (cum_cap cong don qua `CleanupGate.tally`, reset o step_no=1).
-- Buoc sao: chi lam khi tin duoi cung tren man hinh co DUNG ma cay (`**ID:**`), bam xong phai thay nut sao chuyen vang, khong thi that bai.
+- Ke hoach (cach LAI, v39b): SAO cay Giu chua khoa co q < 61.2 (bac thap, co the la Rare) -> ra THEO ID cac cay Bo q > 60.6 (bac cao, ke ca vung chua ro bac) va cay Ruby them tay (`,dropadd`) -> `owo dismantle common`, `uncommon` (cum_group low, cum_cap = so cay Bo q<40) -> `rare` (dung so cay Bo 40<=q<=60.6) -> `nw inv export`. Cay Giu bac cao KHONG sao (it buoc hon nhieu). CommandGuard van chan epic/mythic/legendary/fabled/all.
+- Buoc sao: nut sao la Button desc `star_outline_dim` (chua sao) / `star_yellow` (da sao). Chi lam khi tin co nut sao o duoi cung la cua DUNG cay (ma cay `ID:` trong embed hoac nam duoi tin lenh); bam xong phai doi nhan. OwO tra "could not find a weapon" (so node chua chu nay tang so voi truoc khi go lenh, `CleanupGate.notFoundBefore`) -> bo qua cay, ghi `CleanupGate.notFound`.
 - `,cleanstop` dung ngay: app hoi `GET /clean` truoc MOI buoc (mang loi thi tiep tuc; cong tac Hub van la nut dung khan cap).
 - Cuoi phien: bot dat `awaiting_export`; file export cuoi duoc doi chieu (`cleanup_verdict`) -> bao "Kho da sach" hoac liet ke cay Bo con sot / cay Giu chua sao. Qua `CLEAN_EXPORT_WAIT_SECONDS` chua co file thi bao Ruby.
-- CHUA kiem tra tren may that: ten bac cao trong lenh `owo dismantle` (epic/mythical/legendary/fabled). Neu sai, OwO khong tra nut Dismantle -> buoc optional bi bo qua -> doi chieu cuoi phien se bao con sot.
+- Doc man hinh Discord qua `service.discordRoot()` (quet `windows`), khong dung rootInActiveWindow (cua so Hub co the dang hoat dong).

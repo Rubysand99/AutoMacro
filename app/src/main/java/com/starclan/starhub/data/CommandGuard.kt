@@ -30,7 +30,7 @@ object CommandGuard {
             "|use(?: \\d{1,4}){1,12}" +                                        // owo use 051 052
             "|dex [A-Za-z0-9_]{1,32}" +                                        // owo dex <ten pet>
             "|w(?: [A-Za-z0-9]{4,8})?" +                                     // owo w (danh sach kho) hoac owo w <ID vu khi>
-            "|dismantle (?:common|uncommon|rare|epic|mythical|legendary|fabled|(?!(?:epic|mythic|mythical|legend|legendary|fabled|hidden|special|gem|all)(?![A-Za-z0-9]))[A-Za-z0-9]{4,8})" +          // don kho tu dong: ra theo bac hoac 1 ID (xem CleanupRunner)
+            "|dismantle (?:common|uncommon|rare|(?!(?:epic|mythic|mythical|legend|legendary|fabled|hidden|special|gem|all)(?![A-Za-z0-9]))[A-Za-z0-9]{4,8})" +          // don kho tu dong: ra theo bac hoac 1 ID (xem CleanupRunner)
             ")$",
         RegexOption.IGNORE_CASE
     )

@@ -40,6 +40,13 @@ object CleanupGate {
     /** Tong so cay da ra theo nhom ("low" = common+uncommon, "high" = epic tro len) trong phien nay: buoc co `cum_cap` khong duoc vuot tong. */
     val tally = mutableMapOf<String, Int>()
 
+    /** So tin "could not find a weapon" tren man hinh TRUOC khi go lenh cua buoc nay (service ghi): tang len = OwO vua bao khong tim thay cay. */
+    @Volatile
+    var notFoundBefore: Int = 0
+
+    /** Cay bi bo qua vi OwO bao khong tim thay (da ban/ra hoac sai ID): bao o cuoi phien, doi chieu bang export. */
+    val notFound = mutableListOf<String>()
+
     const val HOLD_AFTER_EXPORT_MS = 45_000L
 
     private val _status = MutableStateFlow(CleanupStatus())
@@ -89,7 +96,7 @@ object CleanupRunner {
 
     suspend fun run(service: AutoAccessibilityService, mode: String, params: Map<String, String>): Boolean {
         CleanupGate.lastFailure = ""
-        if (params["step_no"] == "1") CleanupGate.tally.clear()   // phien moi bat dau tu buoc 1
+        if (params["step_no"] == "1") { CleanupGate.tally.clear(); CleanupGate.notFound.clear() }   // phien moi bat dau tu buoc 1
         CleanupGate.progress(Str.get(R.string.clean_da_go_lenh_cho_owo))
         delay(3_500)   // doi OwO tra loi
         return when (mode) {
@@ -125,6 +132,12 @@ object CleanupRunner {
         var node: android.view.accessibility.AccessibilityNodeInfo? = null
         var waited = 0
         while (true) {
+            // OwO bao khong tim thay cay nay (da ban/ra hoac sai ID): bo qua, khong lam dung ca phien (cay khong ton tai thi khong co gi de giu)
+            if (ButtonClicker.countTextContaining(service, "could not find a weapon") > CleanupGate.notFoundBefore) {
+                CleanupGate.notFound.add(id)
+                CleanupGate.progress(Str.get(R.string.clean_cay_khong_ton_tai, id))
+                return true
+            }
             val n = ButtonClicker.latestStarNode(service)
             if (n != null && isThisWeapon(service, n, id, params)) { node = n; break }
             if (waited >= 8_000) break
