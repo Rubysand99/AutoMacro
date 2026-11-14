@@ -338,6 +338,7 @@
     <string name="farm_da_chay_du_gio_dung">Đã chạy đủ %1$s giờ — dừng để nghỉ. Bấm Bắt đầu để chạy tiếp</string>
     <string name="farm_gio_yen_lang">Giờ yên lặng</string>
     <string name="farm_nghi_giua_phien">Nghỉ giữa phiên</string>
+    <string name="farm_khong_mo_lai_duoc_kenh">không mở lại được kênh Discord</string>
     <string name="farm_sau_gio_nghi_khong_mo">Sau giờ nghỉ không mở lại được kênh Discord</string>
     <string name="farm_owo_khong_tra_loi_hon_2">⚠️ OwO không trả lời hơn 2,5 phút — đang mở lại kênh</string>
     <string name="farm_dang_farm">Đang farm…</string>

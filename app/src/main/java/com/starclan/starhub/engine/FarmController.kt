@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import com.starclan.starhub.data.CommandGuard
 import com.starclan.starhub.data.DayStats
+import com.starclan.starhub.data.FailStreak
 import com.starclan.starhub.data.FarmCmd
 import com.starclan.starhub.data.FarmCommandConfig
 import com.starclan.starhub.data.FarmStatsStore
@@ -1110,12 +1111,13 @@ object FarmController {
         val runStartMs = System.currentTimeMillis()
         var sessionStartMs = runStartMs
         var sessionLimitMs = Random.nextLong(SESSION_MIN_MS, SESSION_MAX_MS)
-        var failsInRow = 0
+        val streak = FailStreak(MAX_FAILS_IN_ROW)
         var cyclesUntilRest = _state.value.speed.let { Random.nextInt(it.restEveryMin, it.restEveryMax + 1) }
         silenceBaselineMs = System.currentTimeMillis()
 
         cycle@ while (isActive) {
             val cycleStart = System.currentTimeMillis()
+            streak.beginCycle()
             val sp = _state.value.speed   // doc moi vong: doi toc do giua chung co hieu luc ngay
 
             // 4.0 Het tong gio chay toi da
@@ -1147,7 +1149,10 @@ object FarmController {
             if (silentRecoverRequested) {
                 silentRecoverRequested = false
                 update { it.copy(alert = Str.get(R.string.farm_owo_khong_tra_loi_hon_2)) }
-                reopenChannel(sender, link)
+                if (!reopenChannel(sender, link) && streak.fail()) {
+                    hardStop(ctx, Str.get(R.string.farm_go_lenh_loi_lan_lien, streak.count, Str.get(R.string.farm_khong_mo_lai_duoc_kenh)))
+                    return
+                }
                 silenceBaselineMs = System.currentTimeMillis()
                 delay(3_000)
             }
@@ -1174,18 +1179,17 @@ object FarmController {
                                 return
                             }
                             if (huntResult == SendResult.OK) {
-                                failsInRow = 0
+                                streak.ok()
                                 update { it.copy(hunts = it.hunts + 1) }
                                 recordStats { b, now -> b.addHunt(now) }
                             } else {
-                                failsInRow++
-                                if (failsInRow >= MAX_FAILS_IN_ROW) {
-                                    hardStop(ctx, Str.get(R.string.farm_go_lenh_loi_lan_lien, failsInRow, describeSend(huntResult)))
+                                if (streak.fail()) {
+                                    hardStop(ctx, Str.get(R.string.farm_go_lenh_loi_lan_lien, streak.count, describeSend(huntResult)))
                                     return
                                 }
-                                update { it.copy(status = Str.get(R.string.farm_loi_go_lenh_lan_dang, describeSend(huntResult), failsInRow)) }
-                                if (failsInRow >= 2) reopenChannel(sender, link)
-                                waitWithCountdown(minOf(4_000L * failsInRow, 30_000L), Str.get(R.string.farm_thu_lai_sau_loi_go))
+                                update { it.copy(status = Str.get(R.string.farm_loi_go_lenh_lan_dang, describeSend(huntResult), streak.count)) }
+                                if (streak.count >= 2) reopenChannel(sender, link)
+                                waitWithCountdown(minOf(4_000L * streak.count, 30_000L), Str.get(R.string.farm_thu_lai_sau_loi_go))
                                 continue@cycle
                             }
                             // Khac lenh (hunt -> battle) thi go luon, khong nghi. Chi cooldown cua CHINH lenh do (hunt -> hunt) moi phai cho.
@@ -1203,23 +1207,22 @@ object FarmController {
                                 return
                             }
                             if (battleResult == SendResult.OK) {
-                                failsInRow = 0
+                                streak.ok()
                                 update { it.copy(battles = it.battles + 1) }
                                 recordStats { b, now -> b.addBattle(now) }
                             } else {
-                                failsInRow++
-                                if (failsInRow >= MAX_FAILS_IN_ROW) {
-                                    hardStop(ctx, Str.get(R.string.farm_go_lenh_loi_lan_lien, failsInRow, describeSend(battleResult)))
+                                if (streak.fail()) {
+                                    hardStop(ctx, Str.get(R.string.farm_go_lenh_loi_lan_lien, streak.count, describeSend(battleResult)))
                                     return
                                 }
                                 cycleOk = false
-                                if (failsInRow >= 2) reopenChannel(sender, link)
+                                if (streak.count >= 2) reopenChannel(sender, link)
                             }
                         }
 
                     }
                     else -> {
-                        // 4.6b Moi vong go them 1 lan "owo" (ngay sau battle, khong nghi). Loi go chi bo qua: khong tinh vao failsInRow.
+                        // 4.6b Moi vong go them 1 lan "owo" (ngay sau battle, khong nghi). Loi go chi bo qua: khong tinh vao bo dem loi (streak).
                         if (cycleOk && cmds.isEnabled(FarmCmd.OWO)) {
                             val owoResult = sendCommand(sender, settings, OWO_COMMAND)
                             if (owoResult == SendResult.CAPTCHA) {
@@ -1231,6 +1234,8 @@ object FarmController {
                     }
                 }
             }
+
+            streak.endCycle()   // vong sach loi + co lenh OK moi xoa bo dem loi lien tiep
 
             // 4.7 Nghi giai lao ngan cho giong nguoi that
             cyclesUntilRest--
