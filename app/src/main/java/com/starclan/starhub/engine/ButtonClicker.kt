@@ -111,6 +111,10 @@ object ButtonClicker {
     /** Chu cua cac o nam ngay TREN nut `label` (toi da ~900px) = noi dung tin xac nhan cua OwO. null neu khong thay nut. */
     fun textAbove(service: AutoAccessibilityService, label: String, requireEnabled: Boolean = true): String? {
         val btn = (if (requireEnabled) enabledBottomMost(service, label) else findBottomMost(service, normalize(label))) ?: return null
+        return textAboveNode(service, btn)
+    }
+
+    fun textAboveNode(service: AutoAccessibilityService, btn: AccessibilityNodeInfo): String? {
         val br = Rect(); btn.getBoundsInScreen(br)
         val root = service.discordRoot() ?: return null
         val nodes = NodeTools.collect(root, maxNodes = 1500) {
@@ -123,24 +127,32 @@ object ButtonClicker {
         return nodes.joinToString("\n") { it.text.toString() }
     }
 
-    /** Nut sao cua tin MOI NHAT (nut thap nhat tren man hinh): "star_yellow" (da sao) hoac "star_outline_dim" (chua sao); null = khong thay. */
-    fun latestStarLabel(service: AutoAccessibilityService): String? {
-        val y = findBottomMost(service, normalize("star_yellow"))
-        val o = findBottomMost(service, normalize("star_outline_dim"))
-        if (y == null && o == null) return null
-        if (y == null) return "star_outline_dim"
-        if (o == null) return "star_yellow"
-        val ry = Rect(); y.getBoundsInScreen(ry)
-        val ro = Rect(); o.getBoundsInScreen(ro)
-        return if (ry.top >= ro.top) "star_yellow" else "star_outline_dim"
+    private fun labelOf(n: AccessibilityNodeInfo): String =
+        normalize(n.contentDescription?.toString()?.takeIf { it.isNotBlank() } ?: n.text?.toString().orEmpty())
+
+    /** Nhan nut sao: "star_outline_dim" = CHUA sao; nhan khac bat dau bang "star" (vd star_yellow) = DA sao. */
+    private fun isStarLabel(n: AccessibilityNodeInfo): Boolean {
+        val l = labelOf(n)
+        return l == "star" || l.startsWith("star ")
+    }
+
+    fun isOutlineStar(n: AccessibilityNodeInfo): Boolean = labelOf(n) == normalize("star_outline_dim")
+
+    fun starLabelText(n: AccessibilityNodeInfo?): String = n?.let { labelOf(it) }.orEmpty()
+
+    /** Nut sao cua tin MOI NHAT (nut sao thap nhat tren man hinh Discord); null = khong thay. */
+    fun latestStarNode(service: AutoAccessibilityService): AccessibilityNodeInfo? {
+        val root = service.discordRoot() ?: return null
+        val nodes = NodeTools.collect(root, maxNodes = 1500) { it.isVisibleToUser && isStarLabel(it) }
+        val clickable = nodes.filter { it.isClickable }
+        return (if (clickable.isNotEmpty()) clickable else nodes).maxByOrNull { n -> val r = Rect(); n.getBoundsInScreen(r); r.top }
     }
 
     /**
-     * Nut sao `label` thap nhat co nam DUOI tin lenh ta vua go (vd "owo w AL57PC") khong? Co = day la tin tra loi cua OwO cho DUNG lenh nay
-     * (tin cua cay truoc nam o TREN tin lenh). Khong can ma cay hien trong embed (embed OwO khong luon in ma).
+     * Nut sao `btn` co nam DUOI tin lenh ta vua go (vd "owo w AL57PC") khong? Co = day la tin tra loi cua OwO cho DUNG lenh nay
+     * (tin cua cay truoc nam o TREN tin lenh). Khong can ma cay hien trong embed.
      */
-    fun starIsBelowCommand(service: AutoAccessibilityService, label: String, commandText: String): Boolean {
-        val btn = findBottomMost(service, normalize(label)) ?: return false
+    fun starIsBelowCommand(service: AutoAccessibilityService, btn: AccessibilityNodeInfo, commandText: String): Boolean {
         val br = Rect(); btn.getBoundsInScreen(br)
         val root = service.discordRoot() ?: return false
         val want = normalize(commandText)
@@ -159,23 +171,22 @@ object ButtonClicker {
 
     /** Anh chup de chan doan khi buoc sao khong nhan ra tin cua cay (hien o dong loi cua Hub). */
     data class StarProbe(
-        val discordWindow: Boolean, val starNodes: Int, val latest: String?,
+        val discordWindow: Boolean, val starNodes: Int, val latest: String,
         val idInText: Boolean, val textLen: Int, val commandFound: Boolean, val belowCommand: Boolean
     )
 
     fun probeStar(service: AutoAccessibilityService, commandText: String, id: String): StarProbe {
         val root = service.discordRoot()
-        val stars = NodeTools.collect(root, maxNodes = 1500) {
-            exactLabel(it, normalize("star_outline_dim")) || exactLabel(it, normalize("star_yellow"))
-        }.size
-        val latest = if (root != null) latestStarLabel(service) else null
-        val text = if (latest != null) textAbove(service, latest, requireEnabled = false) else null
+        val stars = NodeTools.collect(root, maxNodes = 1500) { isStarLabel(it) }.size
+        val node = if (root != null) latestStarNode(service) else null
+        val text = node?.let { textAboveNode(service, it) }
         val want = normalize(commandText)
         val cmdFound = root != null && want.isNotEmpty() && NodeTools.collect(root, maxNodes = 1500) {
             val t = it.text?.toString()
             !t.isNullOrBlank() && !it.isEditable && normalize(t).contains(want)
         }.isNotEmpty()
-        val below = latest != null && starIsBelowCommand(service, latest, commandText)
-        return StarProbe(root != null, stars, latest, com.starclan.starhub.data.CommandGuard.textHasId(text, id), text?.length ?: 0, cmdFound, below)
+        val below = node != null && starIsBelowCommand(service, node, commandText)
+        return StarProbe(root != null, stars, starLabelText(node).ifEmpty { "-" },
+            com.starclan.starhub.data.CommandGuard.textHasId(text, id), text?.length ?: 0, cmdFound, below)
     }
 }

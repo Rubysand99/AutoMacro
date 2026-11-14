@@ -114,44 +114,46 @@ object CleanupRunner {
      * bam xong phai thay nut sao chuyen vang. Khong chac -> that bai (khong bao gio coi la xong khi chua chac cay da sao,
      * vi cay Giu chua sao se bi rã theo bac).
      */
-    /** Tin co nut sao `label` o duoi cung la cua DUNG cay `id`: ma cay hien tren tin, hoac tin nam duoi tin lenh ta vua go. */
-    private fun isThisWeapon(service: AutoAccessibilityService, label: String, id: String, params: Map<String, String>): Boolean =
-        CommandGuard.textHasId(ButtonClicker.textAbove(service, label, requireEnabled = false), id) ||
-            ButtonClicker.starIsBelowCommand(service, label, params["command_text"].orEmpty().trim())
+    /** Tin co nut sao `node` o duoi cung la cua DUNG cay `id`: ma cay hien tren tin, hoac tin nam duoi tin lenh ta vua go. */
+    private fun isThisWeapon(service: AutoAccessibilityService, node: android.view.accessibility.AccessibilityNodeInfo, id: String, params: Map<String, String>): Boolean =
+        CommandGuard.textHasId(ButtonClicker.textAboveNode(service, node), id) ||
+            ButtonClicker.starIsBelowCommand(service, node, params["command_text"].orEmpty().trim())
 
     private suspend fun star(service: AutoAccessibilityService, params: Map<String, String>): Boolean {
         val id = params["command_text"].orEmpty().trim().split(Regex("\\s+")).lastOrNull().orEmpty()
         CleanupGate.progress(Str.get(R.string.clean_tim_nut_sao_tren_tin))
-        var label: String? = null
+        var node: android.view.accessibility.AccessibilityNodeInfo? = null
         var waited = 0
         while (true) {
-            val l = ButtonClicker.latestStarLabel(service)
-            if (l != null && isThisWeapon(service, l, id, params)) { label = l; break }
+            val n = ButtonClicker.latestStarNode(service)
+            if (n != null && isThisWeapon(service, n, id, params)) { node = n; break }
             if (waited >= 8_000) break
             delay(1_000); waited += 1_000
         }
-        if (label == null) {
+        if (node == null) {
             val pr = ButtonClicker.probeStar(service, params["command_text"].orEmpty().trim(), id)
             fun yn(b: Boolean) = Str.get(if (b) R.string.svc_co else R.string.svc_khong)
             return fail(Str.get(R.string.clean_khong_thay_tin_cua_cay, id) + " " +
-                Str.get(R.string.clean_chan_doan_sao, yn(pr.discordWindow), pr.starNodes, pr.latest ?: "-", yn(pr.idInText), pr.textLen, yn(pr.commandFound), yn(pr.belowCommand)))
+                Str.get(R.string.clean_chan_doan_sao, yn(pr.discordWindow), pr.starNodes, pr.latest, yn(pr.idInText), pr.textLen, yn(pr.commandFound), yn(pr.belowCommand)))
         }
-        if (label == "star_yellow") {
+        if (!ButtonClicker.isOutlineStar(node)) {   // nhan khac "star_outline_dim" (vd star_yellow) = da sao tu truoc
             CleanupGate.progress(Str.get(R.string.clean_cay_nay_da_co_sao))
             return true
         }
-        if (!ButtonClicker.clickOnce(service, "star_outline_dim")) return fail(Str.get(R.string.clean_khong_bam_duoc_nut_sao))
+        if (!NodeTools.clickNode(service, node)) return fail(Str.get(R.string.clean_khong_bam_duoc_nut_sao))
         CleanupGate.progress(Str.get(R.string.clean_da_bam_sao))
         waited = 0
-        while (waited < 4_000) {
+        var last = ""
+        while (waited < 5_000) {
             delay(1_000); waited += 1_000
-            val l = ButtonClicker.latestStarLabel(service)
-            if (l == "star_yellow" && isThisWeapon(service, l, id, params)) {
+            val n = ButtonClicker.latestStarNode(service) ?: continue
+            last = ButtonClicker.starLabelText(n)
+            if (!ButtonClicker.isOutlineStar(n) && isThisWeapon(service, n, id, params)) {   // nut sao doi nhan = sao that su len
                 delay(500)
                 return true
             }
         }
-        return fail(Str.get(R.string.clean_sao_khong_len, id))
+        return fail(Str.get(R.string.clean_sao_khong_len, id) + " " + Str.get(R.string.clean_sao_hien_la, last.ifEmpty { "-" }))
     }
 
     private suspend fun dismantle(service: AutoAccessibilityService, mode: String, params: Map<String, String>): Boolean {

@@ -357,6 +357,7 @@
     <string name="clean_khong_thay_tin_cua_cay">không thấy tin OwO của cây %1$s sau 8 giây (cây đã bán/rã, OwO chưa trả lời, hoặc Discord không ở kênh chat)</string>
     <string name="clean_sao_khong_len">đã bấm sao cây %1$s nhưng không thấy nút sao chuyển vàng, nên không chắc cây đã được sao</string>
     <string name="clean_chan_doan_sao">[Chẩn đoán: cửa sổ Discord: %1$s · số nút sao: %2$d · nút sao mới nhất: %3$s · mã cây trong tin: %4$s (độ dài chữ %5$d) · thấy tin lệnh: %6$s · sao nằm dưới lệnh: %7$s]</string>
+    <string name="clean_sao_hien_la">[nhãn nút sao lúc đó: %1$s]</string>
     <string name="clean_da_bam_sao">Đã bấm sao</string>
     <string name="clean_cay_nay_da_co_sao">Cây này đã có sao sẵn</string>
     <string name="clean_khong_thay_nut_sao_tren">không thấy nút sao trên màn hình (OwO chưa trả lời, hoặc Discord không đang ở kênh chat)</string>
