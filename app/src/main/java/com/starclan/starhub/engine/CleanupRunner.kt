@@ -147,7 +147,7 @@ object CleanupRunner {
             val pr = ButtonClicker.probeStar(service, params["command_text"].orEmpty().trim(), id)
             fun yn(b: Boolean) = Str.get(if (b) R.string.svc_co else R.string.svc_khong)
             return fail(Str.get(R.string.clean_khong_thay_tin_cua_cay, id) + " " +
-                Str.get(R.string.clean_chan_doan_sao, yn(pr.discordWindow), pr.starNodes, pr.latest, yn(pr.idInText), pr.textLen, yn(pr.commandFound), yn(pr.belowCommand)))
+                Str.get(R.string.clean_chan_doan_sao, yn(pr.discordWindow), pr.starNodes, pr.latest, yn(pr.idInText), pr.textLen, yn(pr.commandFound), yn(pr.belowCommand)) + " [" + ButtonClicker.sampleTexts(service) + "]")
         }
         if (!ButtonClicker.isOutlineStar(node)) {   // nhan khac "star_outline_dim" (vd star_yellow) = da sao tu truoc
             CleanupGate.progress(Str.get(R.string.clean_cay_nay_da_co_sao))

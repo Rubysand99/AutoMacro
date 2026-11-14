@@ -118,13 +118,13 @@ object ButtonClicker {
         val br = Rect(); btn.getBoundsInScreen(br)
         val root = service.discordRoot() ?: return null
         val nodes = NodeTools.collect(root, maxNodes = 1500) {
-            val t = it.text?.toString()
+            val t = (it.text?.toString()?.takeIf { s -> s.isNotBlank() } ?: it.contentDescription?.toString())
             if (t.isNullOrBlank() || !NodeTools.onScreen(it)) false else {
                 val r = Rect(); it.getBoundsInScreen(r)
                 r.bottom <= br.top + 8 && r.top >= br.top - 900
             }
         }
-        return nodes.joinToString("\n") { it.text.toString() }
+        return nodes.joinToString("\n") { (it.text?.toString()?.takeIf { s -> s.isNotBlank() } ?: it.contentDescription?.toString()).orEmpty() }
     }
 
     private fun labelOf(n: AccessibilityNodeInfo): String =
@@ -160,7 +160,7 @@ object ButtonClicker {
         var cmdBottom = Int.MIN_VALUE
         var cmdTop = Int.MIN_VALUE
         NodeTools.collect(root, maxNodes = 1500) {
-            val t = it.text?.toString()
+            val t = (it.text?.toString()?.takeIf { s -> s.isNotBlank() } ?: it.contentDescription?.toString())
             !t.isNullOrBlank() && NodeTools.onScreen(it) && !it.isEditable && normalize(t).contains(want)
         }.forEach {
             val r = Rect(); it.getBoundsInScreen(r)
@@ -175,6 +175,15 @@ object ButtonClicker {
         val idInText: Boolean, val textLen: Int, val commandFound: Boolean, val belowCommand: Boolean
     )
 
+    /** Vai doan chu (text hoac mo ta) thap nhat tren man hinh Discord: de chan doan khi khong thay tin lenh. */
+    fun sampleTexts(service: AutoAccessibilityService): String {
+        val root = service.discordRoot() ?: return "-"
+        val items = NodeTools.collect(root, maxNodes = 1500) {
+            NodeTools.onScreen(it) && !it.isEditable && !(it.text?.toString() ?: it.contentDescription?.toString()).isNullOrBlank()
+        }.map { n -> val r = Rect(); n.getBoundsInScreen(r); r.top to (n.text?.toString()?.takeIf { it.isNotBlank() } ?: n.contentDescription.toString()) }
+        return items.sortedByDescending { it.first }.take(4).joinToString(" | ") { it.second.replace("\n", " ").take(40) }
+    }
+
     fun probeStar(service: AutoAccessibilityService, commandText: String, id: String): StarProbe {
         val root = service.discordRoot()
         val stars = NodeTools.collect(root, maxNodes = 1500) { isStarLabel(it) }.size
@@ -182,7 +191,7 @@ object ButtonClicker {
         val text = node?.let { textAboveNode(service, it) }
         val want = normalize(commandText)
         val cmdFound = root != null && want.isNotEmpty() && NodeTools.collect(root, maxNodes = 1500) {
-            val t = it.text?.toString()
+            val t = (it.text?.toString()?.takeIf { s -> s.isNotBlank() } ?: it.contentDescription?.toString())
             !t.isNullOrBlank() && !it.isEditable && normalize(t).contains(want)
         }.isNotEmpty()
         val below = node != null && starIsBelowCommand(service, node, commandText)
@@ -195,7 +204,7 @@ object ButtonClicker {
         val root = service.discordRoot() ?: return 0
         val want = normalize(needle)
         return NodeTools.collect(root, maxNodes = 1500) {
-            val t = it.text?.toString()
+            val t = (it.text?.toString()?.takeIf { s -> s.isNotBlank() } ?: it.contentDescription?.toString())
             !t.isNullOrBlank() && !it.isEditable && normalize(t).contains(want)
         }.size
     }
