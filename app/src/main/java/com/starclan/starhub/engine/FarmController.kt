@@ -1165,68 +1165,68 @@ object FarmController {
             for (step in listOf(0, 1, 2).shuffled()) {
                 when (step) {
                     0 -> {
-            if (!huntOn) {
-                // Hunt tat o Setting: khong go hunt (battle va viec vat van chay neu dang bat)
-            } else if (pauseReason == null) {
-                val huntResult = sendCommand(sender, settings, HUNT_COMMAND)
-                if (huntResult == SendResult.CAPTCHA) {
-                    handleCaptcha(ctx)
-                    return
-                }
-                if (huntResult == SendResult.OK) {
-                    failsInRow = 0
-                    update { it.copy(hunts = it.hunts + 1) }
-                    recordStats { b, now -> b.addHunt(now) }
-                } else {
-                    failsInRow++
-                    if (failsInRow >= MAX_FAILS_IN_ROW) {
-                        hardStop(ctx, Str.get(R.string.farm_go_lenh_loi_lan_lien, failsInRow, describeSend(huntResult)))
-                        return
-                    }
-                    update { it.copy(status = Str.get(R.string.farm_loi_go_lenh_lan_dang, describeSend(huntResult), failsInRow)) }
-                    if (failsInRow >= 2) reopenChannel(sender, link)
-                    waitWithCountdown(minOf(4_000L * failsInRow, 30_000L), Str.get(R.string.farm_thu_lai_sau_loi_go))
-                    continue@cycle
-                }
-                // Khac lenh (hunt -> battle) thi go luon, khong nghi. Chi cooldown cua CHINH lenh do (hunt -> hunt) moi phai cho.
-            } else {
-                update { it.copy(status = Str.get(R.string.farm_hunt_tam_dung, pauseReason)) }
-            }
+                        if (!huntOn) {
+                            // Hunt tat o Setting: khong go hunt (battle va viec vat van chay neu dang bat)
+                        } else if (pauseReason == null) {
+                            val huntResult = sendCommand(sender, settings, HUNT_COMMAND)
+                            if (huntResult == SendResult.CAPTCHA) {
+                                handleCaptcha(ctx)
+                                return
+                            }
+                            if (huntResult == SendResult.OK) {
+                                failsInRow = 0
+                                update { it.copy(hunts = it.hunts + 1) }
+                                recordStats { b, now -> b.addHunt(now) }
+                            } else {
+                                failsInRow++
+                                if (failsInRow >= MAX_FAILS_IN_ROW) {
+                                    hardStop(ctx, Str.get(R.string.farm_go_lenh_loi_lan_lien, failsInRow, describeSend(huntResult)))
+                                    return
+                                }
+                                update { it.copy(status = Str.get(R.string.farm_loi_go_lenh_lan_dang, describeSend(huntResult), failsInRow)) }
+                                if (failsInRow >= 2) reopenChannel(sender, link)
+                                waitWithCountdown(minOf(4_000L * failsInRow, 30_000L), Str.get(R.string.farm_thu_lai_sau_loi_go))
+                                continue@cycle
+                            }
+                            // Khac lenh (hunt -> battle) thi go luon, khong nghi. Chi cooldown cua CHINH lenh do (hunt -> hunt) moi phai cho.
+                        } else {
+                            update { it.copy(status = Str.get(R.string.farm_hunt_tam_dung, pauseReason)) }
+                        }
 
                     }
                     1 -> {
-            // 4.6 battle (tat o Setting thi bo qua; cycleOk = false chi khi battle loi)
-            if (cmds.isEnabled(FarmCmd.BATTLE)) {
-                val battleResult = sendCommand(sender, settings, BATTLE_COMMAND)
-                if (battleResult == SendResult.CAPTCHA) {
-                    handleCaptcha(ctx)
-                    return
-                }
-                if (battleResult == SendResult.OK) {
-                    failsInRow = 0
-                    update { it.copy(battles = it.battles + 1) }
-                    recordStats { b, now -> b.addBattle(now) }
-                } else {
-                    failsInRow++
-                    if (failsInRow >= MAX_FAILS_IN_ROW) {
-                        hardStop(ctx, Str.get(R.string.farm_go_lenh_loi_lan_lien, failsInRow, describeSend(battleResult)))
-                        return
-                    }
-                    cycleOk = false
-                    if (failsInRow >= 2) reopenChannel(sender, link)
-                }
-            }
+                        // 4.6 battle (tat o Setting thi bo qua; cycleOk = false chi khi battle loi)
+                        if (cmds.isEnabled(FarmCmd.BATTLE)) {
+                            val battleResult = sendCommand(sender, settings, BATTLE_COMMAND)
+                            if (battleResult == SendResult.CAPTCHA) {
+                                handleCaptcha(ctx)
+                                return
+                            }
+                            if (battleResult == SendResult.OK) {
+                                failsInRow = 0
+                                update { it.copy(battles = it.battles + 1) }
+                                recordStats { b, now -> b.addBattle(now) }
+                            } else {
+                                failsInRow++
+                                if (failsInRow >= MAX_FAILS_IN_ROW) {
+                                    hardStop(ctx, Str.get(R.string.farm_go_lenh_loi_lan_lien, failsInRow, describeSend(battleResult)))
+                                    return
+                                }
+                                cycleOk = false
+                                if (failsInRow >= 2) reopenChannel(sender, link)
+                            }
+                        }
 
                     }
                     else -> {
-            // 4.6b Moi vong go them 1 lan "owo" (ngay sau battle, khong nghi). Loi go chi bo qua: khong tinh vao failsInRow.
-            if (cycleOk && cmds.isEnabled(FarmCmd.OWO)) {
-                val owoResult = sendCommand(sender, settings, OWO_COMMAND)
-                if (owoResult == SendResult.CAPTCHA) {
-                    handleCaptcha(ctx)
-                    return
-                }
-            }
+                        // 4.6b Moi vong go them 1 lan "owo" (ngay sau battle, khong nghi). Loi go chi bo qua: khong tinh vao failsInRow.
+                        if (cycleOk && cmds.isEnabled(FarmCmd.OWO)) {
+                            val owoResult = sendCommand(sender, settings, OWO_COMMAND)
+                            if (owoResult == SendResult.CAPTCHA) {
+                                handleCaptcha(ctx)
+                                return
+                            }
+                        }
 
                     }
                 }
