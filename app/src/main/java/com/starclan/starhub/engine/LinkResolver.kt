@@ -84,7 +84,7 @@ object LinkResolver {
     private const val KEEP = 30
 
     private fun cacheDir(app: Context): java.io.File =
-        java.io.File(app.filesDir, "music")   // filesDir: Android khong tu xoa khi thieu bo nho nhu cacheDir.apply { mkdirs() }
+        java.io.File(app.filesDir, "music").apply { mkdirs() }   // filesDir: Android khong tu xoa khi thieu bo nho nhu cacheDir
 
     private fun hash(link: String): String = Integer.toHexString(link.hashCode()) + "_" + link.length
 
