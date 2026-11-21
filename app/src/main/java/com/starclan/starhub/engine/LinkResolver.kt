@@ -29,6 +29,7 @@ object LinkResolver {
     }
 
     private val lock = Any()
+    private val dlLock = Any()
     private var initialized = false
     private var updateTried = false
 
@@ -37,15 +38,23 @@ object LinkResolver {
         // Bai da tai roi thi phat luon, khong dung toi mang / yt-dlp
         val dir = cacheDir(app)
         findCached(dir, hash(link))?.let { return fromFile(it, "") }
-        ensureInit(app)
-        return try {
-            fetch(app, link)
-        } catch (first: ResolveException) {
-            // Co the yt-dlp ban cu khong doc duoc trang nua -> cap nhat 1 lan roi thu lai
-            if (!tryUpdateOnce(app)) throw first
-            fetch(app, link)
+        // Tai tuan tu: bai dang tai truoc (prefetch) xong roi bai can phat moi vao, khong ghi chong len cung 1 file
+        synchronized(dlLock) {
+            findCached(dir, hash(link))?.let { return fromFile(it, "") }
+            ensureInit(app)
+            return try {
+                fetch(app, link)
+            } catch (first: ResolveException) {
+                // Co the yt-dlp ban cu khong doc duoc trang nua -> cap nhat 1 lan roi thu lai
+                if (!tryUpdateOnce(app)) throw first
+                fetch(app, link)
+            }
         }
     }
+
+    /** Bai nay da tai ve may chua (de bo qua tai truoc). */
+    fun isCached(context: Context, link: String): Boolean =
+        findCached(cacheDir(context.applicationContext), hash(link)) != null
 
     private fun fromFile(f: java.io.File, title: String): Resolved {
         f.setLastModified(System.currentTimeMillis())

@@ -51,6 +51,10 @@ object MusicPlayer {
     private var cfg: MusicConfig = MusicConfig()
     private var currentSource: String? = null   // bai dang phat (theo nguon, khong theo vi tri, vi Ruby co the sua danh sach luc dang phat)
     private var failures = 0                    // so bai loi lien tiep
+    private var plannedNext: String? = null    // bai ke tiep da chon san (de tai truoc; ngau nhien thi phat dung bai nay)
+    private val prefetcher: ExecutorService = Executors.newSingleThreadExecutor { r ->
+        Thread(r, "music-prefetch").apply { isDaemon = true }
+    }
     private var generation = 0                  // tang moi khi doi bai / dung -> bo ket qua tach link cu
 
     @Volatile
@@ -155,6 +159,7 @@ object MusicPlayer {
         failures = 0
         lastError = ""
         currentSource = null
+        plannedNext = null
         requestFocus(app)
         playing = true
         advance()
@@ -183,13 +188,40 @@ object MusicPlayer {
 
     /** Chon bai ke tiep theo thu tu / ngau nhien roi phat. */
     private fun advance() {
-        val cur = currentSource?.let { s -> cfg.tracks.indexOfFirst { it.source == s } } ?: -1
-        val next = PlaylistRules.nextIndex(cur, cfg.tracks.size, cfg.shuffle) { Random.nextInt(it) }
+        val planned = plannedNext?.let { s -> cfg.tracks.indexOfFirst { it.source == s } } ?: -1
+        plannedNext = null
+        val next = if (planned >= 0) planned else pickNext()
         if (next < 0) {
             endSession()
             return
         }
         startTrack(cfg.tracks[next])
+    }
+
+    private fun pickNext(): Int {
+        val cur = currentSource?.let { s -> cfg.tracks.indexOfFirst { it.source == s } } ?: -1
+        return PlaylistRules.nextIndex(cur, cfg.tracks.size, cfg.shuffle) { Random.nextInt(it) }
+    }
+
+    /** Dang phat bai nay thi tai san bai ke tiep, de chuyen bai khong phai cho. */
+    private fun prefetchNext(gen: Int) {
+        if (cfg.tracks.size < 2) return
+        val i = pickNext()
+        if (i < 0) return
+        val nt = cfg.tracks[i]
+        plannedNext = nt.source
+        val app = appCtx ?: return
+        if (!nt.isLink || LinkResolver.isCached(app, nt.source)) return
+        prefetcher.execute {
+            try {
+                val r = LinkResolver.resolve(app, nt.source)
+                if (r.title.isNotBlank() && r.title != nt.title) main.post {
+                    synchronized(this) { if (gen == generation) saveTitle(app, nt, r.title) }
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Tai truoc bai ke tiep loi (se thu lai khi toi luot): ${e.message}")
+            }
+        }
     }
 
     private fun startTrack(t: Track) {
@@ -307,6 +339,7 @@ object MusicPlayer {
         lastError = ""
         loading = false
         notifyChanged()
+        prefetchNext(gen)
     }
 
     @Synchronized
