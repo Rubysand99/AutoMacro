@@ -34,6 +34,9 @@ object LinkResolver {
 
     fun resolve(context: Context, link: String): Resolved {
         val app = context.applicationContext
+        // Bai da tai roi thi phat luon, khong dung toi mang / yt-dlp
+        val dir = cacheDir(app)
+        findCached(dir, hash(link))?.let { return fromFile(it, "") }
         ensureInit(app)
         return try {
             fetch(app, link)
@@ -42,6 +45,11 @@ object LinkResolver {
             if (!tryUpdateOnce(app)) throw first
             fetch(app, link)
         }
+    }
+
+    private fun fromFile(f: java.io.File, title: String): Resolved {
+        f.setLastModified(System.currentTimeMillis())
+        return Resolved(android.net.Uri.fromFile(f).toString(), title, emptyMap(), f.extension)
     }
 
     private fun ensureInit(app: Context) {
@@ -73,10 +81,10 @@ object LinkResolver {
     }
 
     /** Thu muc tai am thanh tam; chi giu [KEEP] file moi nhat de khong day bo nho. */
-    private const val KEEP = 15
+    private const val KEEP = 30
 
     private fun cacheDir(app: Context): java.io.File =
-        java.io.File(app.cacheDir, "music").apply { mkdirs() }
+        java.io.File(app.filesDir, "music")   // filesDir: Android khong tu xoa khi thieu bo nho nhu cacheDir.apply { mkdirs() }
 
     private fun hash(link: String): String = Integer.toHexString(link.hashCode()) + "_" + link.length
 
@@ -91,37 +99,22 @@ object LinkResolver {
 
     private fun fetch(app: Context, link: String): Resolved {
         try {
-            val req = YoutubeDLRequest(link)
-            // Uu tien AAC (m4a) vi MediaPlayer cua Android phat on dinh nhat; khong co thi lay am thanh khac, cuoi cung ban tot nhat (am thanh van phat)
-            req.addOption("-f", "bestaudio[ext=m4a]/bestaudio[acodec^=mp4a]/bestaudio/best")
-            req.addOption("--no-playlist")          // dan link video nam trong danh sach phat thi chi lay video do
-            req.addOption("--socket-timeout", 15)
-            val info = YoutubeDL.getInstance().getInfo(req)
-            val direct = info.url?.takeIf { it.isNotBlank() }
-                ?: info.requestedFormats?.firstOrNull { !it.url.isNullOrBlank() }?.url
-            if (direct.isNullOrBlank()) throw ResolveException("khong co link phat")
-            val title = (info.title ?: info.fulltitle).orEmpty().trim()
-            // Link truc tiep cua YouTube hay bi 403 khi trinh phat tu tai -> de yt-dlp tai file ve (no tai tung doan nho, khong bi chan)
             val dir = cacheDir(app)
             val key = hash(link)
-            var file = findCached(dir, key)
-            if (file == null) {
-                val dl = YoutubeDLRequest(link)
-                dl.addOption("-f", "bestaudio[ext=m4a]/bestaudio[acodec^=mp4a]/bestaudio/best")
-                dl.addOption("--no-playlist")
-                dl.addOption("--socket-timeout", 15)
-                dl.addOption("-o", dir.absolutePath + "/" + key + ".%(ext)s")
-                YoutubeDL.getInstance().execute(dl)
-                file = findCached(dir, key) ?: throw ResolveException("tai xong nhung khong thay file am thanh")
-            }
-            file.setLastModified(System.currentTimeMillis())
+            // MOT lan goi yt-dlp duy nhat: vua tai am thanh vua in ten video (truoc day tach link roi tai = doc trang 2 lan)
+            val req = YoutubeDLRequest(link)
+            // Uu tien AAC (m4a) vi phat on dinh nhat; khong co thi lay am thanh khac, cuoi cung ban tot nhat
+            req.addOption("-f", "bestaudio[ext=m4a]/bestaudio[acodec^=mp4a]/bestaudio/best")
+            req.addOption("--no-playlist")
+            req.addOption("--socket-timeout", 15)
+            req.addOption("--print", "%(title)s")
+            req.addOption("--no-simulate")
+            req.addOption("-o", dir.absolutePath + "/" + key + ".%(ext)s")
+            val resp = YoutubeDL.getInstance().execute(req)
+            val title = resp.out.orEmpty().lines().map { it.trim() }.firstOrNull { it.isNotEmpty() }.orEmpty()
+            val file = findCached(dir, key) ?: throw ResolveException("tai xong nhung khong thay file am thanh")
             prune(dir)
-            return Resolved(
-                url = android.net.Uri.fromFile(file).toString(),
-                title = title,
-                headers = emptyMap(),
-                ext = file.extension
-            )
+            return fromFile(file, title)
         } catch (e: ResolveException) {
             throw e
         } catch (e: Exception) {
