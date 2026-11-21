@@ -36,11 +36,11 @@ object LinkResolver {
         val app = context.applicationContext
         ensureInit(app)
         return try {
-            fetch(link)
+            fetch(app, link)
         } catch (first: ResolveException) {
             // Co the yt-dlp ban cu khong doc duoc trang nua -> cap nhat 1 lan roi thu lai
             if (!tryUpdateOnce(app)) throw first
-            fetch(link)
+            fetch(app, link)
         }
     }
 
@@ -72,7 +72,24 @@ object LinkResolver {
         }
     }
 
-    private fun fetch(link: String): Resolved {
+    /** Thu muc tai am thanh tam; chi giu [KEEP] file moi nhat de khong day bo nho. */
+    private const val KEEP = 15
+
+    private fun cacheDir(app: Context): java.io.File =
+        java.io.File(app.cacheDir, "music").apply { mkdirs() }
+
+    private fun hash(link: String): String = Integer.toHexString(link.hashCode()) + "_" + link.length
+
+    private fun findCached(dir: java.io.File, key: String): java.io.File? =
+        dir.listFiles { f -> f.isFile && f.name.startsWith("$key.") && !f.name.endsWith(".part") && f.length() > 0 }
+            ?.firstOrNull()
+
+    private fun prune(dir: java.io.File) {
+        val files = dir.listFiles()?.sortedByDescending { it.lastModified() } ?: return
+        files.drop(KEEP).forEach { it.delete() }
+    }
+
+    private fun fetch(app: Context, link: String): Resolved {
         try {
             val req = YoutubeDLRequest(link)
             // Uu tien AAC (m4a) vi MediaPlayer cua Android phat on dinh nhat; khong co thi lay am thanh khac, cuoi cung ban tot nhat (am thanh van phat)
@@ -83,11 +100,27 @@ object LinkResolver {
             val direct = info.url?.takeIf { it.isNotBlank() }
                 ?: info.requestedFormats?.firstOrNull { !it.url.isNullOrBlank() }?.url
             if (direct.isNullOrBlank()) throw ResolveException("khong co link phat")
+            val title = (info.title ?: info.fulltitle).orEmpty().trim()
+            // Link truc tiep cua YouTube hay bi 403 khi trinh phat tu tai -> de yt-dlp tai file ve (no tai tung doan nho, khong bi chan)
+            val dir = cacheDir(app)
+            val key = hash(link)
+            var file = findCached(dir, key)
+            if (file == null) {
+                val dl = YoutubeDLRequest(link)
+                dl.addOption("-f", "bestaudio[ext=m4a]/bestaudio[acodec^=mp4a]/bestaudio/best")
+                dl.addOption("--no-playlist")
+                dl.addOption("--socket-timeout", 15)
+                dl.addOption("-o", dir.absolutePath + "/" + key + ".%(ext)s")
+                YoutubeDL.getInstance().execute(dl)
+                file = findCached(dir, key) ?: throw ResolveException("tai xong nhung khong thay file am thanh")
+            }
+            file.setLastModified(System.currentTimeMillis())
+            prune(dir)
             return Resolved(
-                url = direct,
-                title = (info.title ?: info.fulltitle).orEmpty().trim(),
-                headers = info.httpHeaders.orEmpty(),
-                ext = info.ext.orEmpty()
+                url = android.net.Uri.fromFile(file).toString(),
+                title = title,
+                headers = emptyMap(),
+                ext = file.extension
             )
         } catch (e: ResolveException) {
             throw e
