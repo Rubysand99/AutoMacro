@@ -4,12 +4,18 @@ import android.content.Context
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
-import android.media.MediaPlayer
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
-import android.os.PowerManager
 import android.util.Log
+import androidx.media3.common.C
+import androidx.media3.common.MediaItem
+import androidx.media3.common.PlaybackException
+import androidx.media3.common.Player
+import androidx.media3.datasource.DefaultDataSource
+import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import com.starclan.starhub.R
 import com.starclan.starhub.Str
 import com.starclan.starhub.data.ConfigPrefs
@@ -30,13 +36,14 @@ import kotlin.random.Random
  */
 object MusicPlayer {
     private const val TAG = "MusicPlayer"
+    private const val DEFAULT_UA = "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Mobile Safari/537.36"
 
     private val main = Handler(Looper.getMainLooper())
     private val worker: ExecutorService = Executors.newSingleThreadExecutor { r ->
         Thread(r, "music-resolver").apply { isDaemon = true }
     }
 
-    private var player: MediaPlayer? = null
+    private var player: ExoPlayer? = null   // ExoPlayer chi duoc dung tren luong chinh -> moi thao tac qua runMain
     private var focusRequest: AudioFocusRequest? = null
     private var audioManager: AudioManager? = null
     private var pausedByFocus = false
@@ -106,21 +113,30 @@ object MusicPlayer {
             endSession()
             return
         }
-        try {
-            player?.isLooping = cfg.tracks.size == 1
-            player?.setVolume(cfg.gain, cfg.gain)
-        } catch (e: Exception) {
-            Log.w(TAG, "Khong ap dung duoc playlist moi: ${e.message}")
+        val p = player ?: return
+        val single = cfg.tracks.size == 1
+        val g = cfg.gain
+        runMain {
+            try {
+                p.repeatMode = if (single) Player.REPEAT_MODE_ONE else Player.REPEAT_MODE_OFF
+                p.volume = g
+            } catch (e: Exception) {
+                Log.w(TAG, "Khong ap dung duoc playlist moi: ${e.message}")
+            }
         }
     }
 
     @Synchronized
     fun setVolume(volumePercent: Int) {
         cfg = cfg.copy(volume = MusicConfig.clampVolume(volumePercent))
-        try {
-            player?.setVolume(cfg.gain, cfg.gain)
-        } catch (e: Exception) {
-            Log.w(TAG, "Khong chinh duoc am luong: ${e.message}")
+        val p = player ?: return
+        val g = cfg.gain
+        runMain {
+            try {
+                p.volume = g
+            } catch (e: Exception) {
+                Log.w(TAG, "Khong chinh duoc am luong: ${e.message}")
+            }
         }
     }
 
@@ -227,41 +243,69 @@ object MusicPlayer {
         }
     }
 
+    private fun runMain(block: () -> Unit) {
+        if (Looper.myLooper() == Looper.getMainLooper()) block() else main.post(block)
+    }
+
     private fun prepare(app: Context, t: Track, uri: Uri, headers: Map<String, String>, gen: Int) {
-        try {
-            val mp = MediaPlayer()
-            mp.setAudioAttributes(mediaAttrs())
-            mp.setWakeMode(app, PowerManager.PARTIAL_WAKE_LOCK)   // tat man hinh van tai/phat tiep duoc bai tu link
-            if (headers.isEmpty()) mp.setDataSource(app, uri) else mp.setDataSource(app, uri, headers)
-            mp.isLooping = cfg.tracks.size == 1   // chi 1 bai: lap thang, khong tach link lai
-            mp.setVolume(cfg.gain, cfg.gain)
-            mp.setOnPreparedListener { onPrepared(gen, it) }
-            mp.setOnCompletionListener { onCompleted(gen) }
-            mp.setOnErrorListener { _, what, extra ->
-                Log.w(TAG, "MediaPlayer loi what=$what extra=$extra")
-                onPlayerError(gen, t, what, extra)
-                true
+        runMain {
+            synchronized(this) {
+                if (gen != generation || !playing) return@runMain
+                try {
+                    val http = DefaultHttpDataSource.Factory()
+                        .setAllowCrossProtocolRedirects(true)
+                        .setConnectTimeoutMs(15_000)
+                        .setReadTimeoutMs(20_000)
+                        .setUserAgent(headers.entries.firstOrNull { it.key.equals("User-Agent", true) }?.value ?: DEFAULT_UA)
+                        .setDefaultRequestProperties(headers.filterKeys { !it.equals("User-Agent", true) })
+                    val p = ExoPlayer.Builder(app)
+                        .setMediaSourceFactory(DefaultMediaSourceFactory(DefaultDataSource.Factory(app, http)))
+                        .setAudioAttributes(
+                            androidx.media3.common.AudioAttributes.Builder()
+                                .setUsage(C.USAGE_MEDIA)
+                                .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
+                                .build(),
+                            false   // quyen am thanh da tu xu ly o tren
+                        )
+                        .setWakeMode(C.WAKE_MODE_NETWORK)   // tat man hinh van tai/phat tiep duoc bai tu link
+                        .build()
+                    p.repeatMode = if (cfg.tracks.size == 1) Player.REPEAT_MODE_ONE else Player.REPEAT_MODE_OFF
+                    p.volume = cfg.gain
+                    p.addListener(object : Player.Listener {
+                        private var started = false
+                        override fun onPlaybackStateChanged(state: Int) {
+                            if (state == Player.STATE_READY && !started) {
+                                started = true
+                                onPrepared(gen)
+                            } else if (state == Player.STATE_ENDED) {
+                                onCompleted(gen)
+                            }
+                        }
+
+                        override fun onPlayerError(error: PlaybackException) {
+                            Log.w(TAG, "ExoPlayer loi: ${error.errorCodeName}", error)
+                            onPlayerFailed(gen, t, error)
+                        }
+                    })
+                    player = p
+                    p.setMediaItem(MediaItem.fromUri(uri))
+                    p.playWhenReady = true
+                    p.prepare()
+                } catch (e: Exception) {
+                    Log.w(TAG, "Khong phat duoc nhac: ${e.message}")
+                    releasePlayer()
+                    trackFailed(t, Str.get(R.string.music_khong_mo_duoc_file_nhac), e.message ?: e.javaClass.simpleName)
+                }
             }
-            player = mp
-            mp.prepareAsync()
-        } catch (e: Exception) {
-            Log.w(TAG, "Khong phat duoc nhac: ${e.message}")
-            releasePlayer()
-            trackFailed(t, Str.get(R.string.music_khong_mo_duoc_file_nhac), e.message ?: e.javaClass.simpleName)
         }
     }
 
     @Synchronized
-    private fun onPrepared(gen: Int, mp: MediaPlayer) {
+    private fun onPrepared(gen: Int) {
         if (gen != generation || !playing) return
         failures = 0
         lastError = ""
         loading = false
-        try {
-            mp.start()
-        } catch (e: Exception) {
-            Log.w(TAG, "Khong start duoc: ${e.message}")
-        }
         notifyChanged()
     }
 
@@ -272,10 +316,12 @@ object MusicPlayer {
     }
 
     @Synchronized
-    private fun onPlayerError(gen: Int, t: Track, what: Int, extra: Int) {
+    private fun onPlayerFailed(gen: Int, t: Track, e: PlaybackException) {
         if (gen != generation || !playing) return
         releasePlayer()
-        trackFailed(t, Str.get(R.string.music_khong_phat_duoc_file_nhac), "MediaPlayer what=$what extra=$extra" + (if (currentExt.isBlank()) "" else " (${currentExt})"))
+        val cause = (e.cause?.message ?: "").take(120)
+        val why = "ExoPlayer ${e.errorCodeName}" + (if (cause.isBlank()) "" else ": $cause") + (if (currentExt.isBlank()) "" else " (${currentExt})")
+        trackFailed(t, Str.get(R.string.music_khong_phat_duoc_file_nhac), why)
     }
 
     /** 1 bai loi: bo qua sang bai khac; tat ca cac bai deu loi lien tiep thi dung han. */
@@ -300,15 +346,11 @@ object MusicPlayer {
 
     @Synchronized
     private fun onFocusChange(change: Int) {
-        val mp = player ?: return
-        try {
-            when (change) {
-                AudioManager.AUDIOFOCUS_LOSS,
-                AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> if (mp.isPlaying) { mp.pause(); pausedByFocus = true }
-                AudioManager.AUDIOFOCUS_GAIN -> if (pausedByFocus) { mp.start(); pausedByFocus = false }
-            }
-        } catch (e: Exception) {
-            Log.w(TAG, "Loi xu ly quyen am thanh: ${e.message}")
+        val p = player ?: return
+        when (change) {
+            AudioManager.AUDIOFOCUS_LOSS,
+            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> { pausedByFocus = true; runMain { try { p.pause() } catch (e: Exception) { Log.w(TAG, "Loi tam dung: ${e.message}") } } }
+            AudioManager.AUDIOFOCUS_GAIN -> if (pausedByFocus) { pausedByFocus = false; runMain { try { p.play() } catch (e: Exception) { Log.w(TAG, "Loi phat tiep: ${e.message}") } } }
         }
     }
 
@@ -333,24 +375,19 @@ object MusicPlayer {
     }
 
     private fun releasePlayer() {
-        val mp = player ?: return
+        val p = player ?: return
         player = null
-        try {
-            mp.setOnPreparedListener(null)
-            mp.setOnCompletionListener(null)
-            mp.setOnErrorListener(null)
-        } catch (e: Exception) {
-            // bo qua
-        }
-        try {
-            mp.stop()
-        } catch (e: Exception) {
-            // chua kip prepare thi stop() nem loi, bo qua
-        }
-        try {
-            mp.release()
-        } catch (e: Exception) {
-            // bo qua
+        runMain {
+            try {
+                p.stop()
+            } catch (e: Exception) {
+                // bo qua
+            }
+            try {
+                p.release()
+            } catch (e: Exception) {
+                // bo qua
+            }
         }
     }
 }

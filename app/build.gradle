@@ -95,6 +95,9 @@ dependencies {
     // Tach am thanh tu link YouTube / TikTok / Facebook... cho Playlist nhac nen (yt-dlp chay trong app, xem engine/LinkResolver)
     implementation "io.github.junkfood02.youtubedl-android:library:0.18.1"
 
+    // Trinh phat am thanh tu link (gui duoc header cua yt-dlp, MediaPlayer goc cua Android khong tai noi link googlevideo)
+    implementation "androidx.media3:media3-exoplayer:1.3.1"
+
     // Test chay tren JVM (khong can may that): gradle testDebugUnitTest
     testImplementation "junit:junit:4.13.2"
 }
