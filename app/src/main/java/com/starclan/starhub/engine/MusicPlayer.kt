@@ -182,21 +182,23 @@ object MusicPlayer {
             return
         }
         worker.execute {
+            var reason = ""
             val res = try {
                 LinkResolver.resolve(app, t.source)
             } catch (e: Exception) {
+                reason = LinkResolver.shortReason(e)
                 null
             }
-            main.post { onResolved(gen, t, res) }
+            main.post { onResolved(gen, t, res, reason) }
         }
     }
 
     @Synchronized
-    private fun onResolved(gen: Int, t: Track, res: LinkResolver.Resolved?) {
+    private fun onResolved(gen: Int, t: Track, res: LinkResolver.Resolved?, reason: String) {
         if (gen != generation || !playing) return   // da doi bai / dung trong luc cho tach link
         val app = appCtx ?: return
         if (res == null) {
-            trackFailed(t, Str.get(R.string.music_link_khong_lay_duoc, t.displayName))
+            trackFailed(t, Str.get(R.string.music_link_khong_lay_duoc, t.displayName), reason)
             return
         }
         if (res.title.isNotBlank() && res.title != t.title) saveTitle(app, t, res.title)
@@ -227,7 +229,7 @@ object MusicPlayer {
             mp.setOnCompletionListener { onCompleted(gen) }
             mp.setOnErrorListener { _, what, extra ->
                 Log.w(TAG, "MediaPlayer loi what=$what extra=$extra")
-                onPlayerError(gen, t)
+                onPlayerError(gen, t, what, extra)
                 true
             }
             player = mp
@@ -235,7 +237,7 @@ object MusicPlayer {
         } catch (e: Exception) {
             Log.w(TAG, "Khong phat duoc nhac: ${e.message}")
             releasePlayer()
-            trackFailed(t, Str.get(R.string.music_khong_mo_duoc_file_nhac))
+            trackFailed(t, Str.get(R.string.music_khong_mo_duoc_file_nhac), e.message ?: e.javaClass.simpleName)
         }
     }
 
@@ -259,21 +261,23 @@ object MusicPlayer {
     }
 
     @Synchronized
-    private fun onPlayerError(gen: Int, t: Track) {
+    private fun onPlayerError(gen: Int, t: Track, what: Int, extra: Int) {
         if (gen != generation || !playing) return
         releasePlayer()
-        trackFailed(t, Str.get(R.string.music_khong_phat_duoc_file_nhac))
+        trackFailed(t, Str.get(R.string.music_khong_phat_duoc_file_nhac), "MediaPlayer what=$what extra=$extra")
     }
 
     /** 1 bai loi: bo qua sang bai khac; tat ca cac bai deu loi lien tiep thi dung han. */
-    private fun trackFailed(t: Track, msg: String) {
+    private fun trackFailed(t: Track, msg: String, reason: String = "") {
         failures++
+        Log.w(TAG, "Bai loi: ${t.source} -> $reason")
+        val detail = if (reason.isBlank()) msg else "$msg\n($reason)"
         if (PlaylistRules.shouldGiveUp(failures, cfg.tracks.size)) {
             endSession()
-            onError?.invoke(Str.get(R.string.music_ca_playlist_loi))
+            onError?.invoke(Str.get(R.string.music_ca_playlist_loi) + (if (reason.isBlank()) "" else "\n($reason)"))
             return
         }
-        onSkipped?.invoke(msg)
+        onSkipped?.invoke(detail)
         advance()
     }
 

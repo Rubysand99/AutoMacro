@@ -151,8 +151,8 @@ class ConfigFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
-        MusicPlayer.onError = { msg -> previewing = false; toast(msg); refreshNowPlaying() }
-        MusicPlayer.onSkipped = { msg -> toast(msg) }
+        MusicPlayer.onError = { msg -> previewing = false; toast(msg, long = true); refreshNowPlaying() }
+        MusicPlayer.onSkipped = { msg -> toast(msg, long = true) }
         MusicPlayer.onChanged = { refreshNowPlaying() }
         refreshNowPlaying()
     }
@@ -339,8 +339,8 @@ class ConfigFragment : Fragment() {
 
     // ------------------------------------------------------------------ dựng giao diện nhỏ
 
-    private fun toast(msg: String) {
-        context?.let { Toast.makeText(it, msg, Toast.LENGTH_SHORT).show() }
+    private fun toast(msg: String, long: Boolean = false) {
+        context?.let { Toast.makeText(it, msg, if (long) Toast.LENGTH_LONG else Toast.LENGTH_SHORT).show() }
     }
 
     private fun round(fill: String, line: String): GradientDrawable = GradientDrawable().apply {

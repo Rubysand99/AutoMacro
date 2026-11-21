@@ -21,6 +21,13 @@ object LinkResolver {
 
     class ResolveException(message: String, cause: Throwable? = null) : Exception(message, cause)
 
+    /** Ly do ngan gon de hien cho Ruby: dong "ERROR..." cua yt-dlp neu co, khong thi 200 ky tu dau cua thong bao. */
+    fun shortReason(e: Throwable): String {
+        val msg = (e.message ?: e.javaClass.simpleName).trim()
+        val err = msg.lines().map { it.trim() }.lastOrNull { it.startsWith("ERROR", ignoreCase = true) }
+        return (err ?: msg).take(200)
+    }
+
     private val lock = Any()
     private var initialized = false
     private var updateTried = false
@@ -45,7 +52,7 @@ object LinkResolver {
                 initialized = true
             } catch (e: Exception) {
                 Log.w(TAG, "Khong khoi dong duoc yt-dlp: ${e.message}")
-                throw ResolveException("init: ${e.message}", e)
+                throw ResolveException("khong khoi dong duoc yt-dlp: ${e.message}", e)
             }
         }
     }
