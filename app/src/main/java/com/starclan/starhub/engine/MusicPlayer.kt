@@ -60,6 +60,13 @@ object MusicPlayer {
     var nowPlaying: String = ""
         private set
 
+    /** Loi gan nhat (kem ly do that) de tab Config hien thanh chu do ben canh nut; rong khi dang phat binh thuong. */
+    @Volatile
+    var lastError: String = ""
+        private set
+
+    private var currentExt = ""   // dinh dang am thanh cua bai dang tai (m4a, webm...), de chen vao ly do loi
+
     /** DUNG HAN vi khong phat duoc gi (de tab Config hien thong bao va doi nut Nghe thu). */
     var onError: ((String) -> Unit)? = null
 
@@ -130,6 +137,7 @@ object MusicPlayer {
         appCtx = app
         cfg = config
         failures = 0
+        lastError = ""
         currentSource = null
         requestFocus(app)
         playing = true
@@ -174,6 +182,7 @@ object MusicPlayer {
         releasePlayer()
         currentSource = t.source
         nowPlaying = t.displayName
+        currentExt = ""
         loading = true
         notifyChanged()
         val app = appCtx ?: return
@@ -203,6 +212,7 @@ object MusicPlayer {
         }
         if (res.title.isNotBlank() && res.title != t.title) saveTitle(app, t, res.title)
         nowPlaying = res.title.ifBlank { t.displayName }
+        currentExt = res.ext
         notifyChanged()
         prepare(app, t, Uri.parse(res.url), res.headers, gen)
     }
@@ -245,6 +255,7 @@ object MusicPlayer {
     private fun onPrepared(gen: Int, mp: MediaPlayer) {
         if (gen != generation || !playing) return
         failures = 0
+        lastError = ""
         loading = false
         try {
             mp.start()
@@ -264,7 +275,7 @@ object MusicPlayer {
     private fun onPlayerError(gen: Int, t: Track, what: Int, extra: Int) {
         if (gen != generation || !playing) return
         releasePlayer()
-        trackFailed(t, Str.get(R.string.music_khong_phat_duoc_file_nhac), "MediaPlayer what=$what extra=$extra")
+        trackFailed(t, Str.get(R.string.music_khong_phat_duoc_file_nhac), "MediaPlayer what=$what extra=$extra" + (if (currentExt.isBlank()) "" else " (${currentExt})"))
     }
 
     /** 1 bai loi: bo qua sang bai khac; tat ca cac bai deu loi lien tiep thi dung han. */
@@ -272,6 +283,7 @@ object MusicPlayer {
         failures++
         Log.w(TAG, "Bai loi: ${t.source} -> $reason")
         val detail = if (reason.isBlank()) msg else "$msg\n($reason)"
+        lastError = detail
         if (PlaylistRules.shouldGiveUp(failures, cfg.tracks.size)) {
             endSession()
             onError?.invoke(Str.get(R.string.music_ca_playlist_loi) + (if (reason.isBlank()) "" else "\n($reason)"))

@@ -46,6 +46,7 @@ class ConfigFragment : Fragment() {
     private lateinit var music: MusicConfig
     private lateinit var swMusic: SwitchCompat
     private lateinit var tvNow: TextView
+    private lateinit var tvErr: TextView
     private lateinit var tvCount: TextView
     private lateinit var listBox: LinearLayout
     private lateinit var swShuffle: SwitchCompat
@@ -89,6 +90,8 @@ class ConfigFragment : Fragment() {
 
         tvNow = text("", 12.5f, UiTheme.ACCENT)
         musicCard.addView(tvNow, lp(top = 0, bottom = 6))
+        tvErr = text("", 12f, UiTheme.BAD).also { it.setTextIsSelectable(true) }   // lý do lỗi thật, chọn được để chép gửi đi
+        musicCard.addView(tvErr, lp(top = 0, bottom = 6))
         tvCount = text("", 12.5f, UiTheme.TEXT_SECONDARY)
         musicCard.addView(tvCount, lp(top = 0, bottom = 4))
         listBox = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL }
@@ -306,7 +309,7 @@ class ConfigFragment : Fragment() {
     }
 
     private fun refreshNowPlaying() {
-        if (!::tvNow.isInitialized || view == null) return
+        if (!::tvNow.isInitialized || !::tvErr.isInitialized || view == null) return
         val name = MusicPlayer.nowPlaying
         val line = when {
             MusicPlayer.playing && name.isNotEmpty() && MusicPlayer.loading -> getString(R.string.config_now_loading, name)
@@ -315,6 +318,9 @@ class ConfigFragment : Fragment() {
         }
         tvNow.text = line
         tvNow.visibility = if (line.isEmpty()) View.GONE else View.VISIBLE
+        val err = MusicPlayer.lastError
+        tvErr.text = err
+        tvErr.visibility = if (err.isEmpty()) View.GONE else View.VISIBLE
         if (previewing && !MusicPlayer.playing) previewing = false   // bi dung han (vd tat ca bai loi) -> tra nut ve "Nghe thu"
         btnPreview.text = if (previewing) getString(R.string.config_preview_stop) else getString(R.string.config_preview)
         btnPreview.isEnabled = music.hasTrack

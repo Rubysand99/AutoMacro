@@ -17,7 +17,7 @@ object LinkResolver {
     private const val TAG = "LinkResolver"
 
     /** [url] link phat truc tiep, [title] tieu de video (co the rong), [headers] header can gui kem khi tai. */
-    class Resolved(val url: String, val title: String, val headers: Map<String, String>)
+    class Resolved(val url: String, val title: String, val headers: Map<String, String>, val ext: String = "")
 
     class ResolveException(message: String, cause: Throwable? = null) : Exception(message, cause)
 
@@ -75,7 +75,8 @@ object LinkResolver {
     private fun fetch(link: String): Resolved {
         try {
             val req = YoutubeDLRequest(link)
-            req.addOption("-f", "bestaudio/best")   // uu tien chi am thanh; trang nao khong tach rieng thi lay ban tot nhat (am thanh van phat)
+            // Uu tien AAC (m4a) vi MediaPlayer cua Android phat on dinh nhat; khong co thi lay am thanh khac, cuoi cung ban tot nhat (am thanh van phat)
+            req.addOption("-f", "bestaudio[ext=m4a]/bestaudio[acodec^=mp4a]/bestaudio/best")
             req.addOption("--no-playlist")          // dan link video nam trong danh sach phat thi chi lay video do
             req.addOption("--socket-timeout", 15)
             val info = YoutubeDL.getInstance().getInfo(req)
@@ -85,7 +86,8 @@ object LinkResolver {
             return Resolved(
                 url = direct,
                 title = (info.title ?: info.fulltitle).orEmpty().trim(),
-                headers = info.httpHeaders.orEmpty()
+                headers = info.httpHeaders.orEmpty(),
+                ext = info.ext.orEmpty()
             )
         } catch (e: ResolveException) {
             throw e
