@@ -43,7 +43,7 @@ Android 13+ sẽ hỏi quyền thông báo — hãy bấm Cho phép. Giờ huntb
 - **Bật Hub = bot ON, tắt Hub = bot OFF** (app tự báo cho bot; bot ngừng giao việc khi Hub tắt).
 
 ## Tab "Config" (nhạc nền + gem)
-- **Nhạc nền**: bật công tắc, bấm **Chọn file nhạc** (mp3/…), chỉnh âm lượng, bấm **Nghe thử** để kiểm tra. Bắt đầu farm thì nhạc tự phát lặp lại, dừng farm (kể cả khi gặp captcha) thì nhạc tự tắt; chuông báo captcha vẫn kêu riêng.
+- **Nhạc nền = Playlist nhiều bài**: bật công tắc rồi bấm **Thêm file nhạc** (chọn được nhiều file một lần) hoặc **Dán link** video **YouTube / TikTok / Facebook** (dán nhiều link một lần, mỗi dòng 1 link; app tự lấy phần âm thanh bằng yt-dlp chạy ngay trong app). Mỗi bài có nút ↑ ↓ ✕ để đổi chỗ / xoá. Bắt đầu farm thì playlist tự phát lần lượt, hết thì lặp lại (hoặc bật **Phát ngẫu nhiên**); dừng farm (kể cả khi gặp captcha) thì nhạc tự tắt; chuông báo captcha vẫn kêu riêng. Có nút **Nghe thử**, **Bài tiếp** và chỉnh âm lượng. Bài lỗi (mất mạng, link chết/riêng tư) tự bỏ qua sang bài kế; tất cả đều lỗi thì dừng và báo. Bài từ link cần có mạng; lần đầu app chuẩn bị yt-dlp nên bài đầu chậm vài giây, và khi trang đổi cách phát app tự cập nhật yt-dlp 1 lần. Bản cũ chỉ có 1 file thì tự chuyển thành playlist 1 bài. APK nặng thêm khoảng 30–40MB vì mang theo yt-dlp + Python (chỉ cho arm64-v8a và armeabi-v7a).
 - **Gem**: nút chỉnh tier gem (xem mục trên).
 - Mọi lựa chọn ở tab này lưu ngay trên máy, không cần bấm Lưu.
 

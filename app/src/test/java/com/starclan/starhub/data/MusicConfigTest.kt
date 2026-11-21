@@ -16,10 +16,10 @@ class MusicConfigTest {
     }
 
     @Test fun plays_only_when_enabled_and_track_chosen() {
-        assertFalse(MusicConfig(enabled = true).shouldPlay)                      // bat nhung chua chon file
-        assertFalse(MusicConfig(enabled = false, uri = "content://x/1").shouldPlay) // co file nhung tat
-        assertTrue(MusicConfig(enabled = true, uri = "content://x/1").shouldPlay)
-        assertFalse(MusicConfig(enabled = true, uri = "   ").shouldPlay)          // uri rong
+        val one = listOf(Track("content://x/1"))
+        assertFalse(MusicConfig(enabled = true).shouldPlay)                       // bat nhung playlist rong
+        assertFalse(MusicConfig(enabled = false, tracks = one).shouldPlay)        // co bai nhung tat
+        assertTrue(MusicConfig(enabled = true, tracks = one).shouldPlay)
     }
 
     @Test fun volume_is_clamped_and_converted_to_gain() {

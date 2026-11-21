@@ -30,6 +30,17 @@ android {
         targetSdk 34
         versionCode starParts[0].toInteger() * 10000 + starParts[1].toInteger()
         versionName starVersion
+        // yt-dlp (youtubedl-android) mang theo ban Python rieng cho tung kieu CPU -> chi giu 2 kieu may that de APK khong phinh qua to
+        ndk {
+            abiFilters "arm64-v8a", "armeabi-v7a"
+        }
+    }
+
+    // yt-dlp/python phai duoc giai nen ra thu muc app luc cai (thu vien yeu cau)
+    packagingOptions {
+        jniLibs {
+            useLegacyPackaging = true
+        }
     }
 
     signingConfigs {
@@ -80,6 +91,9 @@ dependencies {
 
     // Gson - doc JSON ma owo-tracker tra ve (GET /hub, /gemtier, ...)
     implementation "com.google.code.gson:gson:2.11.0"
+
+    // Tach am thanh tu link YouTube / TikTok / Facebook... cho Playlist nhac nen (yt-dlp chay trong app, xem engine/LinkResolver)
+    implementation "io.github.junkfood02.youtubedl-android:library:0.18.1"
 
     // Test chay tren JVM (khong can may that): gradle testDebugUnitTest
     testImplementation "junit:junit:4.13.2"
