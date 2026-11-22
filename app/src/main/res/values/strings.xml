@@ -81,6 +81,8 @@
     <string name="hub_section_zoo">Pet (Zoo)</string>
     <string name="hub_section_weapons">Vũ khí</string>
     <string name="hub_section_inventory">Kho đồ</string>
+    <string name="hub_section_event">Sự kiện</string>
+    <string name="hubfrag_chua_co_pet_su_kien">Chưa có dữ liệu pet sự kiện — bot cần bản mới và sẽ tự ghi nhận khi bạn hunt hoặc gõ owo zoo.</string>
     <string name="hub_section_pet_dex">Pet Dex</string>
     <!-- Thong bao huntbot sap ve -->
     <string name="huntbot_alert_channel">Huntbot sắp về</string>
@@ -607,6 +609,16 @@
     <string name="hs_quest_left_count">%1$d/%2$d quest chưa xong</string>
     <string name="hs_quest_left_some">Còn quest chưa xong</string>
     <string name="hs_team">%1$d pet: %2$s</string>
+    <string name="hs_evpet_all">%1$s: đã tìm đủ %2$d/%3$d pet sự kiện</string>
+    <string name="hs_evpet_some">%1$s: đã tìm thấy %2$d/%3$d pet sự kiện</string>
+    <string name="hs_evpet_ended">(đã kết thúc)</string>
+    <string name="hf_evpet_found">✅ %1$s — đã tìm thấy</string>
+    <string name="hf_evpet_missing">⬜ %1$s — chưa tìm thấy</string>
+    <string name="hf_evpet_holding">đang giữ %1$s</string>
+    <string name="hf_evpet_seen">thấy %1$d lần khi hunt</string>
+    <string name="hf_evpet_last">lần cuối %1$s</string>
+    <string name="hf_evpet_ends">Sự kiện %1$s kết thúc lúc %2$s</string>
+    <string name="hf_evpet_over">Sự kiện %1$s đã kết thúc</string>
     <string name="hs_zoo_line">%1$s pet · %2$s điểm</string>
     <string name="hs_weapons">%1$s cây đã ghi nhận</string>
     <string name="hs_dex">%1$s/%2$s loài đang có</string>

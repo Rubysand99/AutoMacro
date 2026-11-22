@@ -52,6 +52,7 @@ object HubParser {
             weaponShards = section("weapon_shards", HubWeaponShards::class.java),
             event = section("event", HubEvent::class.java),
             eventMode = eventMode,
+            eventPets = section("event_pets", HubEventPets::class.java),
             slowdown = section("slowdown", HubSlowdown::class.java),
             gems = section("gems", HubGems::class.java),
             huntbot = section("huntbot", HubHuntbot::class.java),

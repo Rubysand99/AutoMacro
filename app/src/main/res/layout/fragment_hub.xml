@@ -110,6 +110,10 @@
 
             <!-- Cac the chi tiet: cham de mo/dong -->
             <include
+                android:id="@+id/cardEvent"
+                layout="@layout/item_hub_card" />
+
+            <include
                 android:id="@+id/cardGems"
                 layout="@layout/item_hub_card" />
 

@@ -150,6 +150,23 @@ object HubSummary {
         return LineState(Texts.get("hs_team", members.size, shown), Tone.INFO)
     }
 
+    /** Dong tom tat cua the "Su kien": da tim thay may con pet cua su kien. */
+    fun eventPetsLine(e: HubEventPets?): LineState {
+        val total = e?.total ?: e?.pets?.size ?: 0
+        if (e == null || total == 0) return noData()
+        val found = e.foundCount ?: e.pets.orEmpty().count { it.found == true }
+        val title = e.title ?: "?"
+        val base = Texts.get(if (found >= total) "hs_evpet_all" else "hs_evpet_some", title, found, total)
+        val text = if (e.active == false) base + " " + Texts.get("hs_evpet_ended") else base
+        val tone = when {
+            found >= total -> Tone.OK
+            found > 0 -> Tone.INFO
+            e.active == false -> Tone.IDLE
+            else -> Tone.WARN
+        }
+        return LineState(text, tone)
+    }
+
     fun zooLine(z: HubZoo?): LineState {
         if (z == null) return noData()
         return LineState(Texts.get("hs_zoo_line", HubFormat.num(z.totalPets), HubFormat.num(z.zooPoints)), Tone.INFO)

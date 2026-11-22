@@ -230,6 +230,30 @@ object HubFormat {
         }
     }
 
+    /** Tieu de 1 pet su kien: "Pumpkin Pie — da tim thay" / "... — chua tim thay". */
+    fun eventPetTitle(p: HubEventPet): String =
+        Texts.get(if (p.found == true) "hf_evpet_found" else "hf_evpet_missing", p.label ?: p.key ?: "?")
+
+    /** Chi tiet: "dang giu 1 · thay 2 lan khi hunt · lan cuoi 5 phut truoc"; chua tim thay thi rong. */
+    fun eventPetDetail(p: HubEventPet, extraAgeSec: Long = 0): String {
+        if (p.found != true) return ""
+        val parts = mutableListOf<String>()
+        if (p.count != null) parts.add(Texts.get("hf_evpet_holding", num(p.count)))
+        if ((p.timesFound ?: 0) > 0) parts.add(Texts.get("hf_evpet_seen", p.timesFound))
+        if (p.ageSeconds != null) parts.add(Texts.get("hf_evpet_last", age(p.ageSeconds + extraAgeSec)))
+        return parts.joinToString(" · ")
+    }
+
+    /** "Su kien November ket thuc luc 29/11 14:59" (theo mui gio [zone]); da het han thi bao da ket thuc. */
+    fun eventEnds(e: HubEventPets, zone: java.time.ZoneId, nowEpoch: Long = System.currentTimeMillis() / 1000): String {
+        val title = e.title ?: "?"
+        val end = e.endsEpoch ?: return ""
+        if (nowEpoch >= end) return Texts.get("hf_evpet_over", title)
+        val text = java.time.format.DateTimeFormatter.ofPattern("dd/MM HH:mm")
+            .format(java.time.Instant.ofEpochSecond(end).atZone(zone))
+        return Texts.get("hf_evpet_ends", title, text)
+    }
+
     fun zoo(z: HubZoo?, expanded: Boolean): String {
         if (z == null) return noData(Texts.get("hf_hint_zoo"))
         val sb = StringBuilder()

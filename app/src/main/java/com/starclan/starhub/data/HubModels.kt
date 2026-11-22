@@ -15,6 +15,7 @@ data class HubResponse(
     @SerializedName("weapon_shards") val weaponShards: HubWeaponShards? = null,
     val event: HubEvent? = null,
     @SerializedName("event_mode") val eventMode: Boolean? = null,
+    @SerializedName("event_pets") val eventPets: HubEventPets? = null,
     val slowdown: HubSlowdown? = null,
     val gems: HubGems? = null,
     val huntbot: HubHuntbot? = null,
@@ -172,6 +173,29 @@ data class HubEvent(
     val counters: List<HubEventEntry>? = null,
     val recent: List<HubEventEntry>? = null,
     @SerializedName("age_seconds") val ageSeconds: Long? = null
+)
+
+/** Pet cua su kien dang dien ra (bot tu ghi nhan khi thay trong tin hunt / zoo) — `event_pets` trong /hub. */
+data class HubEventPet(
+    val key: String? = null,
+    val label: String? = null,
+    val found: Boolean? = null,
+    /** So dang giu theo `owo zoo` (null = chua thay trong zoo) */
+    val count: Long? = null,
+    @SerializedName("times_found") val timesFound: Int? = null,
+    @SerializedName("last_found_at") val lastFoundAt: String? = null,
+    @SerializedName("age_seconds") val ageSeconds: Long? = null,
+    @SerializedName("emoji_id") val emojiId: String? = null,
+    @SerializedName("emoji_animated") val emojiAnimated: Boolean? = null
+)
+
+data class HubEventPets(
+    val title: String? = null,
+    @SerializedName("ends_epoch") val endsEpoch: Long? = null,
+    val active: Boolean? = null,
+    @SerializedName("found_count") val foundCount: Int? = null,
+    val total: Int? = null,
+    val pets: List<HubEventPet>? = null
 )
 
 // ---- Gem ----

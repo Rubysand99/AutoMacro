@@ -75,7 +75,7 @@ class HubFragment : Fragment() {
 
     private var hub: HubResponse? = null
     private var fetchedAtMs: Long = 0L
-    private val expanded = mutableSetOf(KEY_GEMS, KEY_QUEST)
+    private val expanded = mutableSetOf(KEY_EVENT, KEY_GEMS, KEY_QUEST)
 
     private var fetchJob: Job? = null
     private var tickJob: Job? = null
@@ -112,6 +112,7 @@ class HubFragment : Fragment() {
         binding.tileZoo.tvTileLabel.setText(R.string.hub_tile_zoo)
 
         cards = listOf(
+            setupCard(KEY_EVENT, binding.cardEvent, R.string.hub_section_event, R.color.hub_accent_event),
             setupCard(KEY_GEMS, binding.cardGems, R.string.hub_section_gems, R.color.hub_accent_gems),
             setupCard(KEY_QUEST, binding.cardQuest, R.string.hub_section_quest, R.color.hub_accent_quest),
             setupCard(KEY_TEAM, binding.cardTeam, R.string.hub_section_team, R.color.hub_accent_team),
@@ -251,6 +252,7 @@ class HubFragment : Fragment() {
     }
 
     private fun summaryOf(key: String, h: HubResponse): LineState = when (key) {
+        KEY_EVENT -> HubSummary.eventPetsLine(h.eventPets)
         KEY_GEMS -> HubSummary.gemsLine(h.gems)
         KEY_QUEST -> HubSummary.questLine(h.quest)
         KEY_TEAM -> HubSummary.teamLine(h.team)
@@ -261,6 +263,7 @@ class HubFragment : Fragment() {
     }
 
     private fun cardIconFor(key: String, h: HubResponse): IconSpec = when (key) {
+        KEY_EVENT -> IconSpec(unicode = "🍂")
         KEY_GEMS -> gemsTileIcon(h.gems)
         KEY_QUEST -> questTileIcon(h.quest)
         KEY_TEAM -> teamCardIcon(h.team)
@@ -272,6 +275,7 @@ class HubFragment : Fragment() {
 
     private fun fillBody(key: String, h: HubResponse, body: LinearLayout) {
         when (key) {
+            KEY_EVENT -> fillEventPets(body, h.eventPets)
             KEY_GEMS -> fillGems(body, h.gems)
             KEY_QUEST -> fillQuest(body, h.quest)
             KEY_TEAM -> fillTeam(body, h.team)
@@ -284,6 +288,23 @@ class HubFragment : Fragment() {
             else -> fillPetDex(body, h.petDex)
         }
     }
+
+    /** The "Su kien": moi pet cua su kien 1 dong co icon, da tim thay hay chua + chi tiet; dong dau la han ket thuc. */
+    private fun fillEventPets(body: LinearLayout, e: com.starclan.starhub.data.HubEventPets?) {
+        val pets = e?.pets.orEmpty()
+        if (e == null || pets.isEmpty()) {
+            addText(body, Str.get(R.string.hubfrag_chua_co_pet_su_kien), dim = true)
+            return
+        }
+        val ends = HubFormat.eventEnds(e, java.time.ZoneId.systemDefault())
+        if (ends.isNotEmpty()) addText(body, ends, sizeSp = 12f, dim = true)
+        for ((i, p) in pets.withIndex()) {
+            val icon = if (p.emojiId != null) iconOf(p.emojiId, p.emojiAnimated, null, p.label) else IconSpec(unicode = "🍂")
+            addIconTextRow(body, icon, HubFormat.eventPetTitle(p), HubFormat.eventPetDetail(p, elapsedSinceLoadSec()), topDp = if (i == 0) 10 else 14, iconSizeDp = 30)
+        }
+    }
+
+    private fun elapsedSinceLoadSec(): Long = (SystemClock.elapsedRealtime() - fetchedAtMs) / 1000L
 
     private fun fillPetDex(body: LinearLayout, d: com.starclan.starhub.data.HubPetDex?) {
         val all = d?.species.orEmpty()
@@ -442,6 +463,7 @@ class HubFragment : Fragment() {
         applyTile(binding.tileGems, tileOrError(errors, "gems") { HubSummary.gemsTile(h.gems) })
         applyTile(binding.tileZoo, tileOrError(errors, "zoo") { HubSummary.zooTile(h.zoo) })
 
+        setCardAge(KEY_EVENT, h.eventPets?.pets.orEmpty().mapNotNull { it.ageSeconds }.minOrNull(), elapsed)
         setCardAge(KEY_GEMS, HubFormat.gemsAgeSeconds(h.gems), elapsed)
         setCardAge(KEY_QUEST, h.quest?.ageSeconds, elapsed)
         setCardAge(KEY_TEAM, h.team?.ageSeconds, elapsed)
@@ -669,6 +691,7 @@ class HubFragment : Fragment() {
 
     companion object {
         private const val REFRESH_INTERVAL_MS = 30_000L
+        private const val KEY_EVENT = "event_pets"
         private const val KEY_GEMS = "gems"
         private const val KEY_QUEST = "quest"
         private const val KEY_TEAM = "team"

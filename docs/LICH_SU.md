@@ -4,6 +4,12 @@ Nhật ký từng phiên bản, mới nhất ở trên. **Đây là lịch sử,
 (kịch bản, Room, keystore debug, tab "Tự động", 3 tab) đã bị gỡ hoặc đổi. Trạng thái hiện tại + quy ước bắt buộc nằm ở `AI_CONTEXT.md`.
 Khi thêm tính năng mới: ghi 1 mục `## vNN` ở ĐẦU danh sách bên dưới, rồi nếu có quy ước mới thì cập nhật mục "Quy ước bắt buộc" trong `AI_CONTEXT.md`.
 
+## v42 — Pet sự kiện tháng 11 trên Hub
+- Bot (owo-tracker `event_pets.py`, collection `owot_event_pets`) tự ghi nhận pet sự kiện (`2026november_pumpkinpie`, `2026november_autumnHsin`) khi thấy tên emoji trong dòng `You found:` của hunt (kể cả app tự gõ) hoặc trong `owo zoo` / `owo zoo d`; `/hub` trả thêm `event_pets` (`found_count/total`, từng pet: `found`, `count` đang giữ, `times_found`, `age_seconds`, `emoji_id`).
+- App: `HubEventPets/HubEventPet` (`HubModels.kt`), `HubParser` đọc riêng mục `event_pets` (bot cũ chưa có mục này thì null, không báo lỗi), `HubSummary.eventPetsLine`, `HubFormat.eventPetTitle/eventPetDetail/eventEnds`. Thẻ mới **Sự kiện** ở đầu danh sách thẻ trên màn Hub (mở sẵn, icon 🍂) và các dòng pet ở tab **Event** của Hub nổi. Chuỗi: `hs_evpet_*`, `hf_evpet_*`, `hub_section_event`, `hubfrag_chua_co_pet_su_kien`.
+- Sang sự kiện mới: chỉ cần sửa `EVENT_TITLE` / `EVENT_END_EPOCH` / `EVENT_PETS` trong `event_pets.py` của bot; app không phải sửa.
+- Test: `HubEventPetsTest` (JVM). CHUA BIEN DICH day du (can Android SDK): `HubFragment`, `FarmOverlay`, `fragment_hub.xml` (them `cardEvent`). Chua thu tren may that. Chưa rõ tên emoji thật của pet trong tin OwO (bot so khớp cả dạng đầy đủ lẫn rút gọn `pumpkinpie` / `autumnhsin`): nếu sau khi hunt ra pet mà thẻ vẫn "chưa tìm thấy" thì gõ `,rawdump` để xem tên emoji.
+
 ## v41 — Nhạc nền: bật/tắt từng bài, 3 chế độ phát, % tải
 - Mỗi bài có ô tích bật/tắt (`Track.enabled`); bài tắt vẫn nằm trong danh sách nhưng không được phát, không tính vào "lặp 1 bài" hay "tất cả bài đều lỗi".
 - 3 chế độ phát (`PlayMode`, lưu khóa `music_mode`; công tắc ngẫu nhiên cũ `music_shuffle` tự đổi thành SHUFFLE): `ADDED` theo thứ tự trong danh sách (đổi chỗ bằng ↑ ↓, chỉ hiện ở chế độ này), `PICKED` theo thứ tự tích chọn (`Track.pickOrder`: bật bài = xếp cuối; bỏ tích rồi tích lại = xuống cuối; bài cũ chưa có thứ tự giữ thứ tự danh sách), `SHUFFLE` ngẫu nhiên (không lặp bài vừa phát). Logic nằm ở `MusicConfig.playOrder/nextIndex/rankOf/setTrackEnabled` (thuần, có test trong `PlaylistTest`).

@@ -21,6 +21,7 @@ import com.starclan.starhub.data.FarmCmd
 import com.starclan.starhub.data.FarmCmdGroup
 import com.starclan.starhub.data.FarmCommandConfig
 import com.starclan.starhub.data.HubFormat
+import com.starclan.starhub.data.HubSummary
 import com.starclan.starhub.data.SpeedMode
 import com.starclan.starhub.data.StatsFormat
 import com.starclan.starhub.data.CleanupPhase
@@ -1560,12 +1561,24 @@ object FarmOverlay {
         ).joinToString(" · ")
         setGroup("zoo", zooSummary, zooRows)
 
-        // ===== Su kien (nam trong tab Event; chua thay tin su kien thi hien dong bao chua co) =====
+        // ===== Su kien (nam trong tab Event): pet su kien da tim thay chua + bo dem [x/10] khi hunt =====
         val evCounters = hub.event?.counters.orEmpty()
+        val evRows = mutableListOf<Row>()
+        val evSummaryParts = mutableListOf<String>()
+        val evPets = hub.eventPets
+        if (evPets != null && evPets.pets.orEmpty().isNotEmpty()) {
+            evSummaryParts.add(HubSummary.eventPetsLine(evPets).text)
+            for (p in evPets.pets.orEmpty()) {
+                val detail = HubFormat.eventPetDetail(p)
+                val text = HubFormat.eventPetTitle(p) + (if (detail.isEmpty()) "" else " · $detail")
+                evRows.add(Row("", text, if (p.found == true) Tone.GOOD else Tone.MUTED))
+            }
+            val ends = HubFormat.eventEnds(evPets, java.time.ZoneId.systemDefault())
+            if (ends.isNotEmpty()) evRows.add(Row("", ends, Tone.MUTED))
+        }
         if (evCounters.isEmpty()) {
-            setGroup("event", "", listOf(Row("", Str.get(R.string.overlay_chua_thay_tin_su_kien), Tone.MUTED)))
+            if (evRows.isEmpty()) evRows.add(Row("", Str.get(R.string.overlay_chua_thay_tin_su_kien), Tone.MUTED))
         } else {
-            val evRows = mutableListOf<Row>()
             for (c in evCounters) {
                 evRows.add(Row(c.kind ?: "?", "${c.current ?: "?"}/${c.max ?: "?"}${ageText(c.ageSeconds)}"))
             }
@@ -1574,8 +1587,8 @@ object FarmOverlay {
             if (latest != null && rewardText.isNotEmpty()) {
                 evRows.add(Row(Str.get(R.string.overlay_gan_nhat), rewardText + ageText(latest.ageSeconds), Tone.GOOD))
             }
-            val evSummary = evCounters.joinToString(" · ") { c -> "${c.kind ?: "?"} ${c.current ?: "?"}/${c.max ?: "?"}" }
-            setGroup("event", evSummary, evRows)
+            evSummaryParts.add(evCounters.joinToString(" · ") { c -> "${c.kind ?: "?"} ${c.current ?: "?"}/${c.max ?: "?"}" })
         }
+        setGroup("event", evSummaryParts.joinToString(" · "), evRows)
     }
 }
