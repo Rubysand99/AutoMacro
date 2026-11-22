@@ -84,6 +84,28 @@ object MusicPlayer {
     /** 1 bai loi nen bi bo qua, van tiep tuc phat bai khac. */
     var onSkipped: ((String) -> Unit)? = null
 
+    /** Tai xong 1 link o nen va lay duoc ten video -> tab Config cap nhat ten trong danh sach. */
+    var onTitle: ((source: String, title: String) -> Unit)? = null
+
+    /** Vua them link vao playlist: tai ngay ve may (ket hop lay ten), khong doi toi luc phat. */
+    fun downloadAhead(context: Context, tracks: List<Track>) {
+        val app = context.applicationContext
+        for (t in tracks) {
+            if (!t.isLink || LinkResolver.isCached(app, t.source)) continue
+            prefetcher.execute {
+                try {
+                    val r = LinkResolver.resolve(app, t.source)
+                    if (r.title.isNotBlank() && r.title != t.title) main.post {
+                        synchronized(this) { saveTitle(app, t, r.title) }
+                        onTitle?.invoke(t.source, r.title)
+                    }
+                } catch (e: Exception) {
+                    Log.w(TAG, "Tai san link vua them loi (se thu lai khi phat): ${e.message}")
+                }
+            }
+        }
+    }
+
     /** Doi bai / doi trang thai (co the goi tu luong bat ky; noi nhan tu chuyen sang luong chinh). */
     var onChanged: (() -> Unit)? = null
 
@@ -217,6 +239,7 @@ object MusicPlayer {
                 val r = LinkResolver.resolve(app, nt.source)
                 if (r.title.isNotBlank() && r.title != nt.title) main.post {
                     synchronized(this) { if (gen == generation) saveTitle(app, nt, r.title) }
+                    onTitle?.invoke(nt.source, r.title)
                 }
             } catch (e: Exception) {
                 Log.w(TAG, "Tai truoc bai ke tiep loi (se thu lai khi toi luot): ${e.message}")

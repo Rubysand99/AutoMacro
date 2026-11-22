@@ -157,6 +157,7 @@ class ConfigFragment : Fragment() {
         MusicPlayer.onError = { msg -> previewing = false; toast(msg, long = true); refreshNowPlaying() }
         MusicPlayer.onSkipped = { msg -> toast(msg, long = true) }
         MusicPlayer.onChanged = { refreshNowPlaying() }
+        MusicPlayer.onTitle = { src, title -> music = music.withTitle(src, title); refreshMusicUi() }
         refreshNowPlaying()
     }
 
@@ -165,6 +166,7 @@ class ConfigFragment : Fragment() {
         MusicPlayer.onError = null
         MusicPlayer.onSkipped = null
         MusicPlayer.onChanged = null
+        MusicPlayer.onTitle = null
         // Rời tab thì tắt bản nghe thử (nhạc nền lúc đang farm thì giữ nguyên)
         if (previewing && !FarmController.isRunning()) MusicPlayer.stop()
         previewing = false
@@ -222,6 +224,7 @@ class ConfigFragment : Fragment() {
         }
         toast(getString(R.string.config_added_n, added))
         saveMusic(next)
+        MusicPlayer.downloadAhead(requireContext(), tracks)   // link moi them thi tai ve ngay
     }
 
     /** Hop thoai dan link (nhieu link, moi dong 1 link). Co link trong clipboard thi dien san. */
