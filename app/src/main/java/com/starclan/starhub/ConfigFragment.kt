@@ -2,6 +2,7 @@ package com.starclan.starhub
 
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.res.ColorStateList
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.Typeface
@@ -16,6 +17,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -30,6 +32,7 @@ import androidx.lifecycle.lifecycleScope
 import com.starclan.starhub.data.ConfigPrefs
 import com.starclan.starhub.data.MusicConfig
 import com.starclan.starhub.data.MusicLinks
+import com.starclan.starhub.data.PlayMode
 import com.starclan.starhub.data.Track
 import com.starclan.starhub.engine.FarmController
 import com.starclan.starhub.engine.MusicPlayer
@@ -49,7 +52,9 @@ class ConfigFragment : Fragment() {
     private lateinit var tvErr: TextView
     private lateinit var tvCount: TextView
     private lateinit var listBox: LinearLayout
-    private lateinit var swShuffle: SwitchCompat
+    private val modeButtons = LinkedHashMap<PlayMode, Button>()
+    private lateinit var tvModeHint: TextView
+    private val trackLabels = HashMap<String, TextView>()   // nguon -> chu ten bai trong danh sach (de cap nhat % tai ma khong dung lai ca danh sach)
     private lateinit var btnPreview: Button
     private lateinit var btnNext: Button
     private lateinit var seekVolume: SeekBar
@@ -112,11 +117,20 @@ class ConfigFragment : Fragment() {
         playRow.addView(btnNext, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).also { it.leftMargin = dp(8) })
         musicCard.addView(playRow, lp(top = 0, bottom = 6))
 
-        swShuffle = SwitchCompat(ctx).apply {
-            text = getString(R.string.config_shuffle); textSize = 13f; setTextColor(c(UiTheme.TEXT_SECONDARY))
-            setOnCheckedChangeListener { _, on -> if (!updatingUi) saveMusic(music.copy(shuffle = on)) }
+        musicCard.addView(text(getString(R.string.config_mode_title), 13f, UiTheme.TEXT_PRIMARY, bold = true), lp(top = 2, bottom = 4))
+        val modeRow = LinearLayout(ctx).apply { orientation = LinearLayout.HORIZONTAL }
+        for ((m, label) in listOf(
+            PlayMode.ADDED to R.string.config_mode_added,
+            PlayMode.PICKED to R.string.config_mode_picked,
+            PlayMode.SHUFFLE to R.string.config_mode_shuffle
+        )) {
+            val b = button(getString(label)) { saveMusic(music.withMode(m)) }
+            modeButtons[m] = b
+            modeRow.addView(b, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).also { if (modeButtons.size > 1) it.leftMargin = dp(6) })
         }
-        musicCard.addView(swShuffle, lp(top = 0, bottom = 8))
+        musicCard.addView(modeRow, lp(top = 0, bottom = 4))
+        tvModeHint = text("", 11.5f, UiTheme.TEXT_MUTED)
+        musicCard.addView(tvModeHint, lp(top = 0, bottom = 10))
 
         tvVolume = text("", 12f, UiTheme.TEXT_MUTED)
         musicCard.addView(tvVolume)
@@ -158,6 +172,7 @@ class ConfigFragment : Fragment() {
         MusicPlayer.onSkipped = { msg -> toast(msg, long = true) }
         MusicPlayer.onChanged = { refreshNowPlaying() }
         MusicPlayer.onTitle = { src, title -> music = music.withTitle(src, title); refreshMusicUi() }
+        MusicPlayer.onProgress = { src, _ -> updateTrackLabel(src); refreshNowPlaying() }
         refreshNowPlaying()
     }
 
@@ -167,6 +182,7 @@ class ConfigFragment : Fragment() {
         MusicPlayer.onSkipped = null
         MusicPlayer.onChanged = null
         MusicPlayer.onTitle = null
+        MusicPlayer.onProgress = null
         // Rời tab thì tắt bản nghe thử (nhạc nền lúc đang farm thì giữ nguyên)
         if (previewing && !FarmController.isRunning()) MusicPlayer.stop()
         previewing = false
@@ -177,8 +193,8 @@ class ConfigFragment : Fragment() {
     // ------------------------------------------------------------------ nhạc nền
 
     private fun onMusicToggled(on: Boolean) {
-        if (on && !music.hasTrack) {
-            toast(getString(R.string.config_pick_first))
+        if (on && !music.hasPlayable) {
+            toast(getString(if (music.hasTrack) R.string.config_playlist_none_on else R.string.config_pick_first))
             refreshMusicUi()
             return
         }
@@ -261,7 +277,7 @@ class ConfigFragment : Fragment() {
     }
 
     private fun onPreviewClicked() {
-        if (!music.hasTrack) { toast(getString(R.string.config_pick_first)); return }
+        if (!music.hasPlayable) { toast(getString(if (music.hasTrack) R.string.config_playlist_none_on else R.string.config_pick_first)); return }
         if (previewing) {
             MusicPlayer.stop()
             previewing = false
@@ -276,28 +292,71 @@ class ConfigFragment : Fragment() {
         if (!::listBox.isInitialized) return
         updatingUi = true
         try {
-            swMusic.isChecked = music.enabled && music.hasTrack
-            swShuffle.isChecked = music.shuffle
+            swMusic.isChecked = music.enabled && music.hasPlayable
         } finally {
             updatingUi = false
         }
-        tvCount.text = if (music.hasTrack) getString(R.string.config_playlist_count, music.tracks.size) else getString(R.string.config_playlist_empty)
+        tvCount.text = when {
+            !music.hasTrack -> getString(R.string.config_playlist_empty)
+            !music.hasPlayable -> getString(R.string.config_playlist_none_on)
+            else -> getString(R.string.config_playlist_count, music.tracks.size, music.playableCount)
+        }
+        refreshModeUi()
         rebuildList()
         seekVolume.progress = music.volume
         tvVolume.text = volumeLabel()
         refreshNowPlaying()
     }
 
+    /** Nut che do dang chon to dac, hai nut kia vien mo; dong goi y doi theo che do. */
+    private fun refreshModeUi() {
+        for ((m, b) in modeButtons) {
+            val on = m == music.mode
+            b.background = if (on) round(UiTheme.ACCENT, UiTheme.ACCENT) else round(UiTheme.SURFACE, UiTheme.LINE)
+            b.setTextColor(c(if (on) UiTheme.ACCENT_ON else UiTheme.TEXT_SECONDARY))
+        }
+        tvModeHint.text = getString(when (music.mode) {
+            PlayMode.ADDED -> R.string.config_mode_added_hint
+            PlayMode.PICKED -> R.string.config_mode_picked_hint
+            PlayMode.SHUFFLE -> R.string.config_mode_shuffle_hint
+        })
+    }
+
+    /** Chu 1 dong bai: "thu hang. ten" (che do ngau nhien khong co thu hang) + "· dang tai 45%" khi dang tai. */
+    private fun trackLabel(i: Int, t: Track): String {
+        val rank = music.rankOf(i)
+        val base = (if (rank > 0) "$rank. " else "") + t.displayName
+        val pct = MusicPlayer.downloadPercent(t.source)
+        return if (pct >= 0) base + " · " + getString(R.string.config_track_pct, pct) else base
+    }
+
+    private fun updateTrackLabel(source: String) {
+        val i = music.tracks.indexOfFirst { it.source == source }
+        if (i < 0) return
+        trackLabels[source]?.text = trackLabel(i, music.tracks[i])
+    }
+
     private fun rebuildList() {
         listBox.removeAllViews()
+        trackLabels.clear()
+        val sequential = music.mode == PlayMode.ADDED   // chi che do "thu tu them" moi co y nghia khi doi cho bang ↑ ↓
         music.tracks.forEachIndexed { i, t ->
             val row = LinearLayout(requireContext()).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
-            val name = text("${i + 1}. ${t.displayName}", 13f, UiTheme.TEXT_PRIMARY).apply {
+            val check = CheckBox(requireContext()).apply {
+                isChecked = t.enabled
+                buttonTintList = ColorStateList.valueOf(c(UiTheme.ACCENT))
+                setOnCheckedChangeListener { _, on -> saveMusic(music.setTrackEnabled(i, on)) }
+            }
+            row.addView(check, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+            val name = text(trackLabel(i, t), 13f, if (t.enabled) UiTheme.TEXT_PRIMARY else UiTheme.TEXT_MUTED).apply {
                 maxLines = 1; ellipsize = TextUtils.TruncateAt.END
             }
+            trackLabels[t.source] = name
             row.addView(name, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-            row.addView(rowAction("↑", i > 0) { saveMusic(music.move(i, -1)) })
-            row.addView(rowAction("↓", i < music.tracks.size - 1) { saveMusic(music.move(i, +1)) })
+            if (sequential) {
+                row.addView(rowAction("↑", i > 0) { saveMusic(music.move(i, -1)) })
+                row.addView(rowAction("↓", i < music.tracks.size - 1) { saveMusic(music.move(i, +1)) })
+            }
             row.addView(rowAction("✕", true) { saveMusic(music.removeAt(i)) })
             listBox.addView(row)
         }
@@ -315,7 +374,10 @@ class ConfigFragment : Fragment() {
         if (!::tvNow.isInitialized || !::tvErr.isInitialized || view == null) return
         val name = MusicPlayer.nowPlaying
         val line = when {
-            MusicPlayer.playing && name.isNotEmpty() && MusicPlayer.loading -> getString(R.string.config_now_loading, name)
+            MusicPlayer.playing && name.isNotEmpty() && MusicPlayer.loading ->
+                MusicPlayer.currentDownloadPercent.let { pct ->
+                    if (pct >= 0) getString(R.string.config_now_loading_pct, name, pct) else getString(R.string.config_now_loading, name)
+                }
             MusicPlayer.playing && name.isNotEmpty() -> getString(R.string.config_now_playing, name)
             else -> ""
         }
@@ -326,7 +388,7 @@ class ConfigFragment : Fragment() {
         tvErr.visibility = if (err.isEmpty()) View.GONE else View.VISIBLE
         if (previewing && !MusicPlayer.playing) previewing = false   // bi dung han (vd tat ca bai loi) -> tra nut ve "Nghe thu"
         btnPreview.text = if (previewing) getString(R.string.config_preview_stop) else getString(R.string.config_preview)
-        btnPreview.isEnabled = music.hasTrack
+        btnPreview.isEnabled = music.hasPlayable
         btnNext.isEnabled = MusicPlayer.playing
     }
 

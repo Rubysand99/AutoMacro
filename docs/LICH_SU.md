@@ -4,6 +4,13 @@ Nhật ký từng phiên bản, mới nhất ở trên. **Đây là lịch sử,
 (kịch bản, Room, keystore debug, tab "Tự động", 3 tab) đã bị gỡ hoặc đổi. Trạng thái hiện tại + quy ước bắt buộc nằm ở `AI_CONTEXT.md`.
 Khi thêm tính năng mới: ghi 1 mục `## vNN` ở ĐẦU danh sách bên dưới, rồi nếu có quy ước mới thì cập nhật mục "Quy ước bắt buộc" trong `AI_CONTEXT.md`.
 
+## v41 — Nhạc nền: bật/tắt từng bài, 3 chế độ phát, % tải
+- Mỗi bài có ô tích bật/tắt (`Track.enabled`); bài tắt vẫn nằm trong danh sách nhưng không được phát, không tính vào "lặp 1 bài" hay "tất cả bài đều lỗi".
+- 3 chế độ phát (`PlayMode`, lưu khóa `music_mode`; công tắc ngẫu nhiên cũ `music_shuffle` tự đổi thành SHUFFLE): `ADDED` theo thứ tự trong danh sách (đổi chỗ bằng ↑ ↓, chỉ hiện ở chế độ này), `PICKED` theo thứ tự tích chọn (`Track.pickOrder`: bật bài = xếp cuối; bỏ tích rồi tích lại = xuống cuối; bài cũ chưa có thứ tự giữ thứ tự danh sách), `SHUFFLE` ngẫu nhiên (không lặp bài vừa phát). Logic nằm ở `MusicConfig.playOrder/nextIndex/rankOf/setTrackEnabled` (thuần, có test trong `PlaylistTest`).
+- Đổi chế độ / bật tắt bài lúc đang phát: áp dụng ngay, không ngắt bài đang phát (`MusicPlayer.refresh` chọn lại bài kế tiếp và tải trước).
+- % tải: `LinkResolver.resolve(..., onProgress)` lấy tiến độ từ callback của yt-dlp (số nguyên 0..100, không tụt lùi); `MusicPlayer.downloadPercent(nguồn)` + `onProgress` cho tab Config hiện "đang tải 45%" cạnh từng bài và ở dòng "Đang tải: tên — 45%". Bài đã có sẵn trong máy thì không hiện %.
+- CHUA BIEN DICH day du (can Android SDK): `ConfigFragment`, `MusicPlayer`, `LinkResolver` chi duoc doc ky; phan thuan Kotlin da bien dich + chay 30 test JUnit (PlaylistTest, MusicConfigTest) pass. Chua thu tren may that: dang tai % (chu ky `YoutubeDL.execute(request, processId, callback)` cua youtubedl-android 0.18.1), checkbox trong danh sach, chuyen che do luc dang phat.
+
 ## v40 — Rà soát & dọn dẹp (tài liệu, an toàn luồng, bộ đếm lỗi, CI)
 - Tài liệu: tách `AI_CONTEXT.md` (trạng thái hiện tại + quy ước bắt buộc) khỏi `docs/LICH_SU.md` (nhật ký).
 - `CleanupGate.tally` / `notFound` đổi sang tập an toàn luồng (UI thread + coroutine cùng dùng).

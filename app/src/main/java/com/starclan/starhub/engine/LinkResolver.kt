@@ -33,7 +33,11 @@ object LinkResolver {
     private var initialized = false
     private var updateTried = false
 
-    fun resolve(context: Context, link: String): Resolved {
+    /**
+     * [onProgress] nhan phan tram tai (0..100) khi yt-dlp dang tai; bai da co san trong may thi khong goi.
+     * Goi tu luong tai (khong phai luong chinh); chi bao khi so nguyen thay doi va khong tut lui.
+     */
+    fun resolve(context: Context, link: String, onProgress: ((Int) -> Unit)? = null): Resolved {
         val app = context.applicationContext
         // Bai da tai roi thi phat luon, khong dung toi mang / yt-dlp
         val dir = cacheDir(app)
@@ -43,11 +47,11 @@ object LinkResolver {
             findCached(dir, hash(link))?.let { return fromFile(it, "") }
             ensureInit(app)
             return try {
-                fetch(app, link)
+                fetch(app, link, onProgress)
             } catch (first: ResolveException) {
                 // Co the yt-dlp ban cu khong doc duoc trang nua -> cap nhat 1 lan roi thu lai
                 if (!tryUpdateOnce(app)) throw first
-                fetch(app, link)
+                fetch(app, link, onProgress)
             }
         }
     }
@@ -106,7 +110,7 @@ object LinkResolver {
         files.drop(KEEP).forEach { it.delete() }
     }
 
-    private fun fetch(app: Context, link: String): Resolved {
+    private fun fetch(app: Context, link: String, onProgress: ((Int) -> Unit)?): Resolved {
         try {
             val dir = cacheDir(app)
             val key = hash(link)
@@ -119,7 +123,15 @@ object LinkResolver {
             req.addOption("--print", "%(title)s")
             req.addOption("--no-simulate")
             req.addOption("-o", dir.absolutePath + "/" + key + ".%(ext)s")
-            val resp = YoutubeDL.getInstance().execute(req)
+            var last = -1
+            val resp = YoutubeDL.getInstance().execute(req, null) { percent, _, _ ->
+                // yt-dlp bao -1 luc bat dau; lay so nguyen 0..100 va khong cho tut lui (tai nhieu phan thi so nhay lai tu 0)
+                val p = percent.toInt().coerceIn(0, 100)
+                if (onProgress != null && percent >= 0f && p > last) {
+                    last = p
+                    onProgress(p)
+                }
+            }
             val title = resp.out.orEmpty().lines().map { it.trim() }.firstOrNull { it.isNotEmpty() }.orEmpty()
             val file = findCached(dir, key) ?: throw ResolveException("tai xong nhung khong thay file am thanh")
             prune(dir)

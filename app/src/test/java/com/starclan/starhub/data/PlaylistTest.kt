@@ -151,4 +151,95 @@ class PlaylistTest {
         assertTrue(PlaylistRules.shouldGiveUp(0, 0))
         assertTrue(PlaylistRules.shouldGiveUp(1, 1))
     }
+
+    // ---- bat/tat tung bai + che do phat ----
+    private fun cfg(mode: PlayMode, vararg t: Track) = MusicConfig(tracks = t.toList(), mode = mode)
+
+    @Test fun json_keeps_enabled_and_pickOrder_and_old_data_defaults_to_enabled() {
+        val tracks = listOf(Track("a", "A", enabled = false, pickOrder = 0), Track("b", "B", enabled = true, pickOrder = 7))
+        assertEquals(tracks, PlaylistJson.decode(PlaylistJson.encode(tracks)))
+        // du lieu luu tu ban truoc (khong co enabled/pick) -> bai van BAT
+        assertEquals(listOf(Track("x", "X", true, 0)), PlaylistJson.decode("[{\"source\":\"x\",\"title\":\"X\"}]"))
+        assertEquals(0L, PlaylistJson.decode("[{\"source\":\"x\",\"pick\":-5}]")[0].pickOrder)
+    }
+
+    @Test fun loadMode_migrates_old_shuffle_switch() {
+        assertEquals(PlayMode.SHUFFLE, loadMode(null, true))
+        assertEquals(PlayMode.ADDED, loadMode("", false))
+        assertEquals(PlayMode.PICKED, loadMode("picked", true))      // da co che do moi thi bo qua cong tac cu
+        assertEquals(PlayMode.ADDED, loadMode("la-gi-do", false))
+    }
+
+    @Test fun disabled_tracks_are_never_played_and_do_not_count() {
+        val m = cfg(PlayMode.ADDED, Track("a"), Track("b", enabled = false), Track("c"))
+        assertEquals(2, m.playableCount)
+        assertEquals(listOf(0, 2), m.playOrder())
+        assertEquals(2, m.nextIndex(0) { 0 })
+        assertEquals(0, m.nextIndex(2) { 0 })   // het danh sach -> quay lai bai dau, bo qua bai tat
+        assertTrue(MusicConfig(enabled = true, tracks = m.tracks).shouldPlay)
+        val none = MusicConfig(enabled = true, tracks = listOf(Track("a", enabled = false)))
+        assertFalse(none.shouldPlay)
+        assertTrue(none.hasTrack)
+        assertFalse(none.hasPlayable)
+        assertEquals(-1, none.nextIndex(-1) { 0 })
+    }
+
+    @Test fun added_mode_follows_list_order_and_move_changes_it() {
+        val m = cfg(PlayMode.ADDED, Track("a", pickOrder = 3), Track("b", pickOrder = 1), Track("c", pickOrder = 2))
+        assertEquals(listOf(0, 1, 2), m.playOrder())
+        assertEquals(listOf(1, 2, 3), (0..2).map { m.rankOf(it) })
+        assertEquals(listOf("b", "a", "c"), m.move(1, -1).tracks.map { it.source })
+    }
+
+    @Test fun picked_mode_follows_order_tracks_were_enabled() {
+        var m = cfg(PlayMode.PICKED, Track("a"), Track("b"), Track("c"), Track("d"))
+            .setTrackEnabled(0, false).setTrackEnabled(1, false).setTrackEnabled(2, false).setTrackEnabled(3, false)
+        assertEquals(0, m.playableCount)
+        m = m.setTrackEnabled(2, true).setTrackEnabled(0, true).setTrackEnabled(3, true)
+        assertEquals(listOf(2, 0, 3), m.playOrder())               // c, a, d: dung thu tu bam chon
+        assertEquals(listOf(2, 0, 1, 3), listOf(0, 1, 2, 3).map { m.rankOf(it) })   // a=2, b(tat)=0, c=1, d=3
+        assertEquals(3, m.nextIndex(0) { 0 })
+        assertEquals(2, m.nextIndex(3) { 0 })                      // het vong -> quay ve bai chon dau tien
+        // tat roi bat lai bai a -> a xuong cuoi thu tu chon
+        val again = m.setTrackEnabled(0, false).setTrackEnabled(0, true)
+        assertEquals(listOf(2, 3, 0), again.playOrder())
+    }
+
+    @Test fun picked_mode_old_tracks_without_order_keep_list_order() {
+        val m = cfg(PlayMode.PICKED, Track("a"), Track("b"), Track("c"))   // du lieu cu: pickOrder = 0 het
+        assertEquals(listOf(0, 1, 2), m.playOrder())
+        val m2 = m.addTracks(listOf(Track("d")))
+        assertEquals(listOf(0, 1, 2, 3), m2.playOrder())
+        assertTrue(m2.tracks[3].pickOrder > 0)
+    }
+
+    @Test fun shuffle_mode_only_picks_enabled_and_never_repeats_current() {
+        val m = cfg(PlayMode.SHUFFLE, Track("a"), Track("b", enabled = false), Track("c"), Track("d"))
+        for (cur in listOf(0, 2, 3)) {
+            val seen = (0..1).map { r -> m.nextIndex(cur) { r } }.toSet()
+            assertEquals(setOf(0, 2, 3) - cur, seen)
+        }
+        assertEquals(setOf(0, 2, 3), (0..2).map { r -> m.nextIndex(-1) { r } }.toSet())   // chua phat gi: chon trong ca 3 bai bat
+        assertEquals(0, cfg(PlayMode.SHUFFLE, Track("a")).nextIndex(0) { 0 })
+        assertEquals(0, m.rankOf(0))   // ngau nhien thi khong co thu hang
+    }
+
+    @Test fun current_track_disabled_mid_play_moves_on_sensibly() {
+        val added = cfg(PlayMode.ADDED, Track("a"), Track("b", enabled = false), Track("c"))
+        assertEquals(2, added.nextIndex(1) { 0 })      // dang phat b roi b bi tat -> bai bat ke sau trong danh sach
+        val last = cfg(PlayMode.ADDED, Track("a"), Track("b"), Track("c", enabled = false))
+        assertEquals(0, last.nextIndex(2) { 0 })       // khong con bai nao phia sau -> bai dau
+        val picked = cfg(PlayMode.PICKED, Track("a", pickOrder = 2), Track("b", enabled = false), Track("c", pickOrder = 1))
+        assertEquals(2, picked.nextIndex(1) { 0 })     // che do chon: ve bai chon dau tien
+    }
+
+    @Test fun setTrackEnabled_ignores_bad_index_and_no_ops() {
+        val m = cfg(PlayMode.ADDED, Track("a"))
+        assertSame(m, m.setTrackEnabled(5, false))
+        assertSame(m, m.setTrackEnabled(-1, true))
+        assertSame(m, m.setTrackEnabled(0, true))          // da bat
+        assertSame(m, m.withMode(PlayMode.ADDED))
+        assertEquals(PlayMode.SHUFFLE, m.withMode(PlayMode.SHUFFLE).mode)
+        assertEquals(0L, m.setTrackEnabled(0, false).tracks[0].pickOrder)
+    }
 }

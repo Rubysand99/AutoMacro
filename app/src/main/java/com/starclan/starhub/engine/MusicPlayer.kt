@@ -22,13 +22,14 @@ import com.starclan.starhub.data.ConfigPrefs
 import com.starclan.starhub.data.MusicConfig
 import com.starclan.starhub.data.PlaylistRules
 import com.starclan.starhub.data.Track
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import kotlin.random.Random
 
 /**
- * Nhac nen khi farm = PLAYLIST nhieu bai (file trong may hoac link YouTube/TikTok/Facebook...), phat lan luot,
- * het danh sach thi lap lai (hoac ngau nhien neu bat shuffle). Link duoc tach am thanh bang [LinkResolver] (yt-dlp).
+ * Nhac nen khi farm = PLAYLIST nhieu bai (file trong may hoac link YouTube/TikTok/Facebook...), phat theo che do da chon
+ * (theo thu tu them / theo thu tu chon / ngau nhien; bai bi tat thi khong phat), het danh sach thi lap lai. Link duoc tach am thanh bang [LinkResolver] (yt-dlp).
  * Bai loi (mat mang, link chet, file bi xoa) thi bo qua sang bai ke tiep; TAT CA cac bai deu loi lien tiep thi dung han va bao loi.
  * Kenh MEDIA (khac kenh BAO THUC cua AlarmPlayer) nen chuong captcha van keu to, va FarmController dung nhac khi farm ket thuc.
  * Mat quyen am thanh (cuoc goi, app khac) thi tam dung, duoc lai thi phat tiep.
@@ -56,6 +57,7 @@ object MusicPlayer {
         Thread(r, "music-prefetch").apply { isDaemon = true }
     }
     private var generation = 0                  // tang moi khi doi bai / dung -> bo ket qua tach link cu
+    private val progress = ConcurrentHashMap<String, Int>()   // nguon -> % da tai (chi co khi dang tai)
 
     @Volatile
     var playing: Boolean = false
@@ -94,7 +96,7 @@ object MusicPlayer {
             if (!t.isLink || LinkResolver.isCached(app, t.source)) continue
             prefetcher.execute {
                 try {
-                    val r = LinkResolver.resolve(app, t.source)
+                    val r = resolveTracked(app, t.source)
                     if (r.title.isNotBlank() && r.title != t.title) main.post {
                         synchronized(this) { saveTitle(app, t, r.title) }
                         onTitle?.invoke(t.source, r.title)
@@ -103,6 +105,28 @@ object MusicPlayer {
                     Log.w(TAG, "Tai san link vua them loi (se thu lai khi phat): ${e.message}")
                 }
             }
+        }
+    }
+
+    /** % dang tai cua bai co nguon [source] (0..100); -1 neu bai do khong dang tai. */
+    fun downloadPercent(source: String): Int = progress[source] ?: -1
+
+    /** % dang tai cua bai DANG PHAT (-1 neu khong dang tai). */
+    val currentDownloadPercent: Int get() = currentSource?.let { downloadPercent(it) } ?: -1
+
+    /** Phan tram tai cua 1 bai vua doi (percent = -1: da xong / dung tai). Goi tren luong chinh. */
+    var onProgress: ((source: String, percent: Int) -> Unit)? = null
+
+    /** Tai (hoac lay tu bo nho may) 1 link, bao phan tram ra [onProgress]. Chan luong: chi goi tu luong nen. */
+    private fun resolveTracked(app: Context, source: String): LinkResolver.Resolved {
+        try {
+            return LinkResolver.resolve(app, source) { p ->
+                progress[source] = p
+                main.post { onProgress?.invoke(source, p) }
+            }
+        } finally {
+            progress.remove(source)
+            main.post { onProgress?.invoke(source, -1) }
         }
     }
 
@@ -119,7 +143,7 @@ object MusicPlayer {
     /** Nghe thu (khong phu thuoc cong tac bat/tat). */
     @Synchronized
     fun preview(context: Context, config: MusicConfig) {
-        if (config.hasTrack) begin(context, config)
+        if (config.hasPlayable) begin(context, config)
     }
 
     /** Qua bai ke tiep (nut "Bai tiep" o tab Config). */
@@ -130,17 +154,19 @@ object MusicPlayer {
         advance()
     }
 
-    /** Ruby sua playlist / che do ngau nhien luc dang phat: ap dung ngay, KHONG ngat bai dang phat. */
+    /** Ruby sua playlist / bat tat bai / doi che do phat luc dang phat: ap dung ngay, KHONG ngat bai dang phat. */
     @Synchronized
     fun refresh(config: MusicConfig) {
         if (!playing) return
         cfg = config
-        if (!cfg.hasTrack) {
+        if (!cfg.hasPlayable) {
             endSession()
             return
         }
+        plannedNext = null   // doi che do / bat tat bai -> chon lai bai ke tiep
+        if (!loading) prefetchNext(generation)
         val p = player ?: return
-        val single = cfg.tracks.size == 1
+        val single = cfg.playableCount == 1
         val g = cfg.gain
         runMain {
             try {
@@ -210,7 +236,7 @@ object MusicPlayer {
 
     /** Chon bai ke tiep theo thu tu / ngau nhien roi phat. */
     private fun advance() {
-        val planned = plannedNext?.let { s -> cfg.tracks.indexOfFirst { it.source == s } } ?: -1
+        val planned = plannedNext?.let { s -> cfg.tracks.indexOfFirst { it.source == s && it.enabled } } ?: -1
         plannedNext = null
         val next = if (planned >= 0) planned else pickNext()
         if (next < 0) {
@@ -222,12 +248,12 @@ object MusicPlayer {
 
     private fun pickNext(): Int {
         val cur = currentSource?.let { s -> cfg.tracks.indexOfFirst { it.source == s } } ?: -1
-        return PlaylistRules.nextIndex(cur, cfg.tracks.size, cfg.shuffle) { Random.nextInt(it) }
+        return cfg.nextIndex(cur) { Random.nextInt(it) }
     }
 
     /** Dang phat bai nay thi tai san bai ke tiep, de chuyen bai khong phai cho. */
     private fun prefetchNext(gen: Int) {
-        if (cfg.tracks.size < 2) return
+        if (cfg.playableCount < 2) return
         val i = pickNext()
         if (i < 0) return
         val nt = cfg.tracks[i]
@@ -236,7 +262,7 @@ object MusicPlayer {
         if (!nt.isLink || LinkResolver.isCached(app, nt.source)) return
         prefetcher.execute {
             try {
-                val r = LinkResolver.resolve(app, nt.source)
+                val r = resolveTracked(app, nt.source)
                 if (r.title.isNotBlank() && r.title != nt.title) main.post {
                     synchronized(this) { if (gen == generation) saveTitle(app, nt, r.title) }
                     onTitle?.invoke(nt.source, r.title)
@@ -264,7 +290,7 @@ object MusicPlayer {
         worker.execute {
             var reason = ""
             val res = try {
-                LinkResolver.resolve(app, t.source)
+                resolveTracked(app, t.source)
             } catch (e: Exception) {
                 reason = LinkResolver.shortReason(e)
                 null
@@ -324,7 +350,7 @@ object MusicPlayer {
                         )
                         .setWakeMode(C.WAKE_MODE_NETWORK)   // tat man hinh van tai/phat tiep duoc bai tu link
                         .build()
-                    p.repeatMode = if (cfg.tracks.size == 1) Player.REPEAT_MODE_ONE else Player.REPEAT_MODE_OFF
+                    p.repeatMode = if (cfg.playableCount == 1) Player.REPEAT_MODE_ONE else Player.REPEAT_MODE_OFF
                     p.volume = cfg.gain
                     p.addListener(object : Player.Listener {
                         private var started = false
@@ -386,7 +412,7 @@ object MusicPlayer {
         Log.w(TAG, "Bai loi: ${t.source} -> $reason")
         val detail = if (reason.isBlank()) msg else "$msg\n($reason)"
         lastError = detail
-        if (PlaylistRules.shouldGiveUp(failures, cfg.tracks.size)) {
+        if (PlaylistRules.shouldGiveUp(failures, cfg.playableCount)) {
             endSession()
             onError?.invoke(Str.get(R.string.music_ca_playlist_loi) + (if (reason.isBlank()) "" else "\n($reason)"))
             return

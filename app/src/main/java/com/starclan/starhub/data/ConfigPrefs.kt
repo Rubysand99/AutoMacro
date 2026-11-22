@@ -14,7 +14,8 @@ object ConfigPrefs {
     private const val K_MUSIC_URI = "music_uri"       // CU (1 file) - chi doc de chuyen len playlist
     private const val K_MUSIC_NAME = "music_name"     // CU
     private const val K_MUSIC_TRACKS = "music_tracks" // playlist dang JSON
-    private const val K_MUSIC_SHUFFLE = "music_shuffle"
+    private const val K_MUSIC_SHUFFLE = "music_shuffle"   // CU (bool) - chi doc de doi sang che do phat
+    private const val K_MUSIC_MODE = "music_mode"
     private const val K_MUSIC_VOL = "music_vol"
 
     private const val K_TOOLS_SAVED = "tools_saved"
@@ -32,7 +33,7 @@ object ConfigPrefs {
         return MusicConfig(
             enabled = s.getBoolean(K_MUSIC_ON, false),
             tracks = loadTracks(s.getString(K_MUSIC_TRACKS, null), s.getString(K_MUSIC_URI, null), s.getString(K_MUSIC_NAME, null)),
-            shuffle = s.getBoolean(K_MUSIC_SHUFFLE, false),
+            mode = loadMode(s.getString(K_MUSIC_MODE, null), s.getBoolean(K_MUSIC_SHUFFLE, false)),
             volume = MusicConfig.clampVolume(s.getInt(K_MUSIC_VOL, MusicConfig.DEFAULT_VOLUME))
         )
     }
@@ -41,7 +42,8 @@ object ConfigPrefs {
         p(ctx).edit()
             .putBoolean(K_MUSIC_ON, m.enabled)
             .putString(K_MUSIC_TRACKS, PlaylistJson.encode(m.tracks))
-            .putBoolean(K_MUSIC_SHUFFLE, m.shuffle)
+            .putString(K_MUSIC_MODE, m.mode.key)
+            .remove(K_MUSIC_SHUFFLE)
             .putInt(K_MUSIC_VOL, MusicConfig.clampVolume(m.volume))
             .remove(K_MUSIC_URI)
             .remove(K_MUSIC_NAME)

@@ -6,8 +6,10 @@ import com.google.gson.Gson
  * 1 bai trong playlist nhac nen.
  *  - source : `content://...` (file Ruby chon trong may) hoac link `http(s)://` (YouTube, TikTok, Facebook...; app tu tach am thanh bang yt-dlp)
  *  - title  : ten hien thi; rong thi hien nguon. Link duoc ghi ten that (tieu de video) sau lan phat dau tien.
+ *  - enabled   : false -> bai van nam trong danh sach nhung KHONG duoc phat (Ruby tat tung bai)
+ *  - pickOrder : thu tu Ruby BAT bai nay (so cang nho cang phat truoc o che do "theo thu tu chon"); 0 = chua ghi (bai cu / chua chon)
  */
-data class Track(val source: String, val title: String = "") {
+data class Track(val source: String, val title: String = "", val enabled: Boolean = true, val pickOrder: Long = 0L) {
     val isLink: Boolean get() = MusicLinks.isLink(source)
 
     /** Ten de hien cho Ruby: ten da biet, neu chua co thi ten trang + id ngan cua link, con lai la nguon. */
@@ -66,11 +68,11 @@ object MusicLinks {
 
 /** Luu / doc playlist dang JSON (cho SharedPreferences). Doc loi hoac du lieu hong -> danh sach rong, khong nem loi. */
 object PlaylistJson {
-    private class Stored(val source: String? = null, val title: String? = null)
+    private class Stored(val source: String? = null, val title: String? = null, val enabled: Boolean? = null, val pick: Long? = null)
     private val gson = Gson()
 
     fun encode(tracks: List<Track>): String =
-        gson.toJson(tracks.map { Stored(it.source, it.title) })
+        gson.toJson(tracks.map { Stored(it.source, it.title, it.enabled, it.pickOrder) })
 
     fun decode(json: String?): List<Track> {
         if (json.isNullOrBlank()) return emptyList()
@@ -78,7 +80,7 @@ object PlaylistJson {
             val arr = gson.fromJson(json, Array<Stored>::class.java) ?: return emptyList()
             arr.mapNotNull { s ->
                 val src = s?.source?.trim().orEmpty()
-                if (src.isEmpty()) null else Track(src, s?.title.orEmpty())
+                if (src.isEmpty()) null else Track(src, s?.title.orEmpty(), s?.enabled ?: true, (s?.pick ?: 0L).coerceAtLeast(0L))
             }.take(MusicConfig.MAX_TRACKS)
         } catch (e: Exception) {
             emptyList()
@@ -92,6 +94,10 @@ fun loadTracks(json: String?, legacyUri: String?, legacyName: String?): List<Tra
     val uri = legacyUri?.trim().orEmpty()
     return if (uri.isEmpty()) emptyList() else listOf(Track(uri, legacyName?.trim().orEmpty()))
 }
+
+/** Doc che do phat da luu; chua co thi doi tu cong tac ngau nhien cu (true -> SHUFFLE, con lai -> theo thu tu them). */
+fun loadMode(key: String?, legacyShuffle: Boolean): PlayMode =
+    if (key.isNullOrBlank()) (if (legacyShuffle) PlayMode.SHUFFLE else PlayMode.ADDED) else PlayMode.fromKey(key)
 
 /** Luat chuyen bai (thuan, de test). */
 object PlaylistRules {
