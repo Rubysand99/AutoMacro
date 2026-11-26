@@ -13,6 +13,7 @@ import com.starclan.starhub.data.HubResponse
 import com.starclan.starhub.data.HubResult
 import com.starclan.starhub.data.HubWeaponReview
 import com.starclan.starhub.data.WeaponReviewLists
+import com.starclan.starhub.data.BoxRules
 import com.starclan.starhub.data.OwoTrackerApi
 import com.starclan.starhub.data.OwoTrackerPrefs
 import com.starclan.starhub.data.SpeedMode
@@ -138,9 +139,6 @@ object FarmController {
     private const val HUNTBOT_GAP_MS = 30 * 60_000L
     private const val HUNTBOT_IDLE_NOTIFY_GAP_MS = 3 * 3_600_000L
 
-    // Mo hop dinh ky: lootbox, weapon crate, bcrate (owo bwc all do Ruby cung cap; owo lb all / owo wc all la lenh chuan cua OwO)
-    private val OPEN_BOXES_COMMANDS: List<String> = listOf("owo lb all", "owo wc all", "owo bwc all")
-
     // Hien te lay essence (Ruby chon owo sc all), roi nang cap huntbot bang het essence.
     private val SACRIFICE_COMMANDS: List<String> = listOf("owo sc all")
     // Nang cap huntbot tu dong theo huong dan cua Ruby (bot doc cap do tung chi so tu `owo hb`):
@@ -181,6 +179,8 @@ object FarmController {
 
     private val choreAt = mutableMapOf<String, Long>()
     @Volatile private var sendCounter = 0
+    /** Lenh mo hop -> gio go thanh cong gan nhat (giu qua cac lan Bat dau farm, xem BoxRules) */
+    private val boxOpenedAt = mutableMapOf<String, Long>()
 
     /** Lenh kiem tra nhe, chen ngau nhien vao luc cho cooldown hunt va battle (cung cap nhat du lieu cho bot) */
     private data class Filler(val key: String, val command: String, val cmd: FarmCmd)
@@ -790,6 +790,21 @@ object FarmController {
         return SendResult.OK
     }
 
+    /** Go cac lenh mo hop; lenh nao go duoc thi nho gio de khong go lai khi bot chua doc kho moi */
+    private suspend fun openBoxes(
+        sender: DiscordSender,
+        settings: OwoTrackerPrefs.Settings,
+        commands: List<String>
+    ): SendResult {
+        for ((i, cmd) in commands.withIndex()) {
+            val r = runChoreCommands(sender, settings, "open_boxes", listOf(cmd))
+            if (r != SendResult.OK) return r
+            boxOpenedAt[cmd] = System.currentTimeMillis()
+            if (i < commands.size - 1) delay(Random.nextLong(2_500L, 5_000L))
+        }
+        return SendResult.OK
+    }
+
     /**
      * Moi vong lam toi da 1 viec vat, theo du lieu bot doc duoc (bot la "mat"):
      * daily khi den gio, lam moi quest, va (neu Ruby da cho lenh) huntbot / hien te / nang cap.
@@ -903,9 +918,12 @@ object FarmController {
             }
         }
 
-        // Mo lootbox / crate / bcrate
-        if (cmds.isEnabled(FarmCmd.OPEN_BOXES) && OPEN_BOXES_COMMANDS.isNotEmpty() && ready("open_boxes")) {
-            pool += Chore("open_boxes") { runChoreCommands(sender, settings, "open_boxes", OPEN_BOXES_COMMANDS) }
+        // Mo lootbox / crate / bcrate: chi go lenh cua loai hop ma kho con (theo lan doc kho moi nhat cua bot)
+        val boxCommands = BoxRules.commandsToOpen(
+            hub?.inventory, _state.value.hubFetchedAtMs, System.currentTimeMillis(), boxOpenedAt
+        )
+        if (cmds.isEnabled(FarmCmd.OPEN_BOXES) && boxCommands.isNotEmpty() && ready("open_boxes")) {
+            pool += Chore("open_boxes") { openBoxes(sender, settings, boxCommands) }
         }
 
         // Hien te lay essence

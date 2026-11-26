@@ -4,6 +4,11 @@ Nhật ký từng phiên bản, mới nhất ở trên. **Đây là lịch sử,
 (kịch bản, Room, keystore debug, tab "Tự động", 3 tab) đã bị gỡ hoặc đổi. Trạng thái hiện tại + quy ước bắt buộc nằm ở `AI_CONTEXT.md`.
 Khi thêm tính năng mới: ghi 1 mục `## vNN` ở ĐẦU danh sách bên dưới, rồi nếu có quy ước mới thì cập nhật mục "Quy ước bắt buộc" trong `AI_CONTEXT.md`.
 
+## v43 — Chỉ mở hộp khi kho còn
+- `data/BoxRules.kt` (có `BoxRulesTest`): theo `inventory` của `/hub`, chỉ gõ `owo lb all` khi còn `box`, `owo crate all` khi còn `crate` (thay `owo wc all`), `owo bwc all` khi còn `bcrate`.
+- Không gõ lại lệnh vừa gõ cho tới khi bot đọc kho mới hơn (`owo inv`); chờ 25 giây sau lần đọc kho để bot xóa xong món đã hết. Chưa có dữ liệu kho thì không gõ.
+- Không cần đổi bot. Chưa thử trên máy thật.
+
 ## v42 — Pet sự kiện tháng 11 trên Hub
 - Bot (owo-tracker `event_pets.py`, collection `owot_event_pets`) tự ghi nhận pet sự kiện (`2026november_pumpkinpie`, `2026november_autumnHsin`) khi thấy tên emoji trong dòng `You found:` của hunt (kể cả app tự gõ) hoặc trong `owo zoo` / `owo zoo d`; `/hub` trả thêm `event_pets` (`found_count/total`, từng pet: `found`, `count` đang giữ, `times_found`, `age_seconds`, `emoji_id`).
 - App: `HubEventPets/HubEventPet` (`HubModels.kt`), `HubParser` đọc riêng mục `event_pets` (bot cũ chưa có mục này thì null, không báo lỗi), `HubSummary.eventPetsLine`, `HubFormat.eventPetTitle/eventPetDetail/eventEnds`. Thẻ mới **Sự kiện** ở đầu danh sách thẻ trên màn Hub (mở sẵn, icon 🍂) và các dòng pet ở tab **Event** của Hub nổi. Chuỗi: `hs_evpet_*`, `hf_evpet_*`, `hub_section_event`, `hubfrag_chua_co_pet_su_kien`.

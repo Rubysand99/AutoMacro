@@ -487,7 +487,7 @@
     <string name="farmcmd_upgrade_label">Nâng cấp huntbot</string>
     <string name="farmcmd_upgrade_shown">owo upg … (kèm owo hb)</string>
     <string name="farmcmd_boxes_label">Mở hộp</string>
-    <string name="farmcmd_boxes_shown">owo lb / wc / bwc all</string>
+    <string name="farmcmd_boxes_shown">owo lb / crate / bwc all (khi kho còn)</string>
     <string name="farmcmd_sacrifice_label">Hiến tế</string>
     <string name="farmcmd_sacrifice_shown">owo sc all</string>
     <string name="farmcmd_team_label">Đội hình</string>
