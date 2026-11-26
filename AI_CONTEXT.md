@@ -49,7 +49,7 @@ dien thoai). Xem muc "Ket noi voi owo-tracker" ben duoi.
 
 
 ## Ket noi voi owo-tracker (repo rieng)
-- owo-tracker (Python, chay Railway) co API rieng: GET /commands/pending,
+- owo-tracker (Python, chay tren VPS, xem `deploy/VPS.md` ben repo bot) co API rieng: GET /commands/pending,
   POST /commands/{id}/ack, GET /hub (du lieu cho man hinh Hub), xac thuc bang header Authorization: Bearer <token>.
   Token nay KHAC MONGODB_URI - dien thoai khong bao gio cam chuoi ket noi Mongo that.
 - Ca 2 phia phai dat CUNG 1 token: owo-tracker qua bien moi truong AUTOMACRO_API_TOKEN,
