@@ -7,6 +7,7 @@ Khi thêm tính năng mới: ghi 1 mục `## vNN` ở ĐẦU danh sách bên dư
 ## v43 — Chỉ mở hộp khi kho còn
 - `data/BoxRules.kt` (có `BoxRulesTest`): theo `inventory` của `/hub`, chỉ gõ `owo lb all` khi còn `box`, `owo crate all` khi còn `crate` (thay `owo wc all`), `owo bwc all` khi còn `bcrate`.
 - Không gõ lại lệnh vừa gõ cho tới khi bot đọc kho mới hơn (`owo inv`); chờ 25 giây sau lần đọc kho để bot xóa xong món đã hết. Chưa có dữ liệu kho thì không gõ.
+- `crate` và `bcrate` chung cooldown: mỗi lượt chỉ gõ một trong hai (lệnh lâu chưa gõ nhất), cách nhau ít nhất 60 giây (`CRATE_GAP_MS`).
 - Không cần đổi bot. Chưa thử trên máy thật.
 
 ## v42 — Pet sự kiện tháng 11 trên Hub

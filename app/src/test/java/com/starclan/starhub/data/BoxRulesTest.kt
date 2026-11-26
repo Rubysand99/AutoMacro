@@ -15,8 +15,19 @@ class BoxRulesTest {
     @Test fun only_owned_boxes() =
         assertEquals(listOf("owo lb all", "owo bwc all"), run(inv("box" to 2L, "bcrate" to 6L, "cgem1" to 9L)))
 
-    @Test fun all_three() =
-        assertEquals(listOf("owo lb all", "owo crate all", "owo bwc all"), run(inv("bcrate" to 1L, "crate" to 1L, "box" to 1L)))
+    @Test fun crate_and_bcrate_never_together() =
+        assertEquals(listOf("owo lb all", "owo crate all"), run(inv("bcrate" to 1L, "crate" to 1L, "box" to 1L)))
+
+    @Test fun other_crate_waits_for_shared_cooldown() =
+        assertEquals(emptyList<String>(), run(inv("bcrate" to 1L, "crate" to 1L), mapOf("owo crate all" to now - 20_000L)))
+
+    @Test fun other_crate_after_shared_cooldown() =
+        assertEquals(listOf("owo bwc all"), run(inv("bcrate" to 1L, "crate" to 1L), mapOf("owo crate all" to now - 90_000L)))
+
+    @Test fun oldest_crate_command_goes_first() = assertEquals(
+        listOf("owo bwc all"),
+        run(inv("bcrate" to 1L, "crate" to 1L), mapOf("owo crate all" to now - 200_000L, "owo bwc all" to now - 400_000L))
+    )
 
     @Test fun zero_count_is_skipped() = assertEquals(emptyList<String>(), run(inv("box" to 0L, "crate" to 0L)))
 
