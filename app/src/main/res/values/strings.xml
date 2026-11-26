@@ -5,7 +5,7 @@
     <string name="title_owo_tracker_settings">Kết nối owo-tracker</string>
     <string name="title_hub_farm">Hub nổi &amp; farm</string>
     <string name="section_accessibility">Quyền truy cập</string>
-    <string name="label_owo_api_url">Địa chỉ API (URL public trên Railway)</string>
+    <string name="label_owo_api_url">Địa chỉ API (URL public của máy chủ)</string>
     <string name="label_owo_api_token">Token (giống AUTOMACRO_API_TOKEN đã đặt)</string>
     <string name="label_owo_sync_enabled">Bật tự động kiểm tra lệnh mới (mỗi 15 giây)</string>
     <string name="note_owo_sync">Khi bật, cứ 15 giây app sẽ hỏi owo-tracker có lệnh mới không và tự gõ lệnh đó vào Discord (chỉ khi Hub nổi đang bật).</string>
@@ -91,7 +91,7 @@
     <!-- Kiem tra dia chi API luc bam Luu -->
     <string name="toast_api_url_empty">Chưa nhập địa chỉ API</string>
     <string name="toast_api_url_missing_scheme">Địa chỉ API phải bắt đầu bằng https://</string>
-    <string name="toast_api_url_cleartext">Android chặn địa chỉ http:// — hãy dùng https:// (Railway đã có sẵn HTTPS)</string>
+    <string name="toast_api_url_cleartext">Android chặn địa chỉ http:// — hãy dùng https:// (máy chủ cần bật HTTPS)</string>
     <!-- Tab Cong cu: nhap tay pet / loai vu khi / passive (,petset ,weapontypeset ,passiveset) -->
     <string name="tools_manual_title">Nhập tay (khi bot chưa có dữ liệu)</string>
     <string name="tools_manual_note">Dùng khi bot chưa tự ghi nhận được từ owo dex / owo weapon. Nhập lại cùng tên sẽ ghi đè bản cũ.</string>
