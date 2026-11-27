@@ -102,9 +102,10 @@ object OwoTrackerApi {
      * tra ve ro thanh cong hay that bai (kem cau bao loi bang tieng Viet) de
      * man hinh Hub hien cho Ruby biet sai o dau (sai token, chua cap nhat bot...).
      */
-    suspend fun fetchHub(apiUrl: String, token: String): HubResult = withContext<HubResult>(Dispatchers.IO) {
+    suspend fun fetchHub(apiUrl: String, token: String, includePetDex: Boolean = true): HubResult = withContext<HubResult>(Dispatchers.IO) {
         try {
-            val url = URL(joinUrl(apiUrl, "/hub"))
+            // ?dex=0: bot bo so loai pet (phan nang nhat) cho nhung noi khong dung toi
+            val url = URL(joinUrl(apiUrl, if (includePetDex) "/hub" else "/hub?dex=0"))
             val conn = url.openConnection() as HttpURLConnection
             conn.requestMethod = "GET"
             conn.setRequestProperty("Authorization", "Bearer $token")

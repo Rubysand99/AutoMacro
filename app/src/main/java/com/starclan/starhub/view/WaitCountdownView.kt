@@ -15,8 +15,8 @@ import com.starclan.starhub.R
 import com.starclan.starhub.Str
 
 /**
- * Dong ho dem nguoc cho Hub noi: dong chu "Ly do · m:ss" + thanh tien do co dan ve 0 (cap nhat moi 0,1 giay
- * nen chay muot). Dung de Ruby thay app dang CHO chu khong phai dung. danger = true (thoi gian vang captcha):
+ * Dong ho dem nguoc cho Hub noi: dong chu "Ly do · m:ss" + thanh tien do co dan ve 0 (cap nhat 4 lan
+ * moi giay). Dung de Ruby thay app dang CHO chu khong phai dung. danger = true (thoi gian vang captcha):
  * mau do, het gio thi hien "HET GIO" va dung lai. onTick(text) bao chu "m:ss" hien tai (null = da an) de
  * bong bong ngoi sao cung hien dong ho khi menu dang thu gon.
  */
@@ -92,7 +92,8 @@ class WaitCountdownView(context: Context) : LinearLayout(context) {
             return
         }
         val text = CountdownFormat.mmss(left)
-        title.text = "$label · $text"
+        // chu chi doi moi giay: bo qua lan nhip trung de khoi do lai bo cuc (start() dat lastText = null nen lan dau luon ghi)
+        if (text != lastText) title.text = "$label · $text"
         bar.progress = (CountdownFormat.fraction(left, totalMs) * BAR_MAX).toInt()
         if (text != lastText) {
             lastText = text
@@ -112,7 +113,7 @@ class WaitCountdownView(context: Context) : LinearLayout(context) {
     }
 
     private companion object {
-        const val TICK_MS = 100L
+        const val TICK_MS = 250L
         const val BAR_MAX = 1000
     }
 }

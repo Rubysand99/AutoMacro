@@ -90,15 +90,24 @@ object FarmOverlay {
 
     private enum class Tone { NORMAL, GOOD, WARN, MUTED }
 
-    /** 1 dong: nhan (cot trai, co the de trong) + gia tri */
-    private class Row(val label: String, val value: String, val tone: Tone = Tone.NORMAL, val build: ((Context) -> View)? = null)
+    /**
+     * 1 dong: nhan (cot trai, co the de trong) + gia tri. Dong tu ve ([build]) phai khai [sig] gom MOI thu quyet dinh
+     * hinh ve thi moi bo qua duoc lan ve lai khong doi; khong khai [sig] = lan nao cung ve lai.
+     */
+    private class Row(
+        val label: String, val value: String, val tone: Tone = Tone.NORMAL,
+        val sig: Any? = null, val build: ((Context) -> View)? = null
+    )
 
     private class Group(
         val card: LinearLayout,
         val body: LinearLayout,
         val summary: TextView,
         val chevron: TextView
-    )
+    ) {
+        /** Chu ky noi dung dang ve trong [body]; null = chua ve hoac phai ve lai */
+        var shown: List<Any?>? = null
+    }
 
     /** ScrollView cao toi da maxH, thap hon thi co theo noi dung (khong chua khoang trong thua) */
     private class MaxHeightScrollView(ctx: Context, private val maxH: Int) : ScrollView(ctx) {
@@ -690,6 +699,12 @@ object FarmOverlay {
         val ctx = viewCtx ?: return
         g.card.visibility = if (visible) View.VISIBLE else View.GONE
         g.summary.text = summary
+        // Noi dung y nhu lan truoc thi giu nguyen view: render() chay rat thuong xuyen trong luc farm
+        val sig: List<Any?>? =
+            if (rows.any { it.build != null && it.sig == null }) null
+            else rows.map { listOf(it.label, it.value, it.tone, it.sig) }
+        if (sig != null && sig == g.shown) return
+        g.shown = sig
         g.body.removeAllViews()
         for (r in rows) g.body.addView(rowView(ctx, r))
     }
@@ -1155,6 +1170,8 @@ object FarmOverlay {
     private fun togglePanel() {
         val p = panel ?: return
         p.visibility = if (p.visibility == View.VISIBLE) View.GONE else View.VISIBLE
+        // Luc thu gon render() khong ve noi dung menu, nen mo ra phai ve lai bang so lieu moi nhat
+        if (p.visibility == View.VISIBLE) render(FarmController.state.value)
         relayout()
         if (p.visibility == View.VISIBLE) scheduleAutoCollapse()
     }
@@ -1203,7 +1220,7 @@ object FarmOverlay {
             rows.add(Row(Str.get(R.string.overlay_hom_nay), Str.get(R.string.overlay_chua_co_so_lieu_bam), Tone.MUTED))
         } else {
             val runText = StatsFormat.duration(t.seconds).replace(Str.get(R.string.overlay_phut), "p")
-            rows.add(Row("", "", build = { c ->
+            rows.add(Row("", "", sig = listOf(t.hunts, t.battles, runText), build = { c ->
                 tileRow(
                     c,
                     listOf(
@@ -1220,7 +1237,7 @@ object FarmOverlay {
             val ds = byDate[d.toString()]
             DayBar(StatsFormat.shortDate(d.toString()), (ds?.hunts ?: 0) + (ds?.battles ?: 0), back == 0)
         }
-        rows.add(Row("", "", build = { c ->
+        rows.add(Row("", "", sig = bars, build = { c ->
             val chart = DayBarsView(c)
             chart.bars = bars
             chart.also { it.setPadding(0, dp(8), 0, 0) }
@@ -1364,6 +1381,9 @@ object FarmOverlay {
             lastExpandedAlert = alertText
         }
 
+        // Menu dang thu gon (chi con bong bong): khoi dung noi dung ben trong
+        if (panel?.visibility != View.VISIBLE) return
+
         renderStats()
 
         // --- chua co du lieu tu bot ---
@@ -1422,7 +1442,7 @@ object FarmOverlay {
                 val gemName = HubFormat.gemType(g.slot)
                 val gemText = "${g.tier ?: "?"} [${g.current ?: 0}/${g.max ?: 0}]"
                 val gemPct = g.percent ?: 100
-                gemRows.add(Row(gemName, gemText, if (low) Tone.WARN else Tone.NORMAL, build = { c -> gemBarRow(c, gemName, gemText, gemPct, low) }))
+                gemRows.add(Row(gemName, gemText, if (low) Tone.WARN else Tone.NORMAL, sig = gemPct, build = { c -> gemBarRow(c, gemName, gemText, gemPct, low) }))
             }
         }
         val spare = hub.gems?.spare.orEmpty()
@@ -1473,7 +1493,7 @@ object FarmOverlay {
                 val pct = h.progressPct?.let { "${HubFormat.trimNum(it)}%" } ?: ""
                 val pctInt = h.progressPct?.toInt()
                 if (pctInt != null) {
-                    hbRows.add(Row("", "", build = { c -> ringRow(c, pctInt, Str.get(R.string.overlay_dang_san), timeText) }))
+                    hbRows.add(Row("", "", sig = listOf(pctInt, timeText), build = { c -> ringRow(c, pctInt, Str.get(R.string.overlay_dang_san), timeText) }))
                 } else {
                     hbRows.add(Row(Str.get(R.string.overlay_trang_thai), Str.get(R.string.overlay_dang_san), Tone.GOOD))
                     hbRows.add(Row(Str.get(R.string.overlay_thoi_gian), timeText))

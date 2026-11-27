@@ -4,6 +4,12 @@ Nhật ký từng phiên bản, mới nhất ở trên. **Đây là lịch sử,
 (kịch bản, Room, keystore debug, tab "Tự động", 3 tab) đã bị gỡ hoặc đổi. Trạng thái hiện tại + quy ước bắt buộc nằm ở `AI_CONTEXT.md`.
 Khi thêm tính năng mới: ghi 1 mục `## vNN` ở ĐẦU danh sách bên dưới, rồi nếu có quy ước mới thì cập nhật mục "Quy ước bắt buộc" trong `AI_CONTEXT.md`.
 
+## v44 — Tối ưu hiệu năng Hub nổi và gọi bot
+- Hub nổi: menu đang thu gọn thì `render()` chỉ cập nhật phần đầu / bong bóng / đếm ngược, không dựng nội dung các nhóm; mở menu ra thì vẽ lại ngay. `setGroup` giữ nguyên view khi nội dung không đổi (dòng tự vẽ phải khai `Row.sig` gồm mọi thứ quyết định hình vẽ, không khai thì luôn vẽ lại).
+- Đếm ngược cập nhật 4 lần/giây (trước 10 lần), chữ chỉ ghi khi đổi.
+- Farm gọi `/hub?dex=0` (bỏ `pet_dex`, phần nặng nhất); màn Hub và tab Công cụ vẫn lấy đủ. Cần bot bản mới, bot cũ bỏ qua tham số.
+- CHUA thu tren may that.
+
 ## v43 — Chỉ mở hộp khi kho còn
 - `data/BoxRules.kt` (có `BoxRulesTest`): theo `inventory` của `/hub`, chỉ gõ `owo lb all` khi còn `box`, `owo crate all` khi còn `crate` (thay `owo wc all`), `owo bwc all` khi còn `bcrate`.
 - Không gõ lại lệnh vừa gõ cho tới khi bot đọc kho mới hơn (`owo inv`); chờ 25 giây sau lần đọc kho để bot xóa xong món đã hết. Chưa có dữ liệu kho thì không gõ.

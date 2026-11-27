@@ -523,7 +523,7 @@ object FarmController {
             return
         }
         if (_state.value.captchaEndMs > 0L && !isRunning()) clearCaptchaIfSolved(s)
-        when (val r = OwoTrackerApi.fetchHub(s.apiUrl, s.token)) {
+        when (val r = OwoTrackerApi.fetchHub(s.apiUrl, s.token, includePetDex = false)) {
             is HubResult.Success -> {
                 val hub = r.hub
                 val cur = _state.value
