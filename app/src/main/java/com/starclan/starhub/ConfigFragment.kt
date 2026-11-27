@@ -1,7 +1,5 @@
 package com.starclan.starhub
 
-import android.content.ClipboardManager
-import android.content.Context
 import android.content.res.ColorStateList
 import android.content.Intent
 import android.graphics.Color
@@ -10,7 +8,6 @@ import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Bundle
 import android.provider.OpenableColumns
-import android.text.InputType
 import android.text.TextUtils
 import android.view.Gravity
 import android.view.LayoutInflater
@@ -18,20 +15,17 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.CheckBox
-import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.SwitchCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.starclan.starhub.data.ConfigPrefs
 import com.starclan.starhub.data.MusicConfig
-import com.starclan.starhub.data.MusicLinks
 import com.starclan.starhub.data.PlayMode
 import com.starclan.starhub.data.Track
 import com.starclan.starhub.engine.FarmController
@@ -40,7 +34,7 @@ import com.starclan.starhub.view.UiTheme
 
 /**
  * Tab "Config": cac lua chon rieng cua app, luu ngay tren may (khong can bam Luu).
- *  - Nhac nen : bat/tat, PLAYLIST nhieu bai (them file trong may / dan link YouTube-TikTok-Facebook), ngau nhien, am luong, nghe thu. Nhac tu phat khi bat dau farm va dung khi farm ket thuc.
+ *  - Nhac nen : bat/tat, PLAYLIST nhieu bai (them file trong may), ngau nhien, am luong, nghe thu. Nhac tu phat khi bat dau farm va dung khi farm ket thuc.
  *  - Tier gem : mo hop thoai chon tier gem bot duoc phep dung (truoc day nam o tab Cai dat).
  * Giao dien dung bang code (khong XML) giong tab Cong cu.
  */
@@ -54,7 +48,6 @@ class ConfigFragment : Fragment() {
     private lateinit var listBox: LinearLayout
     private val modeButtons = LinkedHashMap<PlayMode, Button>()
     private lateinit var tvModeHint: TextView
-    private val trackLabels = HashMap<String, TextView>()   // nguon -> chu ten bai trong danh sach (de cap nhat % tai ma khong dung lai ca danh sach)
     private lateinit var btnPreview: Button
     private lateinit var btnNext: Button
     private lateinit var seekVolume: SeekBar
@@ -105,10 +98,7 @@ class ConfigFragment : Fragment() {
         val addRow = LinearLayout(ctx).apply { orientation = LinearLayout.HORIZONTAL }
         addRow.addView(button(getString(R.string.config_add_file)) { pickMusic.launch(arrayOf("audio/*")) },
             LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-        addRow.addView(button(getString(R.string.config_paste_link)) { showPasteLinkDialog() },
-            LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).also { it.leftMargin = dp(8) })
-        musicCard.addView(addRow, lp(top = 0, bottom = 4))
-        musicCard.addView(text(getString(R.string.config_link_note), 11f, UiTheme.TEXT_MUTED), lp(top = 0, bottom = 8))
+        musicCard.addView(addRow, lp(top = 0, bottom = 8))
 
         val playRow = LinearLayout(ctx).apply { orientation = LinearLayout.HORIZONTAL }
         btnPreview = button(getString(R.string.config_preview)) { onPreviewClicked() }
@@ -171,8 +161,6 @@ class ConfigFragment : Fragment() {
         MusicPlayer.onError = { msg -> previewing = false; toast(msg, long = true); refreshNowPlaying() }
         MusicPlayer.onSkipped = { msg -> toast(msg, long = true) }
         MusicPlayer.onChanged = { refreshNowPlaying() }
-        MusicPlayer.onTitle = { src, title -> music = music.withTitle(src, title); refreshMusicUi() }
-        MusicPlayer.onProgress = { src, _ -> updateTrackLabel(src); refreshNowPlaying() }
         refreshNowPlaying()
     }
 
@@ -181,8 +169,6 @@ class ConfigFragment : Fragment() {
         MusicPlayer.onError = null
         MusicPlayer.onSkipped = null
         MusicPlayer.onChanged = null
-        MusicPlayer.onTitle = null
-        MusicPlayer.onProgress = null
         // Rời tab thì tắt bản nghe thử (nhạc nền lúc đang farm thì giữ nguyên)
         if (previewing && !FarmController.isRunning()) MusicPlayer.stop()
         previewing = false
@@ -240,40 +226,6 @@ class ConfigFragment : Fragment() {
         }
         toast(getString(R.string.config_added_n, added))
         saveMusic(next)
-        MusicPlayer.downloadAhead(requireContext(), tracks)   // link moi them thi tai ve ngay
-    }
-
-    /** Hop thoai dan link (nhieu link, moi dong 1 link). Co link trong clipboard thi dien san. */
-    private fun showPasteLinkDialog() {
-        val ctx = requireContext()
-        val input = EditText(ctx).apply {
-            hint = getString(R.string.config_paste_link_hint)
-            minLines = 4
-            gravity = Gravity.TOP or Gravity.START
-            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE
-        }
-        try {
-            val clip = (ctx.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager)?.primaryClip
-            val clipText = if (clip != null && clip.itemCount > 0) clip.getItemAt(0).coerceToText(ctx)?.toString().orEmpty() else ""
-            if (MusicLinks.extract(clipText).isNotEmpty()) input.setText(clipText)
-        } catch (e: Exception) {
-            // khong doc duoc clipboard thi de trong
-        }
-        val box = LinearLayout(ctx).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(20), dp(8), dp(20), 0)
-            addView(input, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
-        }
-        AlertDialog.Builder(ctx)
-            .setTitle(R.string.config_paste_link)
-            .setMessage(R.string.config_paste_link_msg)
-            .setView(box)
-            .setNegativeButton(R.string.btn_cancel, null)
-            .setPositiveButton(R.string.config_paste_link_ok) { _, _ ->
-                val links = MusicLinks.extract(input.text?.toString().orEmpty())
-                if (links.isEmpty()) toast(getString(R.string.config_links_none)) else addTracks(links.map { Track(it) })
-            }
-            .show()
     }
 
     private fun onPreviewClicked() {
@@ -322,23 +274,14 @@ class ConfigFragment : Fragment() {
         })
     }
 
-    /** Chu 1 dong bai: "thu hang. ten" (che do ngau nhien khong co thu hang) + "· dang tai 45%" khi dang tai. */
+    /** Chu 1 dong bai: "thu hang. ten" (che do ngau nhien khong co thu hang). */
     private fun trackLabel(i: Int, t: Track): String {
         val rank = music.rankOf(i)
-        val base = (if (rank > 0) "$rank. " else "") + t.displayName
-        val pct = MusicPlayer.downloadPercent(t.source)
-        return if (pct >= 0) base + " · " + getString(R.string.config_track_pct, pct) else base
-    }
-
-    private fun updateTrackLabel(source: String) {
-        val i = music.tracks.indexOfFirst { it.source == source }
-        if (i < 0) return
-        trackLabels[source]?.text = trackLabel(i, music.tracks[i])
+        return (if (rank > 0) "$rank. " else "") + t.displayName
     }
 
     private fun rebuildList() {
         listBox.removeAllViews()
-        trackLabels.clear()
         val sequential = music.mode == PlayMode.ADDED   // chi che do "thu tu them" moi co y nghia khi doi cho bang ↑ ↓
         music.tracks.forEachIndexed { i, t ->
             val row = LinearLayout(requireContext()).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
@@ -351,7 +294,6 @@ class ConfigFragment : Fragment() {
             val name = text(trackLabel(i, t), 13f, if (t.enabled) UiTheme.TEXT_PRIMARY else UiTheme.TEXT_MUTED).apply {
                 maxLines = 1; ellipsize = TextUtils.TruncateAt.END
             }
-            trackLabels[t.source] = name
             row.addView(name, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
             if (sequential) {
                 row.addView(rowAction("↑", i > 0) { saveMusic(music.move(i, -1)) })
@@ -374,10 +316,7 @@ class ConfigFragment : Fragment() {
         if (!::tvNow.isInitialized || !::tvErr.isInitialized || view == null) return
         val name = MusicPlayer.nowPlaying
         val line = when {
-            MusicPlayer.playing && name.isNotEmpty() && MusicPlayer.loading ->
-                MusicPlayer.currentDownloadPercent.let { pct ->
-                    if (pct >= 0) getString(R.string.config_now_loading_pct, name, pct) else getString(R.string.config_now_loading, name)
-                }
+            MusicPlayer.playing && name.isNotEmpty() && MusicPlayer.loading -> getString(R.string.config_now_loading, name)
             MusicPlayer.playing && name.isNotEmpty() -> getString(R.string.config_now_playing, name)
             else -> ""
         }

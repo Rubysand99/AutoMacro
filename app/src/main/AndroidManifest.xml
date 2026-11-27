@@ -4,7 +4,7 @@
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <!-- Nhac nen phat tu link: tat man hinh van tai/phat tiep duoc (MediaPlayer.setWakeMode) -->
+    <!-- Nhac nen: tat man hinh van phat tiep duoc (ExoPlayer.setWakeMode) -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <!-- Android 13+: de hien thong bao "huntbot con 10 phut nua ve" -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
@@ -17,7 +17,6 @@
     <application
         android:name=".StarHubApp"
         android:allowBackup="false"
-        android:extractNativeLibs="true"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:label="@string/app_name"

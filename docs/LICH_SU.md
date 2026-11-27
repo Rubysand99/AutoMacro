@@ -4,6 +4,12 @@ Nhật ký từng phiên bản, mới nhất ở trên. **Đây là lịch sử,
 (kịch bản, Room, keystore debug, tab "Tự động", 3 tab) đã bị gỡ hoặc đổi. Trạng thái hiện tại + quy ước bắt buộc nằm ở `AI_CONTEXT.md`.
 Khi thêm tính năng mới: ghi 1 mục `## vNN` ở ĐẦU danh sách bên dưới, rồi nếu có quy ước mới thì cập nhật mục "Quy ước bắt buộc" trong `AI_CONTEXT.md`.
 
+## v45 — Gỡ tải nhạc bằng link
+- Bỏ thư viện `youtubedl-android` (Python + yt-dlp), `engine/LinkResolver`, nút "Dán link", % tải; bỏ `abiFilters` / `useLegacyPackaging` / `extractNativeLibs` (không còn thư viện native của yt-dlp).
+- Nhạc nền chỉ còn file trong máy (vẫn dùng ExoPlayer). Link đã lưu trong playlist cũ bị loại khi đọc.
+- `data/LegacyMusicCleanup` (có test): mở app thì xóa `no_backup/youtubedl-android`, `files/music` và SharedPreferences `youtubedl-android`.
+- CHUA thu tren may that.
+
 ## v44 — Tối ưu hiệu năng Hub nổi và gọi bot
 - Hub nổi: menu đang thu gọn thì `render()` chỉ cập nhật phần đầu / bong bóng / đếm ngược, không dựng nội dung các nhóm; mở menu ra thì vẽ lại ngay. `setGroup` giữ nguyên view khi nội dung không đổi (dòng tự vẽ phải khai `Row.sig` gồm mọi thứ quyết định hình vẽ, không khai thì luôn vẽ lại).
 - Đếm ngược cập nhật 4 lần/giây (trước 10 lần), chữ chỉ ghi khi đổi.

@@ -4,67 +4,20 @@ import com.google.gson.Gson
 
 /**
  * 1 bai trong playlist nhac nen.
- *  - source : `content://...` (file Ruby chon trong may) hoac link `http(s)://` (YouTube, TikTok, Facebook...; app tu tach am thanh bang yt-dlp)
- *  - title  : ten hien thi; rong thi hien nguon. Link duoc ghi ten that (tieu de video) sau lan phat dau tien.
+ *  - source : `content://...` (file Ruby chon trong may)
+ *  - title  : ten hien thi; rong thi hien nguon
  *  - enabled   : false -> bai van nam trong danh sach nhung KHONG duoc phat (Ruby tat tung bai)
  *  - pickOrder : thu tu Ruby BAT bai nay (so cang nho cang phat truoc o che do "theo thu tu chon"); 0 = chua ghi (bai cu / chua chon)
  */
 data class Track(val source: String, val title: String = "", val enabled: Boolean = true, val pickOrder: Long = 0L) {
-    val isLink: Boolean get() = MusicLinks.isLink(source)
-
-    /** Ten de hien cho Ruby: ten da biet, neu chua co thi ten trang + id ngan cua link, con lai la nguon. */
+    /** Ten de hien cho Ruby: ten da biet, neu chua co thi la nguon. */
     val displayName: String
-        get() = title.ifBlank { if (isLink) MusicLinks.shortLabel(source) else source }
+        get() = title.ifBlank { source }
 }
 
-/** Nhan dien va tach link dan vao (co the dan nhieu link 1 lan, moi dong 1 link hoac cach nhau bang khoang trang). */
-object MusicLinks {
-    private val URL_REGEX = Regex("""https?://[^\s<>"']+""", RegexOption.IGNORE_CASE)
-    private const val TRAILING = ".,;:!?)]}。"
-
-    fun isLink(s: String): Boolean {
-        val t = s.trim().lowercase()
-        return t.startsWith("http://") || t.startsWith("https://")
-    }
-
-    /** Lay moi link hop le trong doan chu Ruby dan; bo trung, giu thu tu. */
-    fun extract(text: String): List<String> {
-        val out = LinkedHashSet<String>()
-        for (m in URL_REGEX.findAll(text)) {
-            val url = m.value.trimEnd { it in TRAILING }
-            if (host(url).contains('.')) out.add(url)
-        }
-        return out.toList()
-    }
-
-    /** Ten mien viet thuong, khong "www."/"m."; rong neu khong tach duoc. */
-    fun host(url: String): String {
-        val rest = url.trim().substringAfter("://", "")
-        val h = rest.substringBefore('/').substringBefore('?').substringBefore('#').substringAfterLast('@').substringBefore(':').lowercase()
-        return h.removePrefix("www.").removePrefix("m.")
-    }
-
-    /** Ten trang cho de doc: YouTube / TikTok / Facebook, trang khac thi ten mien. */
-    fun siteName(url: String): String {
-        val h = host(url)
-        return when {
-            h == "youtu.be" || h.endsWith("youtube.com") || h.endsWith("youtube-nocookie.com") -> "YouTube"
-            h.endsWith("tiktok.com") -> "TikTok"
-            h == "fb.watch" || h == "fb.com" || h.endsWith("facebook.com") -> "Facebook"
-            else -> h
-        }
-    }
-
-    /** "YouTube · dQw4w9WgXcQ" (id ngan cua link) cho den khi co tieu de that. */
-    fun shortLabel(url: String): String {
-        val tail = url.trim().substringAfter("://", "").substringAfter('/', "")
-            .substringBefore('#').trimEnd('/').let { t ->
-                val v = Regex("""[?&]v=([^&]+)""").find(t)?.groupValues?.get(1)
-                v ?: t.substringBefore('?').substringAfterLast('/')
-            }
-        return if (tail.isBlank()) siteName(url) else siteName(url) + " · " + tail.take(24)
-    }
-}
+/** Bai tu link web (tinh nang da go o v45): ban cu co the con luu trong playlist nen phai loai khi doc. */
+private fun isWebLink(source: String): Boolean =
+    source.startsWith("http://", ignoreCase = true) || source.startsWith("https://", ignoreCase = true)
 
 /** Luu / doc playlist dang JSON (cho SharedPreferences). Doc loi hoac du lieu hong -> danh sach rong, khong nem loi. */
 object PlaylistJson {
@@ -80,7 +33,7 @@ object PlaylistJson {
             val arr = gson.fromJson(json, Array<Stored>::class.java) ?: return emptyList()
             arr.mapNotNull { s ->
                 val src = s?.source?.trim().orEmpty()
-                if (src.isEmpty()) null else Track(src, s?.title.orEmpty(), s?.enabled ?: true, (s?.pick ?: 0L).coerceAtLeast(0L))
+                if (src.isEmpty() || isWebLink(src)) null else Track(src, s?.title.orEmpty(), s?.enabled ?: true, (s?.pick ?: 0L).coerceAtLeast(0L))
             }.take(MusicConfig.MAX_TRACKS)
         } catch (e: Exception) {
             emptyList()

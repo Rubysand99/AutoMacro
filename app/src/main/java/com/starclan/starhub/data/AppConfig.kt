@@ -18,7 +18,7 @@ enum class PlayMode(val key: String) {
 /**
  * Cau hinh nhac nen (tab Config) = PLAYLIST nhieu bai. Thuan Kotlin (khong dinh Android) de kiem tra de dang.
  *  - enabled : bat -> tu phat playlist khi bat dau farm, tu dung khi farm ket thuc
- *  - tracks  : cac bai (file trong may HOAC link YouTube/TikTok/Facebook...); bai bi tat (`Track.enabled = false`) khong duoc phat
+ *  - tracks  : cac bai (file trong may); bai bi tat (`Track.enabled = false`) khong duoc phat
  *  - mode    : xem [PlayMode]; het danh sach thi lap lai tu dau
  *  - volume  : 0..100 (chi am luong cua nhac nen, khong anh huong chuong bao captcha)
  */
@@ -104,12 +104,6 @@ data class MusicConfig(
         val t = list.removeAt(index)
         list.add(to, t)
         return copy(tracks = list)
-    }
-
-    /** Ghi ten that (tieu de video) cho bai co nguon [source]; khong co bai do thi giu nguyen. */
-    fun withTitle(source: String, title: String): MusicConfig {
-        if (title.isBlank() || tracks.none { it.source == source && it.title != title }) return this
-        return copy(tracks = tracks.map { if (it.source == source) it.copy(title = title) else it })
     }
 
     companion object {

@@ -161,11 +161,6 @@
     <string name="config_music_title">Phát nhạc khi farm</string>
     <string name="config_music_sub">Bắt đầu farm thì playlist tự phát (hết thì lặp lại), dừng farm thì nhạc tự tắt. Chuông báo captcha vẫn kêu bình thường.</string>
     <string name="config_add_file">Thêm file nhạc</string>
-    <string name="config_paste_link">Dán link</string>
-    <string name="config_paste_link_msg">Dán link video YouTube, TikTok hoặc Facebook (nhiều link cũng được, mỗi dòng 1 link). App tự lấy phần âm thanh để phát.</string>
-    <string name="config_paste_link_hint">https://youtu.be/…</string>
-    <string name="config_paste_link_ok">Thêm</string>
-    <string name="config_links_none">Không thấy link hợp lệ (phải bắt đầu bằng http:// hoặc https://)</string>
     <string name="config_added_n">Đã thêm %1$s bài</string>
     <string name="config_added_none">Không có bài nào mới (bài đó đã có trong playlist)</string>
     <string name="config_playlist_full">Playlist tối đa %1$s bài</string>
@@ -178,13 +173,10 @@
     <string name="config_mode_added_hint">Phát theo thứ tự trong danh sách (đổi chỗ bằng ↑ ↓), hết thì lặp lại. Bỏ tích bài nào thì bài đó bị bỏ qua.</string>
     <string name="config_mode_picked_hint">Phát theo thứ tự bạn tích chọn từng bài: tích trước phát trước. Bỏ tích rồi tích lại thì bài đó xuống cuối.</string>
     <string name="config_mode_shuffle_hint">Sau mỗi bài chọn ngẫu nhiên 1 bài khác trong các bài đang tích.</string>
-    <string name="config_track_pct">đang tải %1$s%%</string>
-    <string name="config_now_loading_pct">Đang tải: %1$s — %2$s%%</string>
-    <string name="config_playlist_empty">Playlist trống — thêm file nhạc hoặc dán link.</string>
-    <string name="config_link_note">Bài từ link cần có mạng. Lần đầu app chuẩn bị yt-dlp nên bài đầu tiên có thể chậm vài giây; link riêng tư hoặc bắt đăng nhập thì không phát được.</string>
+    <string name="config_playlist_empty">Playlist trống — thêm file nhạc.</string>
     <string name="config_next_track">Bài tiếp</string>
     <string name="config_now_playing">Đang phát: %1$s</string>
-    <string name="config_now_loading">Đang lấy âm thanh: %1$s…</string>
+    <string name="config_now_loading">Đang mở bài: %1$s…</string>
     <string name="config_preview">Nghe thử</string>
     <string name="config_pick_first">Thêm bài vào playlist trước đã</string>
     <string name="config_preview_stop">Dừng nghe thử</string>
@@ -405,8 +397,7 @@
     <string name="tag_xong_bot_da_gui_file">✅ Xong — bot đã gửi file cho bạn qua Discord</string>
     <string name="tag_da_hoc_xong_nhung_chua">Đã học xong nhưng chưa gửi được lên bot (bot đã cập nhật chưa?). Bấm lại để gửi</string>
     <string name="music_khong_phat_duoc_file_nhac">Không phát được file nhạc — chọn lại file khác</string>
-    <string name="music_link_khong_lay_duoc">Không lấy được âm thanh từ link: %1$s — kiểm tra mạng hoặc thử link khác</string>
-    <string name="music_ca_playlist_loi">Không bài nào trong playlist phát được — kiểm tra mạng và link rồi nghe thử lại</string>
+    <string name="music_ca_playlist_loi">Không bài nào trong playlist phát được — chọn lại file nhạc rồi nghe thử lại</string>
     <string name="music_khong_mo_duoc_file_nhac">Không mở được file nhạc (có thể đã bị xoá hoặc mất quyền đọc) — chọn lại</string>
     <string name="svc_farm_dang_chay_cho_farm">Farm đang chạy — chờ farm dừng rồi app mới gõ nw inv export.</string>
     <string name="svc_dang_go_nw_inv_export">Đang gõ nw inv export vào Discord…</string>
